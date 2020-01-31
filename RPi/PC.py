@@ -1,24 +1,27 @@
-from ..main import bcolors
 import socket
 
 
 class PC:
 
-    def __init__(self, ip_address, port):
+    def __init__(self, ip_address, port, text_color):
         self.ip_address = ip_address
         self.port = port
+        self.text_color = text_color
 
     def connect(self):
         s = socket.socket()
-        print(bcolors.BOLD +
+        print(self.text_color.BOLD +
               'Connecting to ' + self.ip_address + ':' + self.port
-              + bcolors.ENDC)
+              + self.text_color.ENDC)
 
         try:
             s.connect((self.ip_address, self.port))
-            print(bcolors.OKGREEN +
+            print(self.text_color.OKGREEN +
                   'Connected to ' + self.ip_address + ':' + self.port
-                  + bcolors.ENDC)
+                  + self.text_color.ENDC)
 
         except:
-            print(bcolors.FAIL + 'Connection failed/terminated' + bcolors.ENDC)
+            print(self.text_color.FAIL + 'Connection failed/terminated' + self.text_color.ENDC)
+
+    # TODO: write function to handle streaming data from Pi camera to PC
+    # TODO: write function to handle retrieving data from PC to Pi
