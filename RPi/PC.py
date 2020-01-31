@@ -7,15 +7,15 @@ class PC:
         self.ip_address = ip_address
         self.port = port
         self.text_color = text_color
+        self.s = socket.socket()
 
     def connect(self):
-        s = socket.socket()
         print(self.text_color.BOLD +
               'Connecting to ' + self.ip_address + ':' + self.port
               + self.text_color.ENDC)
 
         try:
-            s.connect((self.ip_address, self.port))
+            self.s.connect((self.ip_address, self.port))
             print(self.text_color.OKGREEN +
                   'Connected to ' + self.ip_address + ':' + self.port
                   + self.text_color.ENDC)

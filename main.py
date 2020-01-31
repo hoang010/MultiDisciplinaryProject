@@ -1,11 +1,14 @@
 # Import written classes
 from RPi.PC import PC
 from RPi.Tablet import Tablet
+from RPi.Arduino import Arduino
 from config.text_color import TextColor as text_color
 
 # Import libraries
 import threading
 import socket
+import serial
+import time
 
 
 def main(sys_type):
@@ -15,36 +18,40 @@ def main(sys_type):
     rpi_ip = '192.168.17.17'
     port = '80'
     host_mac_addr = ''
+    arduino_name = ''
 
+    # If running on Pi, run relevant threads
     if sys_type == 'Linux':
-        rpi(pc_ip, port, host_mac_addr)
+        rpi(pc_ip, port, host_mac_addr, arduino_name)
 
+    # If running on own PC, run instance of algorithms
     elif sys_type == 'Windows' or sys_type == 'Darwin':
         pc(rpi_ip, port)
 
 
-def rpi(pc_ip, port, host_mac_addr):
+def rpi(pc_ip, port, host_mac_addr, arduino_name):
+    
+    # Connect to Arduino
+    arduino_object = Arduino(arduino_name, text_color)
+
     # Connect to PC
     pc_object = PC(pc_ip, port, text_color)
     pc_connection = threading.Thread(target=pc_object.connect())
 
-    # Connect to tablet
+    # Connect to Tablet
     tablet_object = Tablet(host_mac_addr, text_color)
     tablet_connection = threading.Thread(target=tablet_object.connect())
 
     print(text_color.BOLD +
-          'PC connection running on thread 1.'
+          'PC socket running on thread 1.'
           + text_color.ENDC)
     pc_connection.start()
 
     print(text_color.BOLD +
-          'Tablet connection running on thread 2.'
+          'Tablet socket running on thread 2.'
           + text_color.ENDC)
     tablet_connection.start()
 
-    print(text_color.OKGREEN +
-          'Threads running.'
-          + text_color.ENDC)
     return
 
 
