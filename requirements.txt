@@ -1,0 +1,2 @@
+PyBluez==0.23
+OpenCV==3.4.2
