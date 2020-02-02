@@ -12,7 +12,7 @@ class PC:
     def connect(self):
         self.s.bind((self.ip_address, self.port))
         print(self.text_color.BOLD +
-              'Listening on port: {}'.format(self.port)
+              'Listening on port {}'.format(self.port)
               + self.text_color.ENDC)
         self.s.listen()
 
@@ -24,7 +24,10 @@ class PC:
             return conn_socket, addr
 
         except:
-            print(self.text_color.FAIL + 'Connection failed/terminated' + self.text_color.ENDC)
+            raise Exception('Connection to {} failed/terminated'.format(addr))
 
-    # TODO: write function to handle streaming data from Pi camera to PC
-    # TODO: write function to handle retrieving data from PC to Pi
+    def disconnect(self, pc_socket, pc_addr):
+        pc_socket.close()
+        print(self.text_color.OKGREEN +
+              'Connection to {} closed successfully'.format(pc_addr)
+              + self.text_color.ENDC)

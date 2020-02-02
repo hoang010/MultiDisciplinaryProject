@@ -21,6 +21,9 @@ class Arduino:
     def send_data(self, data):
         try:
             self.s.write(data)
+            print(self.text_color.OKGREEN +
+                  'Data "{}" sent'.format(data)
+                  + self.text_color.ENDC)
 
         except serial.SerialTimeoutException:
             print(self.text_color.FAIL +

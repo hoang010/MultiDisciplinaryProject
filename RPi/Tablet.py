@@ -23,9 +23,13 @@ class Tablet:
             return client_sock, client_info
 
         except:
-            print(self.text_color.WARNING + 'Closing bluetooth connection' + self.text_color.ENDC)
-            client_sock.close()
-            self.server_socket.close()
+            raise Exception('An error occurred while establishing connection with {}'.format(client_info))
+
+    def disconnect(self, client_sock, client_info):
+        client_sock.close()
+        print(self.text_color.OKGREEN +
+              'Connection to {} closed'.format(client_info)
+              + self.text_color.ENDC)
 
     def receive_data(self, client_sock):
         data = client_sock.recv(self.size)
@@ -34,13 +38,13 @@ class Tablet:
 
     def send_data(self, client_sock, client_info, data):
         print(self.text_color.OKGREEN +
-              'Sending data {} to {}'.format(data, client_info)
+              'Sending "{}" to {}'.format(data, client_info)
               + self.text_color.ENDC)
 
         try:
             client_sock.send(data)
             print(self.text_color.OKGREEN +
-                  'Data {} successfully sent to {}'.format(data, client_info)
+                  'Data "{}" successfully sent to {}'.format(data, client_info)
                   + self.text_color.ENDC)
             return True
 

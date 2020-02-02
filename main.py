@@ -50,17 +50,25 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name):
         while not mode:
             mode = tablet_object.receive_data(tablet_socket)
 
-        # Send acknowledgment once data from tablet is received
-        tablet_object.send_data(tablet_socket, tablet_info, '{} acknowledged'.format(mode))
-
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path and Manual
-        if mode == 'Explore':
+        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
+            tablet_object.send_data(tablet_socket, tablet_info, '{} acknowledged'.format(mode))
 
-        elif mode == 'Image Recognition':
+            if mode == 'Explore':
+                
+            elif mode == 'Image Recognition':
 
-        elif mode == 'Shortest Path':
+            elif mode == 'Shortest Path':
 
-        elif mode == 'Manual':
+            elif mode == 'Manual':
+
+            elif mode == 'Disconnect':
+                pc_object.disconnect(pc_socket, pc_addr)
+                tablet_object.disconnect(tablet_socket, tablet_info)
+                return
+
+        else:
+            tablet_object.send_data(tablet_socket, tablet_info, 'Send valid argument')
 
 
 def pc(rpi_ip, port):
@@ -78,9 +86,28 @@ def pc(rpi_ip, port):
               + text_color.ENDC)
 
     except:
-        print(text_color.FAIL +
-              'Connection failed/terminated'
-              + text_color.ENDC)
+        raise Exception("Connection to {}:{} failed/terminated".format(rpi_ip, port))
+
+    while True:
+        data = s.recv(bufsize=1)
+
+        while not data:
+            data = s.recv(bufsize=1)
+
+        if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual']:
+            s.sendmsg('{} acknowledged'.format(data))
+
+            # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path and Manual
+            if data == 'Explore':
+
+            elif data == 'Image Recognition':
+
+            elif data == 'Shortest Path':
+
+            elif data == 'Manual':
+
+        else:
+            s.sendmsg('Send valid argument')
 
 
 if __name__ == "__main__":
