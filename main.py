@@ -2,57 +2,65 @@
 from RPi.PC import PC
 from RPi.Tablet import Tablet
 from RPi.Arduino import Arduino
+from RPi.Camera import Camera
 from config.text_color import TextColor as text_color
 
 # Import libraries
-import threading
+import queue
 import socket
-import serial
 import time
 
 
 def main(sys_type):
 
     # Initialise required stuff here
-    pc_ip = ''
     rpi_ip = '192.168.17.17'
     port = '80'
-    host_mac_addr = ''
+    rpi_mac_addr = ''
     arduino_name = ''
 
     # If running on Pi, run relevant threads
     if sys_type == 'Linux':
-        rpi(pc_ip, port, host_mac_addr, arduino_name)
+        rpi(rpi_ip, port, rpi_mac_addr, arduino_name)
 
     # If running on own PC, run instance of algorithms
     elif sys_type == 'Windows' or sys_type == 'Darwin':
         pc(rpi_ip, port)
 
 
-def rpi(pc_ip, port, host_mac_addr, arduino_name):
+def rpi(rpi_ip, port, rpi_mac_addr, arduino_name):
     
     # Connect to Arduino
     arduino_object = Arduino(arduino_name, text_color)
 
     # Connect to PC
-    pc_object = PC(pc_ip, port, text_color)
-    pc_connection = threading.Thread(target=pc_object.connect())
+    pc_object = PC(rpi_ip, port, text_color)
+    pc_socket, pc_addr = pc_object.connect()
 
     # Connect to Tablet
-    tablet_object = Tablet(host_mac_addr, text_color)
-    tablet_connection = threading.Thread(target=tablet_object.connect())
+    tablet_object = Tablet(rpi_mac_addr, text_color)
+    tablet_socket, tablet_info = tablet_object.connect()
 
-    print(text_color.BOLD +
-          'PC socket running on thread 1.'
-          + text_color.ENDC)
-    pc_connection.start()
+    while True:
 
-    print(text_color.BOLD +
-          'Tablet socket running on thread 2.'
-          + text_color.ENDC)
-    tablet_connection.start()
+        # Receive data from tablet
+        mode = tablet_object.receive_data(tablet_socket)
 
-    return
+        # If no data received, wait for tablet to send data
+        while not mode:
+            mode = tablet_object.receive_data(tablet_socket)
+
+        # Send acknowledgment once data from tablet is received
+        tablet_object.send_data(tablet_socket, tablet_info, '{} acknowledged'.format(mode))
+
+        # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path and Manual
+        if mode == 'Explore':
+
+        elif mode == 'Image Recognition':
+
+        elif mode == 'Shortest Path':
+
+        elif mode == 'Manual':
 
 
 def pc(rpi_ip, port):

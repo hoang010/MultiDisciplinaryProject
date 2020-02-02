@@ -10,15 +10,18 @@ class PC:
         self.s = socket.socket()
 
     def connect(self):
+        self.s.bind((self.ip_address, self.port))
         print(self.text_color.BOLD +
-              'Connecting to ' + self.ip_address + ':' + self.port
+              'Listening on port: {}'.format(self.port)
               + self.text_color.ENDC)
+        self.s.listen()
 
         try:
-            self.s.connect((self.ip_address, self.port))
+            conn_socket, addr = self.s.accept()
             print(self.text_color.OKGREEN +
-                  'Connected to ' + self.ip_address + ':' + self.port
+                  'Connected to ' + addr
                   + self.text_color.ENDC)
+            return conn_socket, addr
 
         except:
             print(self.text_color.FAIL + 'Connection failed/terminated' + self.text_color.ENDC)
