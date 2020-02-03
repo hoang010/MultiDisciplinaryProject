@@ -93,9 +93,11 @@ def pc(rpi_ip, port):
     except:
         raise Exception("Connection to {}:{} failed".format(rpi_ip, port))
 
+    # while True:
     data = sock.recv(bufsize=1)
 
     # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
+    # if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
     sock.sendmsg('{} acknowledged'.format(data))
     print(text_color.OKGREEN + '{} Mode Initiated'.format(data) + text_color.ENDC)
 
