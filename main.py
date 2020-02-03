@@ -67,6 +67,7 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name):
             print(mode)
 
         elif mode == 'Disconnect':
+            pc_socket.sendmsg('Disconnect')
             pc_object.disconnect(pc_socket, pc_addr)
             tablet_object.disconnect(tablet_socket, tablet_info)
             return
@@ -99,7 +100,7 @@ def pc(rpi_ip, port):
     # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
     # if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
     sock.sendmsg('{} acknowledged'.format(data))
-    print(text_color.OKGREEN + '{} Mode Initiated'.format(data) + text_color.ENDC)
+    print(text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
     if data == 'Explore':
         print(data)
