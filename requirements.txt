@@ -1,3 +1,5 @@
+matplotlib
+numpy
 PyBluez==0.23
 OpenCV==3.4.2
 pyserial==3.4
