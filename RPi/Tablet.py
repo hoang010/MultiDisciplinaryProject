@@ -28,7 +28,7 @@ class Tablet:
     def disconnect(self, client_sock, client_info):
         client_sock.close()
         print(self.text_color.OKGREEN +
-              'Connection to {} closed'.format(client_info)
+              'Connection to {} closed successfully'.format(client_info)
               + self.text_color.ENDC)
 
     def receive_data(self, client_sock):
