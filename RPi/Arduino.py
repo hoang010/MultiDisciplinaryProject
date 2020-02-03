@@ -1,6 +1,7 @@
 import serial
 import queue
 import threading
+import time
 
 
 class Arduino:
@@ -29,6 +30,7 @@ class Arduino:
     def recv_channel(self):
         while True:
             data = self.arduino_serial.read(self.size)
+            print(self.text_color.OKBLUE + "{} | Arduino Socket:".format(time.asctime()), end='')
             print(self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, self.arduino_name)
                   + self.text_color.ENDC)
@@ -39,6 +41,7 @@ class Arduino:
         while True:
             if self.to_send_queue:
                 data = self.to_send_queue.get()
+                print(self.text_color.OKBLUE + "{} | Arduino Socket:".format(time.asctime()), end='')
                 print(self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, self.arduino_name)
                       + self.text_color.ENDC)

@@ -1,6 +1,7 @@
 import socket
 import threading
 import queue
+import time
 
 
 class PC:
@@ -36,6 +37,7 @@ class PC:
     def recv_channel(self, conn_socket, addr):
         while True:
             data = conn_socket.recv(self.size)
+            print(self.text_color.OKBLUE + "{} | PC Socket:".format(time.asctime()), end='')
             print(self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, addr)
                   + self.text_color.ENDC)
@@ -46,6 +48,7 @@ class PC:
         while True:
             if self.to_send_queue:
                 data = self.to_send_queue.get()
+                print(self.text_color.OKBLUE + "{} | PC Socket:".format(time.asctime()), end='')
                 print(self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, addr)
                       + self.text_color.ENDC)

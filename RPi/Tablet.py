@@ -1,6 +1,7 @@
 import bluetooth
 import queue
 import threading
+import time
 
 
 class Tablet:
@@ -34,6 +35,7 @@ class Tablet:
     def recv_channel(self, client_sock, client_info):
         while True:
             data = client_sock.recv(self.size)
+            print(self.text_color.OKBLUE + "{} | Tablet socket:".format(time.asctime()), end='')
             print(self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, client_info)
                   + self.text_color.ENDC)
@@ -44,6 +46,7 @@ class Tablet:
         while True:
             if self.to_send_queue:
                 data = self.to_send_queue.get()
+                print(self.text_color.OKBLUE + "{} | Tablet socket:".format(time.asctime()), end='')
                 print(self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, client_info)
                       + self.text_color.ENDC)
