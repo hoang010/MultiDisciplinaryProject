@@ -9,9 +9,7 @@ from RPi.Arduino import Arduino
 from config.text_color import TextColor as text_color
 
 # Import libraries
-import queue
 import socket
-import time
 
 
 def main(sys_type):
@@ -40,41 +38,41 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name):
 
     # Connect to PC
     pc_object = PC(rpi_ip, port, text_color)
-    pc_socket, pc_addr = pc_object.connect()
+    pc_object.listen()
 
     # Connect to Tablet
     tablet_object = Tablet(rpi_mac_addr, text_color)
-    tablet_socket, tablet_info = tablet_object.connect()
+    tablet_object.listen()
 
-    # Receive data from tablet
-    mode = tablet_object.receive_data(tablet_socket)
+    while True:
+        # Receive data from tablet
+        mode = tablet_object.have_recv_queue.get()
 
-    # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-    if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
-        tablet_object.send_data(tablet_socket, tablet_info, '{} acknowledged'.format(mode))
-        print(text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
+        # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
+        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
+            tablet_object.to_send_queue.put('{} acknowledged'.format(mode))
+            print(text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
-        if mode == 'Explore':
-            print(mode)
+            if mode == 'Explore':
+                print(mode)
 
-        elif mode == 'Image Recognition':
-            print(mode)
+            elif mode == 'Image Recognition':
+                print(mode)
 
-        elif mode == 'Shortest Path':
-            print(mode)
+            elif mode == 'Shortest Path':
+                print(mode)
 
-        elif mode == 'Manual':
-            print(mode)
+            elif mode == 'Manual':
+                print(mode)
 
-        elif mode == 'Disconnect':
-            pc_socket.sendmsg('Disconnect')
-            pc_object.disconnect(pc_socket, pc_addr)
-            tablet_object.disconnect(tablet_socket, tablet_info)
-            return
+            elif mode == 'Disconnect':
+                pc_object.disconnect()
+                tablet_object.disconnect()
+                return
 
-    else:
-        print(text_color.FAIL + 'Invalid argument received.' + text_color.ENDC)
-        tablet_object.send_data(tablet_socket, tablet_info, 'Send valid argument')
+        else:
+            print(text_color.FAIL + 'Invalid message received.' + text_color.ENDC)
+            tablet_object.to_send_queue.put('Send valid argument')
 
 
 def pc(rpi_ip, port):
@@ -95,7 +93,7 @@ def pc(rpi_ip, port):
         raise Exception("Connection to {}:{} failed".format(rpi_ip, port))
 
     # while True:
-    data = sock.recv(bufsize=1)
+    data = sock.recv(bufsize=1)[0]
 
     # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
     # if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:

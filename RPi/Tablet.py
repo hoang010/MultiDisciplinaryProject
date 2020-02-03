@@ -1,4 +1,6 @@
 import bluetooth
+import queue
+import threading
 
 
 class Tablet:
@@ -10,9 +12,11 @@ class Tablet:
         self.text_color = text_color
         self.server_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         self.port = bluetooth.PORT_ANY
-
-    def connect(self):
         self.server_socket.bind((self.rpi_mac_addr, self.port))
+        self.to_send_queue = queue.Queue()
+        self.have_recv_queue = queue.Queue()
+
+    def listen(self):
         self.server_socket.listen(self.backlog)
 
         try:
@@ -20,36 +24,33 @@ class Tablet:
             print(self.text_color.OKGREEN +
                   'Connected to ' + client_info
                   + self.text_color.ENDC)
+            threading.Thread(target=self.send_channel, args=(client_sock, client_info)).start()
+            threading.Thread(target=self.recv_channel, args=(client_sock, client_info)).start()
             return client_sock, client_info
 
         except:
             raise Exception('An error occurred while establishing connection with {}'.format(client_info))
 
-    def disconnect(self, client_sock, client_info):
-        client_sock.close()
-        print(self.text_color.OKGREEN +
-              'Connection to {} closed successfully'.format(client_info)
-              + self.text_color.ENDC)
-
-    def receive_data(self, client_sock):
-        data = client_sock.recv(self.size)
-        print(self.text_color.OKGREEN + 'Data "{}" received'.format(data) + self.text_color.ENDC)
-        return data
-
-    def send_data(self, client_sock, client_info, data):
-        print(self.text_color.OKGREEN +
-              'Sending "{}" to {}'.format(data, client_info)
-              + self.text_color.ENDC)
-
-        try:
-            client_sock.send(data)
-            print(self.text_color.OKGREEN +
-                  'Data "{}" successfully sent to {}'.format(data, client_info)
+    def recv_channel(self, client_sock, client_info):
+        while True:
+            data = client_sock.recv(self.size)
+            print(self.text_color.BOLD +
+                  'Received "{}" from {}'.format(data, client_info)
                   + self.text_color.ENDC)
-            return True
+            if data:
+                self.have_recv_queue.put(data)
 
-        except:
-            print(self.text_color.FAIL +
-                  'Data failed to send'
-                  + self.text_color.ENDC)
-            return False
+    def send_channel(self, client_sock, client_info):
+        while True:
+            if self.to_send_queue:
+                data = self.to_send_queue.get()
+                print(self.text_color.BOLD +
+                      'Sending "{}" to {}'.format(data, client_info)
+                      + self.text_color.ENDC)
+                client_sock.send(data)
+
+    def disconnect(self):
+        self.server_socket.close()
+        print(self.text_color.OKGREEN +
+              'Bluetooth socket closed successfully'
+              + self.text_color.ENDC)
