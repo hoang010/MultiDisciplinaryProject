@@ -17,7 +17,7 @@ def main(sys_type):
 
     # Initialise required stuff here
     rpi_ip = '192.168.17.17'
-    port = '80'
+    port = 80
     rpi_mac_addr = ''
     arduino_name = ''
 
