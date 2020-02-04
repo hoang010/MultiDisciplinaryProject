@@ -101,8 +101,11 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
                 return
 
         else:
+            # Display feedback so that user knows this condition is triggered
             print(log_string + text_color.FAIL + 'Invalid message received.' + text_color.ENDC)
-            bt_conn.to_send_queue.put('Send valid argument')
+
+            # Add data into queue for sending to tablet
+            bt_conn.to_send_queue.put(['Send valid argument'])
 
 
 def pc(rpi_ip, port, log_string):
@@ -153,7 +156,12 @@ def pc(rpi_ip, port, log_string):
                 return
 
         else:
+
+            # Display feedback so that user knows this condition is triggered
             print(log_string + text_color.FAIL + 'Invalid argument received.' + text_color.ENDC)
+
+            # Add data into queue for sending to Raspberry Pi
+            # Failsafe condition
             pc_obj.to_send_queue.put(['Send valid argument'])
 
 
