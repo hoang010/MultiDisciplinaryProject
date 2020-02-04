@@ -22,6 +22,7 @@ class Bluetooth:
         self.backlog = backlog
         self.size = size
         self.text_color = text_color
+        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + "{} | Bluetooth socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Declare Bluetooth connection protocol
@@ -70,7 +71,7 @@ class Bluetooth:
             threading.Thread(target=self.recv_channel, args=(client_sock, client_info)).start()
 
         except:
-            raise Exception(self.log_string + 'An error occurred while establishing connection with {}'.format(client_info))
+            raise Exception(self.log_string + 'An error occurred while establishing connection')
 
     def recv_channel(self, client_sock, client_info):
         """
@@ -85,6 +86,9 @@ class Bluetooth:
         """
         while True:
 
+            while not self.lock.acquire(blocking=True):
+                pass
+
             # Read data from connected socket
             data = client_sock.recv(self.size)
             print(self.log_string + self.text_color.BOLD +
@@ -93,6 +97,9 @@ class Bluetooth:
 
             # Finally, store data into self.have_recv_queue
             self.have_recv_queue.put(data)
+
+            # Release lock once done
+            self.lock.release()
 
     def send_channel(self, client_sock, client_info):
         """
@@ -110,6 +117,9 @@ class Bluetooth:
             # Checks if there is anything in the queue
             if self.to_send_queue:
 
+                while not self.lock.acquire(blocking=True):
+                    pass
+
                 # De-queue the first item
                 data = self.to_send_queue.get()
 
@@ -120,6 +130,8 @@ class Bluetooth:
 
                 # Finally, send the data to PC
                 client_sock.send(data)
+
+                self.lock.release()
 
     def disconnect(self):
         """

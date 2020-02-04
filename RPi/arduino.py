@@ -20,6 +20,7 @@ class Arduino:
         self.arduino_name = arduino_name
         self.text_color = text_color
         self.size = size
+        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + "{} | Arduino Socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Initialise a queue to store data for sending to Arduino device
@@ -68,6 +69,9 @@ class Arduino:
         """
         while True:
 
+            while not self.lock.acquire(blocking=True):
+                pass
+
             # Read data from connected socket
             data = self.arduino_serial.read(self.size)
 
@@ -78,6 +82,8 @@ class Arduino:
 
             # Finally, store received data into self.have_recv_queue
             self.have_recv_queue.put(data)
+
+            self.lock.release()
 
     def send_channel(self):
         """
@@ -91,6 +97,9 @@ class Arduino:
             # Checks if there is anything in the queue
             if self.to_send_queue:
 
+                while not self.lock.acquire(blocking=True):
+                    pass
+
                 # De-queue the first item
                 data = self.to_send_queue.get()
 
@@ -101,6 +110,8 @@ class Arduino:
 
                 # Finally, send the data to the Arduino device
                 self.arduino_serial.write(data)
+
+                self.lock.release()
 
     def disconnect(self):
         """

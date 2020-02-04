@@ -22,6 +22,7 @@ class PC:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
+        self.lock = threading.Lock()
         self.to_send_queue = queue.Queue()
         self.have_recv_queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + "{} | PC Socket: ".format(time.asctime()) + self.text_color.ENDC
@@ -57,6 +58,10 @@ class PC:
         :return:
         """
         while True:
+
+            while not self.lock.acquire(blocking=True):
+                pass
+
             # Read data from connected socket
             data = conn_socket.recv(self.size)
 
@@ -67,6 +72,9 @@ class PC:
 
             # Finally, store data into self.have_recv_queue
             self.have_recv_queue.put(data)
+
+            # Release the lock
+            self.lock.release()
 
     def send_channel(self, conn_socket, addr):
         """
@@ -82,6 +90,9 @@ class PC:
             # Checks if there is anything in the queue
             if self.to_send_queue:
 
+                while not self.lock.acquire(blocking=True):
+                    pass
+
                 # De-queue the first item
                 data = self.to_send_queue.get()
 
@@ -92,6 +103,8 @@ class PC:
 
                 # Finally, send the data to PC
                 conn_socket.send(data)
+
+                self.lock.release()
 
     def disconnect(self):
         """

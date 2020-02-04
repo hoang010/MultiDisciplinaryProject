@@ -23,6 +23,7 @@ class Wifi:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
+        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + "{} | Wifi Socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Bind Raspberry Pi's own ip and port to the socket
@@ -78,6 +79,10 @@ class Wifi:
         :return:
         """
         while True:
+
+            while not self.lock.acquire(blocking=True):
+                pass
+
             # Read data from connected socket
             data = conn_socket.recv(self.size)
 
@@ -88,6 +93,8 @@ class Wifi:
 
             # Finally, store data into self.have_recv_queue
             self.have_recv_queue.put(data)
+
+            self.lock.release()
 
     def send_channel(self, conn_socket, addr):
         """
@@ -104,6 +111,10 @@ class Wifi:
 
             # Checks if there is anything in the queue
             if self.to_send_queue:
+
+                while not self.lock.acquire(blocking=True):
+                    pass
+
                 # De-queue the first item
                 data = self.to_send_queue.get()
 
@@ -114,6 +125,8 @@ class Wifi:
 
                 # Finally, send the data to PC
                 conn_socket.send(data)
+
+                self.lock.release()
 
     def disconnect(self):
         """
