@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 
 class Explore:
@@ -27,18 +28,43 @@ class Explore:
             self.real_map[x][y] = 1
 
     def is_map_complete(self):
+
+        # If all the bits are 1
         if self.explored_map.sum() == 300:
+
+            # Get number of files already in Maps sub-folder
+            num = len([name for name in os.listdir('./Maps') if os.path.isfile(name)])
+
+            # Open/Create a file with Map <num>.txt
+            f = open('Map {}.txt'.format(num), 'w+')
+
+            # For each row in self.explored_map
             for i in range(self.explored_map.size()):
+
+                # Combine all elements in each row (as an array) into one string
                 self.explored_map[i] = ''.join(self.explored_map[i])
+
+                # Save it to the opened file
+                f.write('{}\n'.format(self.explored_map[i]))
+
+                # Combine all elements in each row (as an array) into one string
                 self.real_map[i] = ''.join(self.real_map[i])
 
+            # Close the file
+            f.close()
+
+            # Add '11' before and after as required
             explored_bin_str = '11' + ''.join(self.explored_map) + '11'
             real_bin_str = '11' + ''.join(self.real_map) + '11'
 
+            # Convert strings to hexadecimal
             explored_hex_str = hex(int(explored_bin_str, 2))[1:]
             real_hex_str = hex(int(real_bin_str, 2))[1:]
+
+            # Return the hexadecimal strings
             return real_hex_str, explored_hex_str
-        return False
+
+        return None
 
     def reset(self):
         self.real_map = np.zeros((20, 15))
