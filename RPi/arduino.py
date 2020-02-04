@@ -7,7 +7,7 @@ import time
 class Arduino:
     def __init__(self, arduino_name, text_color, size=1, timeout=1):
         """
-        Function to create an instance of the Arduino connection
+        Function to create an instance of the connection with Arduino
         :param arduino_name: String
                 String containing name of Arduino device
         :param text_color: Class
@@ -102,3 +102,17 @@ class Arduino:
 
                 # Finally, send the data to the Arduino device
                 self.arduino_serial.write(data)
+
+    def disconnect(self):
+        """
+        Function to close Arduino serial
+        :return:
+        """
+
+        # Close the serial
+        self.arduino_serial.close()
+
+        # Display feedback to let user know that this function is called successfully
+        print(self.text_color.OKGREEN +
+              'Arduino serial closed successfully'
+              + self.text_color.ENDC)

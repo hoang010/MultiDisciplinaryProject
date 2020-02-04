@@ -4,11 +4,11 @@ import queue
 import time
 
 
-class PC:
+class Wifi:
 
     def __init__(self, ip_address, port, text_color, size=1024):
         """
-        Function to create an instance of PC connection
+        Function to create an instance of connection with PC
         :param ip_address: String
                 String containing Raspberry Pi IP address
         :param port: int
@@ -35,12 +35,12 @@ class PC:
 
     def listen(self):
         """
-        Function to simulate listening for requests for connection
+        Function to listen for requests for wifi connection
         :return:
         """
         # Display feedback so that user knows this function is called
         print(self.text_color.BOLD +
-              'Listening on port {}'.format(self.port)
+              'Wifi listening on port {}'.format(self.port)
               + self.text_color.ENDC)
 
         # Listen to requests for connecting
@@ -68,6 +68,8 @@ class PC:
     def recv_channel(self, conn_socket, addr):
         """
         Function to receive data from PC on the channel
+
+        Once data is received, data is put into self.have_recv_queue
         :param conn_socket: Socket
                 Contains Socket used for connection
         :param addr: String
@@ -79,7 +81,7 @@ class PC:
             data = conn_socket.recv(self.size)
 
             # Display feedback whenever something is to be received
-            print(self.text_color.OKBLUE + "{} | PC Socket:".format(time.asctime()), end='')
+            print(self.text_color.OKBLUE + "{} | Wifi Socket:".format(time.asctime()), end='')
             print(self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, addr)
                   + self.text_color.ENDC)
@@ -90,6 +92,8 @@ class PC:
     def send_channel(self, conn_socket, addr):
         """
         Function to send data to PC on the channel
+
+        Once there is a item in self.to_send_queue, this function will send that item to the PC
         :param conn_socket: Socket
                 Contains Socket used for connection
         :param addr: String
@@ -104,7 +108,7 @@ class PC:
                 data = self.to_send_queue.get()
 
                 # Display feedback whenever something is to be sent
-                print(self.text_color.OKBLUE + "{} | PC Socket:".format(time.asctime()), end='')
+                print(self.text_color.OKBLUE + "{} | Wifi Socket:".format(time.asctime()), end='')
                 print(self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, addr)
                       + self.text_color.ENDC)

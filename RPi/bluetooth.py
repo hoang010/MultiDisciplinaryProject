@@ -4,11 +4,11 @@ import threading
 import time
 
 
-class Tablet:
+class Bluetooth:
 
     def __init__(self, rpi_mac_addr, text_color, backlog=1, size=1024):
         """
-        Function to initialise an instance of tablet connection
+        Function to initialise an instance of connection with bluetooth device
         :param rpi_mac_addr: String
                 String containing MAC address of Raspberry Pi
         :param text_color: Class
@@ -40,13 +40,13 @@ class Tablet:
 
     def listen(self):
         """
-        Function to let Raspberry Pi listen for devices that want to connect
+        Function to listen for requests for bluetooth connection
         :return:
         """
 
         # Display feedback so that user knows this function is called
         print(self.text_color.OKGREEN +
-              'Listening on port ' + self.port
+              'Bluetooth listening on port ' + self.port
               + self.text_color.ENDC)
 
         # Listen for requests
@@ -74,6 +74,8 @@ class Tablet:
     def recv_channel(self, client_sock, client_info):
         """
         Function to receive data from tablet from the channel
+
+        Once data is received, data is put into self.have_recv_queue
         :param client_sock: Socket
                 Contains Socket used for connection
         :param client_info: String
@@ -84,7 +86,7 @@ class Tablet:
 
             # Read data from connected socket
             data = client_sock.recv(self.size)
-            print(self.text_color.OKBLUE + "{} | Tablet socket:".format(time.asctime()), end='')
+            print(self.text_color.OKBLUE + "{} | Bluetooth socket:".format(time.asctime()), end='')
             print(self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, client_info)
                   + self.text_color.ENDC)
@@ -95,6 +97,8 @@ class Tablet:
     def send_channel(self, client_sock, client_info):
         """
         Function to send data to tablet from the channel
+
+        Once there is a item in self.to_send_queue, this function will send that item to the tablet
         :param client_sock: Socket
                 Contains Socket used for connection
         :param client_info: String
@@ -110,7 +114,7 @@ class Tablet:
                 data = self.to_send_queue.get()
 
                 # Display feedback whenever something is to be sent
-                print(self.text_color.OKBLUE + "{} | Tablet socket:".format(time.asctime()), end='')
+                print(self.text_color.OKBLUE + "{} | Bluetooth socket:".format(time.asctime()), end='')
                 print(self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, client_info)
                       + self.text_color.ENDC)
