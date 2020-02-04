@@ -23,6 +23,7 @@ class Wifi:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
+        self.log_string = self.text_color.OKBLUE + "{} | Wifi Socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Bind Raspberry Pi's own ip and port to the socket
         self.sock.bind((self.ip_address, self.port))
@@ -39,7 +40,7 @@ class Wifi:
         :return:
         """
         # Display feedback so that user knows this function is called
-        print(self.text_color.BOLD +
+        print(self.log_string + self.text_color.BOLD +
               'Wifi listening on port {}'.format(self.port)
               + self.text_color.ENDC)
 
@@ -52,7 +53,7 @@ class Wifi:
             conn_socket, addr = self.sock.accept()
 
             # Display feedback to let user know that a connection has been established
-            print(self.text_color.OKGREEN +
+            print(self.log_string + self.text_color.OKGREEN +
                   'Connected to {}:{}'.format(addr, self.port)
                   + self.text_color.ENDC)
 
@@ -81,8 +82,7 @@ class Wifi:
             data = conn_socket.recv(self.size)
 
             # Display feedback whenever something is to be received
-            print(self.text_color.OKBLUE + "{} | Wifi Socket:".format(time.asctime()), end='')
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, addr)
                   + self.text_color.ENDC)
 
@@ -108,8 +108,7 @@ class Wifi:
                 data = self.to_send_queue.get()
 
                 # Display feedback whenever something is to be sent
-                print(self.text_color.OKBLUE + "{} | Wifi Socket:".format(time.asctime()), end='')
-                print(self.text_color.BOLD +
+                print(self.log_string + self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, addr)
                       + self.text_color.ENDC)
 
@@ -126,6 +125,6 @@ class Wifi:
         self.sock.close()
 
         # Display feedback to let user know that this function is called successfully
-        print(self.text_color.OKGREEN +
+        print(self.log_string + self.text_color.OKGREEN +
               'Wifi socket closed successfully'
               + self.text_color.ENDC)

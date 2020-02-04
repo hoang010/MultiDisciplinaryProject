@@ -20,6 +20,7 @@ class Arduino:
         self.arduino_name = arduino_name
         self.text_color = text_color
         self.size = size
+        self.log_string = self.text_color.OKBLUE + "{} | Arduino Socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Initialise a queue to store data for sending to Arduino device
         self.to_send_queue = queue.Queue()
@@ -30,7 +31,7 @@ class Arduino:
         try:
 
             # Display feedback so that user knows this function is called
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Connecting to {}'.format(self.arduino_name)
                   + self.text_color.ENDC)
 
@@ -38,7 +39,7 @@ class Arduino:
             self.arduino_serial = serial.Serial(self.arduino_name, timeout)
 
             # Display feedback
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Connected to {}'.format(self.arduino_name)
                   + self.text_color.ENDC)
 
@@ -49,12 +50,12 @@ class Arduino:
             threading.Thread(target=self.send_channel)
 
         except serial.SerialException:
-            print(self.text_color.FAIL +
+            print(self.log_string + self.text_color.FAIL +
                   'Connection failed, check connection with Arduino!'
                   + self.text_color.ENDC)
 
         except ValueError:
-            print(self.text_color.FAIL +
+            print(self.log_string + self.text_color.FAIL +
                   'Connection failed, check parameter values!'
                   + self.text_color.ENDC)
 
@@ -71,8 +72,7 @@ class Arduino:
             data = self.arduino_serial.read(self.size)
 
             # Display feedback whenever something is received
-            print(self.text_color.OKBLUE + "{} | Arduino Socket:".format(time.asctime()), end='')
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, self.arduino_name)
                   + self.text_color.ENDC)
 
@@ -95,8 +95,7 @@ class Arduino:
                 data = self.to_send_queue.get()
 
                 # Display feedback whenever something is to be sent
-                print(self.text_color.OKBLUE + "{} | Arduino Socket:".format(time.asctime()), end='')
-                print(self.text_color.BOLD +
+                print(self.log_string + self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, self.arduino_name)
                       + self.text_color.ENDC)
 
@@ -113,6 +112,6 @@ class Arduino:
         self.arduino_serial.close()
 
         # Display feedback to let user know that this function is called successfully
-        print(self.text_color.OKGREEN +
+        print(self.log_string + self.text_color.OKGREEN +
               'Arduino serial closed successfully'
               + self.text_color.ENDC)

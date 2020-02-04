@@ -22,6 +22,7 @@ class Bluetooth:
         self.backlog = backlog
         self.size = size
         self.text_color = text_color
+        self.log_string = self.text_color.OKBLUE + "{} | Bluetooth socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Declare Bluetooth connection protocol
         self.server_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -45,7 +46,7 @@ class Bluetooth:
         """
 
         # Display feedback so that user knows this function is called
-        print(self.text_color.OKGREEN +
+        print(self.log_string + self.text_color.OKGREEN +
               'Bluetooth listening on port ' + self.port
               + self.text_color.ENDC)
 
@@ -58,7 +59,7 @@ class Bluetooth:
             client_sock, client_info = self.server_socket.accept()
 
             # Display feedback to let user know that a connection has been established
-            print(self.text_color.OKGREEN +
+            print(self.log_string + self.text_color.OKGREEN +
                   'Connected to ' + client_info
                   + self.text_color.ENDC)
 
@@ -69,7 +70,7 @@ class Bluetooth:
             threading.Thread(target=self.recv_channel, args=(client_sock, client_info)).start()
 
         except:
-            raise Exception('An error occurred while establishing connection with {}'.format(client_info))
+            raise Exception(self.log_string + 'An error occurred while establishing connection with {}'.format(client_info))
 
     def recv_channel(self, client_sock, client_info):
         """
@@ -86,8 +87,7 @@ class Bluetooth:
 
             # Read data from connected socket
             data = client_sock.recv(self.size)
-            print(self.text_color.OKBLUE + "{} | Bluetooth socket:".format(time.asctime()), end='')
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, client_info)
                   + self.text_color.ENDC)
 
@@ -114,8 +114,7 @@ class Bluetooth:
                 data = self.to_send_queue.get()
 
                 # Display feedback whenever something is to be sent
-                print(self.text_color.OKBLUE + "{} | Bluetooth socket:".format(time.asctime()), end='')
-                print(self.text_color.BOLD +
+                print(self.log_string + self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, client_info)
                       + self.text_color.ENDC)
 
@@ -132,6 +131,6 @@ class Bluetooth:
         self.server_socket.close()
 
         # Display feedback to let user know that this function is called successfully
-        print(self.text_color.OKGREEN +
+        print(self.log_string + self.text_color.OKGREEN +
               'Bluetooth socket closed successfully'
               + self.text_color.ENDC)

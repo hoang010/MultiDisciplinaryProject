@@ -24,16 +24,17 @@ class PC:
         self.sock = socket.socket()
         self.to_send_queue = queue.Queue()
         self.have_recv_queue = queue.Queue()
+        self.log_string = self.text_color.OKBLUE + "{} | PC Socket: ".format(time.asctime()) + self.text_color.ENDC
 
     def connect(self):
         try:
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Connecting to ' + self.rpi_ip + ':' + self.port
                   + self.text_color.ENDC)
 
             self.sock.connect((self.rpi_ip, self.port))
 
-            print(self.text_color.OKGREEN +
+            print(self.log_string + self.text_color.OKGREEN +
                   'Connected to ' + self.rpi_ip + ':' + self.port
                   + self.text_color.ENDC)
 
@@ -44,7 +45,7 @@ class PC:
             threading.Thread(target=self.recv_channel, args=(self.sock, self.rpi_ip)).start()
 
         except:
-            raise Exception("Connection to {}:{} failed".format(self.rpi_ip, self.port))
+            raise Exception(self.log_string + "Connection to {}:{} failed".format(self.rpi_ip, self.port))
 
     def recv_channel(self, conn_socket, addr):
         """
@@ -60,8 +61,7 @@ class PC:
             data = conn_socket.recv(self.size)
 
             # Display feedback whenever something is to be received
-            print(self.text_color.OKBLUE + "{} | PC Socket:".format(time.asctime()), end='')
-            print(self.text_color.BOLD +
+            print(self.log_string + self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, addr)
                   + self.text_color.ENDC)
 
@@ -81,12 +81,12 @@ class PC:
 
             # Checks if there is anything in the queue
             if self.to_send_queue:
+
                 # De-queue the first item
                 data = self.to_send_queue.get()
 
                 # Display feedback whenever something is to be sent
-                print(self.text_color.OKBLUE + "{} | PC Socket:".format(time.asctime()), end='')
-                print(self.text_color.BOLD +
+                print(self.log_string + self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, addr)
                       + self.text_color.ENDC)
 
@@ -103,6 +103,6 @@ class PC:
         self.sock.close()
 
         # Display feedback to let user know that this function is called successfully
-        print(self.text_color.OKGREEN +
+        print(self.log_string + self.text_color.OKGREEN +
               'Wifi socket closed successfully'
               + self.text_color.ENDC)
