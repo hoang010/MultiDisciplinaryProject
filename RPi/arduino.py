@@ -109,7 +109,7 @@ class Arduino:
                       + self.text_color.ENDC)
 
                 # Finally, send the data to the Arduino device
-                self.arduino_serial.write(data)
+                self.arduino_serial.write([data])
 
                 self.lock.release()
 

@@ -23,9 +23,9 @@ respective folders.
 * [RPi](RPi/README.md)
 
 ### main.py
-This file contains the main function required to start a server
-on the Raspberry Pi as well as for the PC used to initiate the
-connection.
+This file contains the main function required to start the program. It starts a server/client 
+depending on the OS in which the main function is run on. A server on the Raspberry Pi will be 
+initialised if the OS is Linux, and a client will be initialised if the OS is Windows or Mac.
 
 ## Deployment
 Execute the command `python3 main.py` to start.

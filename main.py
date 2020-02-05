@@ -3,14 +3,15 @@ from RPi.wifi import Wifi
 from RPi.bluetooth import Bluetooth
 from RPi.arduino import Arduino
 from RPi.pc import PC
-# from RPi.Camera import Camera
-# from Algo.explore import Explore
+from RPi.recorder import Recorder
+from Algo.explore import Explore
 # from Algo.image_recognition import ImageRecognition
 # from Algo.shortest_path import ShortestPath
 from config.text_color import TextColor as text_color
 
 # Import libraries
 import time
+import cv2
 
 
 def main(sys_type):
@@ -70,13 +71,39 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
         if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
             # Send ack to Android device
-            bt_conn.to_send_queue.put('{} acknowledged'.format(mode))
+            bt_conn.to_send_queue.put(['{} acknowledged'.format(mode)])
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
+            # TODO: Add function check_black_box() in Image Recognition to
+            #           1. draw box if object in front is >=10% black
+            #           2. save image if object in front is >= 25% black
+            #       This way Explore can be segregated from ImageRecognition
+
+            # TODO: Add function save_map() in Explore to save a map in PC for ShortestPath
+            #       Maybe send the txt file and delete it once sent?
+            #       Or send the bits directly to PC for PC to save?
+            #       Or just leave it in Pi?
             if mode == 'Explore':
-                print(mode)
+
+                # Start an instance of Recorder class
+                recorder = Recorder()
+
+                # Start recording with the Pi camera
+                recorder.start()
+
+                # Start an instance of Explore class
+                explore = Explore()
+
+                # While map is not complete, continue streaming data to PC
+                while not explore.is_map_complete():
+
+                    # Put stream into send_queue
+                    wifi_conn.to_send_queue.put([recorder.io.read1(1)])
+
+                # Once map is complete, stop recording
+                recorder.stop()
 
             elif mode == 'Image Recognition':
                 print(mode)
@@ -140,10 +167,20 @@ def pc(rpi_ip, port, log_string):
             print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
             if data == 'Explore':
-                print(data)
+                while True:
+
+                    # Receive stream from socket
+                    stream = pc_obj.have_recv_queue.get()[0]
+
+                    # If end of stream (indicated with return value 0), break
+                    if not stream:
+                        break
+
+                    # Display stream in a window
+                    cv2.imshow('Stream from Pi', stream)
 
             elif data == 'Image Recognition':
-                print(data)
+                pass
 
             elif data == 'Shortest Path':
                 print(data)
