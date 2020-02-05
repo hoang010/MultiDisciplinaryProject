@@ -32,11 +32,16 @@ class Explore:
         # If all the bits are 1
         if self.explored_map.sum() == 300:
 
+            directory = './Maps'
+
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
             # Get number of files already in Maps sub-folder
-            num = len([name for name in os.listdir('./Maps') if os.path.isfile(name)])
+            num = len([name for name in os.listdir(directory) if os.path.isfile(name)])
 
             # Open/Create a file with Map <num>.txt
-            f = open('Map {}.txt'.format(num), 'w+')
+            f = open(directory + 'Map {}.txt'.format(num), 'w+')
 
             # For each row in self.explored_map
             for i in range(self.explored_map.size()):

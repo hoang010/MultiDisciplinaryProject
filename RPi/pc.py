@@ -25,6 +25,7 @@ class PC:
         self.lock = threading.Lock()
         self.to_send_queue = queue.Queue()
         self.have_recv_queue = queue.Queue()
+        self.recv_stream_queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + "{} | PC Socket: ".format(time.asctime()) + self.text_color.ENDC
 
     def connect(self):
@@ -39,11 +40,14 @@ class PC:
                   'Connected to ' + self.rpi_ip + ':' + self.port
                   + self.text_color.ENDC)
 
-            # Once connected, start a thread for sending data to PC
+            # Once connected, start a thread for sending data to Raspberry Pi
             threading.Thread(target=self.send_channel, args=(self.sock, self.rpi_ip)).start()
 
-            # Once connected, start a thread for receiving data from PC
+            # Once connected, start a thread for receiving data from Raspberry Pi
             threading.Thread(target=self.recv_channel, args=(self.sock, self.rpi_ip)).start()
+
+            # Once connected, start a thread for receiving stream from Raspberry Pi
+            threading.Thread(target=self.recv_stream_channel, args=(self.sock, self.rpi_ip)).start()
 
         except:
             raise Exception(self.log_string + "Connection to {}:{} failed".format(self.rpi_ip, self.port))
@@ -105,6 +109,29 @@ class PC:
                 conn_socket.send(data)
 
                 self.lock.release()
+
+    def recv_stream_channel(self, conn_socket, addr):
+        """
+        Function to receive stream from Raspberry Pi on the channel
+        :param conn_socket: Socket
+                Contains Socket used for connection
+        :param addr: String
+                Contains IP address of connected device
+        :return:
+        """
+        while True:
+
+            while not self.lock.acquire(blocking=True):
+                pass
+
+            # Read data from connected socket
+            stream = conn_socket.recv(self.size)
+
+            # Finally, store data into self.have_recv_queue
+            self.recv_stream_queue.put(stream)
+
+            # Release the lock
+            self.lock.release()
 
     def disconnect(self):
         """

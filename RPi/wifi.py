@@ -35,6 +35,9 @@ class Wifi:
         # Initialise queue to store data received from PC
         self.have_recv_queue = queue.Queue()
 
+        # Initialise queue to store stream received from PC
+        self.to_stream_queue = queue.Queue()
+
     def listen(self):
         """
         Function to listen for requests for wifi connection
@@ -63,6 +66,9 @@ class Wifi:
 
             # Once connected, start a thread for receiving data from PC
             threading.Thread(target=self.recv_channel, args=(conn_socket, addr)).start()
+
+            # Once connected, start a thread for streaming data to PC
+            threading.Thread(target=self.send_stream_channel, args=(conn_socket, addr)).start()
 
         except:
             raise Exception('Connection to {} failed/terminated'.format(addr))
@@ -122,6 +128,33 @@ class Wifi:
                 print(self.log_string + self.text_color.BOLD +
                       'Sending "{}" to {}'.format(data, addr)
                       + self.text_color.ENDC)
+
+                # Finally, send the data to PC
+                conn_socket.send(data)
+
+                self.lock.release()
+
+    def send_stream_channel(self, conn_socket, addr):
+        """
+        Function to send stream to PC on the channel
+
+        Once there is a item in self.to_send_queue, this function will send that item to the PC
+        :param conn_socket: Socket
+                Contains Socket used for connection
+        :param addr: String
+                Contains IP address of connected device
+        :return:
+        """
+        while True:
+
+            # Checks if there is anything in the queue
+            if self.to_stream_queue:
+
+                while not self.lock.acquire(blocking=True):
+                    pass
+
+                # De-queue the first item
+                data = self.to_stream_queue.get()
 
                 # Finally, send the data to PC
                 conn_socket.send(data)

@@ -80,11 +80,6 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
             #           1. draw box if object in front is >=10% black
             #           2. save image if object in front is >= 25% black
             #       This way Explore can be segregated from ImageRecognition
-
-            # TODO: Add function save_map() in Explore to save a map in PC for ShortestPath
-            #       Maybe send the txt file and delete it once sent?
-            #       Or send the bits directly to PC for PC to save?
-            #       Or just leave it in Pi?
             if mode == 'Explore':
 
                 # Start an instance of Recorder class
@@ -96,14 +91,21 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
                 # Start an instance of Explore class
                 explore = Explore()
 
+                real_map_hex, exp_map_hex = explore.is_map_complete()
+
                 # While map is not complete, continue streaming data to PC
-                while not explore.is_map_complete():
+                while not real_map_hex:
 
                     # Put stream into send_queue
-                    wifi_conn.to_send_queue.put([recorder.io.read1(1)])
+                    # TODO: For streaming, input from camera (index = 0), explored map (index = 1) and
+                    #       current position of robot (index = 2) are sent together in an array
+                    wifi_conn.to_stream_queue.put([recorder.io.read1(1), explore.explored_map, explore.current_pos])
 
                 # Once map is complete, stop recording
                 recorder.stop()
+
+                wifi_conn.to_send_queue.put([real_map_hex])
+                wifi_conn.to_send_queue.put([exp_map_hex])
 
             elif mode == 'Image Recognition':
                 print(mode)
@@ -170,7 +172,8 @@ def pc(rpi_ip, port, log_string):
                 while True:
 
                     # Receive stream from socket
-                    stream = pc_obj.have_recv_queue.get()[0]
+                    # TODO: Do something with explored map (index = 1) and current robot position (index = 2)
+                    stream = pc_obj.recv_stream_queue.get()[0]
 
                     # If end of stream (indicated with return value 0), break
                     if not stream:
@@ -178,6 +181,24 @@ def pc(rpi_ip, port, log_string):
 
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
+
+                real_map_hex = pc_obj.have_recv_queue.get()[0]
+
+                while not real_map_hex:
+                    real_map_hex = pc_obj.have_recv_queue.get()[0]
+
+                exp_map_hex = pc_obj.have_recv_queue.get()[0]
+
+                while not exp_map_hex:
+                    exp_map_hex = pc_obj.have_recv_queue.get()[0]
+
+                print(log_string + text_color.BOLD +
+                      'Real Map Hexadecimal = {}'.format(real_map_hex)
+                      + text_color.ENDC)
+
+                print(log_string + text_color.BOLD +
+                      'Explored Map Hexadecimal = {}'.format(exp_map_hex)
+                      + text_color.ENDC)
 
             elif data == 'Image Recognition':
                 pass
@@ -195,7 +216,7 @@ def pc(rpi_ip, port, log_string):
         else:
 
             # Display feedback so that user knows this condition is triggered
-            print(log_string + text_color.FAIL + 'Invalid argument received.' + text_color.ENDC)
+            print(log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
 
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition

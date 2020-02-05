@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from os import listdir
@@ -16,7 +17,10 @@ class ImageRecognition:
         self.threshold = threshold
         self.text_color = text_color
         self.true_images = []
-        directory = '/Images'
+        self.log_string = self.text_color.OKBLUE + \
+                          '{} | ImageRecognition Algo: '.format(time.asctime()) \
+                          + self.text_color.ENDC
+        directory = './Images'
 
         # Save all file names if they are an image (.jpg extension)
         image_folder = [file for file in listdir(directory) if '.jpg' in file]
@@ -42,20 +46,20 @@ class ImageRecognition:
 
             # This formula is retrieved from https://www.pyimagesearch.com/2014/09/15/python-compare-two-images/
             # Need to check validity
-            diff = np.sum((captured_image_array - image)**2)
+            diff = np.sum((captured_image_array - image) ** 2)
             diff /= float(captured_image_array.shape[0] * image.shape[1])
 
             # If the difference is lower than declared threshold, image is more or less similar
             # Hence return image ID
             if diff <= self.threshold:
-                print(self.text_color.OKGREEN +
+                print(self.log_string + self.text_color.OKGREEN +
                       'Similar image found! ID: {}'.format(self.true_images.index(image) + 1)
                       + self.text_color.ENDC)
                 return self.true_images.index(image) + 1
 
         # If all images does not conform within threshold, image is not similar.
         # Hence return -1
-        print(self.text_color.FAIL +
+        print(self.log_string + self.text_color.FAIL +
               'No similar images found.'
               + self.text_color.ENDC)
         return -1
