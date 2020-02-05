@@ -5,7 +5,11 @@ import time
 
 
 class Wifi:
-
+    # TODO: Current implementation is one wifi instance handling three threads, each thread is using the same port.
+    #       For optimisation, we might consider assigning one wifi instance to handle one thread
+    #       and then creating 3 instances of wifi using different ports:
+    #       one for receiving, one for sending and one for streaming
+    #       If network speed is slow this implementation can be considered
     def __init__(self, ip_address, port, text_color, size=1024):
         """
         Function to create an instance of connection with PC
