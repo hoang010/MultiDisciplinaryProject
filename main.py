@@ -58,6 +58,7 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
     wifi_conn = Wifi(rpi_ip, port, text_color)
     wifi_conn.listen()
 
+    # TODO: Check if using port 80 on wifi will interfer with using port 80 on bluetooth
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
     bt_conn.listen()
