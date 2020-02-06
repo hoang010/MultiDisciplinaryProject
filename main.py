@@ -1,8 +1,8 @@
 # Import written classes
-from RPi.wifi import Wifi
+from RPi.server import Server
 from RPi.bluetooth import Bluetooth
 from RPi.arduino import Arduino
-from RPi.pc import PC
+from RPi.client import Client
 from RPi.recorder import Recorder
 from Algo.explore import Explore
 # from Algo.image_recognition import ImageRecognition
@@ -55,8 +55,12 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
     arduino_conn = Arduino(arduino_name, text_color)
 
     # Connect to PC
-    wifi_conn = Wifi(rpi_ip, port, text_color)
-    wifi_conn.listen()
+    server_send = Server('server_send', 'send', rpi_ip, 80, text_color)
+    server_recv = Server('server_recv', 'recv', rpi_ip, 81, text_color)
+    server_stream = Server('server_stream', 'send', rpi_ip, 82, text_color)
+    server_send.listen()
+    server_recv.listen()
+    server_stream.listen()
 
     # TODO: Check if using port 80 on wifi will interfer with using port 80 on bluetooth
     # Connect to Tablet
@@ -150,21 +154,25 @@ def pc(rpi_ip, port, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_obj = PC(rpi_ip, port, text_color)
+    pc_send = Client('pc_send', 'send', rpi_ip, 80, text_color)
+    pc_recv = Client('pc_recv', 'recv', rpi_ip, 81, text_color)
+    pc_stream = Client('pc_stream', 'recv', rpi_ip, 82, text_color)
 
     # Connect to Raspberry Pi
-    pc_obj.connect()
+    pc_send.connect()
+    pc_recv.connect()
+    pc_stream.connect()
 
     while True:
 
         # Receive data from Raspberry Pi
-        data = pc_obj.have_recv_queue.get()[0]
+        data = pc_recv.queue.get()[0]
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
         if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
             # Send ack to Raspberry Pi
-            pc_obj.to_send_queue.put(['{} acknowledged'.format(data)])
+            pc_send.queue.put(['{} acknowledged'.format(data)])
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -174,7 +182,7 @@ def pc(rpi_ip, port, log_string):
 
                     # Receive stream from socket
                     # TODO: Do something with explored map (index = 1) and current robot position (index = 2)
-                    stream = pc_obj.recv_stream_queue.get()[0]
+                    stream = pc_stream.queue.get()[0]
 
                     # If end of stream (indicated with return value 0), break
                     if not stream:
@@ -183,15 +191,15 @@ def pc(rpi_ip, port, log_string):
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
 
-                real_map_hex = pc_obj.have_recv_queue.get()[0]
+                real_map_hex = pc_recv.queue.get()[0]
 
                 while not real_map_hex:
-                    real_map_hex = pc_obj.have_recv_queue.get()[0]
+                    real_map_hex = pc_recv.queue.get()[0]
 
-                exp_map_hex = pc_obj.have_recv_queue.get()[0]
+                exp_map_hex = pc_recv.queue.get()[0]
 
                 while not exp_map_hex:
-                    exp_map_hex = pc_obj.have_recv_queue.get()[0]
+                    exp_map_hex = pc_recv.queue.get()[0]
 
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
@@ -221,7 +229,7 @@ def pc(rpi_ip, port, log_string):
 
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition
-            pc_obj.to_send_queue.put(['Send valid argument'])
+            pc_send.queue.put(['Send valid argument'])
 
 
 if __name__ == "__main__":
