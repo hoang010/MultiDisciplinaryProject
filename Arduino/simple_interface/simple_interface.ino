@@ -52,8 +52,18 @@ void stopRobot(){
   md.setM1Speed(0);
   md.setM2Speed(0);
   }
-
-String reportSensors(){
+String result;
+void reportSensors(){
+  result = "";
+  int val = analogRead(analogPin);
+  result += String("{") + "right front:"+ val;
+  val = analogRead(analogPin2);
+  result += String("; left front:") + val;
+  val = analogRead(analogPin3);
+  result += String("; right side:") + val;
+  val = analogRead(analogPin4);
+  result += String("; left side:")+ val + "}"; 
+  Serial.println(result);
   }
 
 void setup() {
@@ -82,6 +92,7 @@ void loop() {
       break;
     default:
       stopRobot();
+      reportSensors();
       break;
     }
   cmd = "";
