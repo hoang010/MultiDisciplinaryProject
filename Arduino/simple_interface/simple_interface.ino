@@ -23,6 +23,7 @@ void stopIfFault()
 }
 
 void goStraight(){
+  Serial.println("Going straight...");
   while(Serial.available() == 0){
     int spd = 200;
     md.setM1Speed(spd);
@@ -31,47 +32,38 @@ void goStraight(){
   }
 
 void turnLeft(){
+  Serial.println("Turning Left...");
   int spd = 200;
   md.setM1Speed(spd);
   md.setM2Speed(spd);
-  delay(10000);
+  delay(1000);
   }
 
 
 void turnRight(){
+  Serial.println("Turning Right...");
   int spd = 200;
   md.setM1Speed(-spd);
   md.setM2Speed(-spd);
-  delay(10000);
+  delay(1000);
   }
 
 void stopRobot(){
   md.setM1Speed(0);
   md.setM2Speed(0);
   }
+
+String reportSensors(){
+  }
+
 void setup() {
   Serial.begin(9600); 
+  Serial.println("Welcome Pi! Alduino here!");
   md.init();
 }
 
 void loop() {
-  /*
-  val = analogRead(analogPin);  // read the input pin
-  Serial.println("Pin 1, right front");
-  Serial.println(val); 
-  val = analogRead(analogPin2);  // read the input pin
-  Serial.println("Pin 2, left front");
-  Serial.println(val); 
-  val = analogRead(analogPin3);  // read the input pin
-  Serial.println("Pin 3, right side");
-  Serial.println(val); 
-  val = analogRead(analogPin4);  // read the input pin
-  Serial.println("Pin 4, left side");
-  Serial.println(val); 
-*/
-  String cmd = "";
-  int spd = 0;
-  Serial.println("Hello this is ardunio uno!");
+  static String cmd = "";
   if (Serial.available()>0){
     delay(2);
     char ch = Serial.read();
@@ -88,13 +80,9 @@ void loop() {
     case 3:
       turnRight();
       break;
-    case 0:
+    default:
       stopRobot();
       break;
     }
-  
-  
-  Serial.println("This is what i see: ");
-  Serial.println(spd);
-  delay(1000);
+  cmd = "";
 }
