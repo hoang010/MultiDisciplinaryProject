@@ -31,7 +31,7 @@ class Client:
         self.lock = threading.Lock()
         self.queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + \
-                          "{} | {} pc socket: ".format(time.asctime(), self.name)\
+                          "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
 
     def connect(self):

@@ -18,7 +18,6 @@ def main(sys_type):
 
     # Initialise required stuff here
     rpi_ip = '192.168.17.17'
-    port = 80
     rpi_mac_addr = 'B8:27:EB:52:AC:83'
     arduino_name = ''
 
@@ -26,22 +25,20 @@ def main(sys_type):
 
     # If running on Pi, run relevant threads
     if sys_type == 'Linux':
-        rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string)
+        rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string)
 
     # If running on own PC, run instance of algorithms
     elif sys_type == 'Windows' or sys_type == 'Darwin':
-        pc(rpi_ip, port, log_string)
+        pc(rpi_ip, log_string)
 
     print(text_color.WARNING + 'End of program reached.' + text_color.ENDC)
 
 
-def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
+def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     """
     Function to start running code on Raspberry Pi
     :param rpi_ip: String
             String containing IP address of Raspberry Pi
-    :param port: int
-            Int containing port number to be used
     :param rpi_mac_addr: String
             String containing MAC address of Raspberry Pi
     :param arduino_name: String
@@ -62,7 +59,6 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
     server_recv.listen()
     server_stream.listen()
 
-    # TODO: Check if using port 80 on wifi will interfer with using port 80 on bluetooth
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
     bt_conn.listen()
@@ -104,13 +100,14 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
                     # Put stream into send_queue
                     # TODO: For streaming, input from camera (index = 0), explored map (index = 1) and
                     #       current position of robot (index = 2) are sent together in an array
-                    wifi_conn.to_stream_queue.put([recorder.io.read1(1), explore.explored_map, explore.current_pos])
+                    bt_conn.to_send_queue.put([explore.explored_map, explore.current_pos])
+                    server_stream.queue.put([recorder.io.read1(1)])
 
                 # Once map is complete, stop recording
                 recorder.stop()
 
-                wifi_conn.to_send_queue.put([real_map_hex])
-                wifi_conn.to_send_queue.put([exp_map_hex])
+                server_send.queue.put([real_map_hex])
+                server_send.queue.put([exp_map_hex])
 
             elif mode == 'Image Recognition':
                 print(mode)
@@ -123,14 +120,17 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
 
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
-                wifi_conn.to_send_queue.put(['Disconnect'])
-                arduino_conn.to_send_queue.put(['Disconnect'])
+                server_send.queue.put(['Disconnect'])
+                arduino_conn.queue.put(['Disconnect'])
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
 
                 # Disconnect from wifi and bluetooth connection
-                wifi_conn.disconnect()
+                server_send.disconnect()
+                server_recv.disconnect()
+                server_stream.disconnect()
+                arduino_conn.disconnect()
                 bt_conn.disconnect()
                 return
 
@@ -142,13 +142,11 @@ def rpi(rpi_ip, port, rpi_mac_addr, arduino_name, log_string):
             bt_conn.to_send_queue.put(['Send valid argument'])
 
 
-def pc(rpi_ip, port, log_string):
+def pc(rpi_ip, log_string):
     """
     Function to start running code on PC
     :param rpi_ip: String
             String containing IP address of Raspberry Pi
-    :param port: int
-            Int containing port number to be used
     :param log_string: String
             String containing format of log to be used
     :return:
@@ -219,7 +217,9 @@ def pc(rpi_ip, port, log_string):
                 print(data)
 
             elif data == 'Disconnect':
-                pc_obj.disconnect()
+                pc_send.disconnect()
+                pc_recv.disconnect()
+                pc_stream.disconnect()
                 return
 
         else:

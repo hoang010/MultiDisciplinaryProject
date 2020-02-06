@@ -30,7 +30,7 @@ class Server:
         self.sock = socket.socket()
         self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
-                          "{} | {} wifi socket: ".format(time.asctime(), self.name)\
+                          "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
 
         # Bind Raspberry Pi's own ip and port to the socket
