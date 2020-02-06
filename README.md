@@ -9,6 +9,10 @@ following libraries to execute:
 * PySerial 3.4
 
 ## Installing
+
+PlBluez requires additional dependencies to install. Get it from 
+`https://visualstudio.microsoft.com/visual-cpp-build-tools/`
+
 Execute the following command to install the libraries\
 `pip3 install -r requirements.txt`
 
