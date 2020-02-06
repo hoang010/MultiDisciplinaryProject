@@ -19,7 +19,7 @@ def main(sys_type):
     # Initialise required stuff here
     rpi_ip = '192.168.17.17'
     port = 80
-    rpi_mac_addr = ''
+    rpi_mac_addr = 'B8:27:EB:52:AC:83'
     arduino_name = ''
 
     log_string = text_color.OKBLUE + "{} | Main: ".format(time.asctime()) + text_color.ENDC
