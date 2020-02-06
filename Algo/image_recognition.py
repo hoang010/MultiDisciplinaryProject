@@ -6,7 +6,7 @@ from os import listdir
 
 
 class ImageRecognition:
-    def __init__(self, text_color, threshold):
+    def __init__(self, text_color, threshold=1):
         """
         Function to initialise an instance of ImageRecognition class
         :param text_color: Class
@@ -23,7 +23,7 @@ class ImageRecognition:
         directory = './Images'
 
         # Save all file names if they are an image (.jpg extension)
-        image_folder = [file for file in listdir(directory) if '.jpg' in file]
+        image_folder = [file for file in listdir(directory) if '.png' in file]
 
         for image in image_folder:
             # Convert image into bgr array of type float before saving it
@@ -55,14 +55,14 @@ class ImageRecognition:
                 print(self.log_string + self.text_color.OKGREEN +
                       'Similar image found! ID: {}'.format(self.true_images.index(image) + 1)
                       + self.text_color.ENDC)
-                return self.true_images.index(image) + 1
+                return True
 
         # If all images does not conform within threshold, image is not similar.
         # Hence return -1
         print(self.log_string + self.text_color.FAIL +
               'No similar images found.'
               + self.text_color.ENDC)
-        return -1
+        return False
 
     @staticmethod
     def display_image(captured_image):

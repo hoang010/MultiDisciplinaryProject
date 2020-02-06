@@ -5,13 +5,15 @@ from RPi.arduino import Arduino
 from RPi.client import Client
 from RPi.recorder import Recorder
 from Algo.explore import Explore
-# from Algo.image_recognition import ImageRecognition
+from Algo.image_recognition import ImageRecognition
 # from Algo.shortest_path import ShortestPath
 from config.text_color import TextColor as text_color
+from config.state import Direction
 
 # Import libraries
 import time
 import cv2
+import os
 
 
 def main(sys_type):
@@ -82,32 +84,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             #           2. save image if object in front is >= 25% black
             #       This way Explore can be segregated from ImageRecognition
             if mode == 'Explore':
-
-                # Start an instance of Recorder class
-                recorder = Recorder()
-
-                # Start recording with the Pi camera
-                recorder.start()
-
-                # Start an instance of Explore class
-                explore = Explore()
-
-                real_map_hex, exp_map_hex = explore.is_map_complete()
-
-                # While map is not complete, continue streaming data to PC
-                while not real_map_hex:
-
-                    # Put stream into send_queue
-                    # TODO: For streaming, input from camera (index = 0), explored map (index = 1) and
-                    #       current position of robot (index = 2) are sent together in an array
-                    bt_conn.to_send_queue.put([explore.explored_map, explore.current_pos])
-                    server_stream.queue.put([recorder.io.read1(1)])
-
-                # Once map is complete, stop recording
-                recorder.stop()
-
-                server_send.queue.put([real_map_hex])
-                server_send.queue.put([exp_map_hex])
+                explore(arduino_conn, bt_conn, server_stream, server_send)
 
             elif mode == 'Image Recognition':
                 print(mode)
@@ -121,7 +98,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
                 server_send.queue.put(['Disconnect'])
-                arduino_conn.queue.put(['Disconnect'])
+                arduino_conn.to_send_queue.put(['Disconnect'])
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
@@ -230,6 +207,65 @@ def pc(rpi_ip, log_string):
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition
             pc_send.queue.put(['Send valid argument'])
+
+
+def explore(arduino_conn, bt_conn, server_stream, server_send):
+
+    # Start an instance of Recorder class
+    recorder = Recorder()
+
+    # Start recording with the Pi camera
+    recorder.start()
+
+    # Start an instance of Explore class
+    explorer = Explore()
+
+    # Start an instance of ImageRecognition class
+    img_recognisor = ImageRecognition(text_color)
+
+    # Get variables from is_map_complete
+    real_map_hex, exp_map_hex = explorer.is_map_complete()
+
+    # While map is not complete, continue streaming data to PC
+    while not real_map_hex:
+
+        obstacle = []
+        dir_stack = []
+
+        # TODO: For streaming, input from camera (index = 0), explored map (index = 1) and
+        #       current position of robot (index = 2) are sent together in an array
+        # Try get feedback from arduino
+        feedback = arduino_conn.have_recv_queue.get()
+
+        # If arduino senses something in front, draw box and try to identify if there is an image
+        if feedback:
+
+            # Draw box and capture image
+            img = recorder.draw_box()
+
+            # Compare captured image with our own image
+            is_img = img_recognisor.compare(img)
+
+            # If captured image is image, send to PC to save
+            if is_img:
+                server_send.queue.put([img])
+
+            # Remove saved image
+            os.remove(img)
+
+            explorer.update_map(explorer.current_pos, obstacle)
+
+        # Update tablet with explored map and current position
+        bt_conn.to_send_queue.put([explorer.explored_map, explorer.current_pos])
+
+        # Stream camera input to PC
+        server_stream.queue.put([recorder.io.read1(1)])
+
+    # Once map is complete, stop recording
+    recorder.stop()
+
+    server_send.queue.put([real_map_hex])
+    server_send.queue.put([exp_map_hex])
 
 
 if __name__ == "__main__":

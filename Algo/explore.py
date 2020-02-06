@@ -69,7 +69,7 @@ class Explore:
             # Return the hexadecimal strings
             return real_hex_str, explored_hex_str
 
-        return None
+        return None, None
 
     def reset(self):
         self.real_map = np.zeros((20, 15))

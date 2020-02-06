@@ -126,3 +126,12 @@ class Arduino:
         print(self.log_string + self.text_color.OKGREEN +
               'Arduino serial closed successfully'
               + self.text_color.ENDC)
+
+    def turn_left(self):
+        self.to_send_queue.put('left')
+
+    def turn_right(self):
+        self.to_send_queue.put('right')
+
+    def advance(self, num=1):
+        self.to_send_queue.put(num)
