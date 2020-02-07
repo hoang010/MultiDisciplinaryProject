@@ -3,7 +3,6 @@ from RPi.server import Server
 from RPi.bluetooth import Bluetooth
 from RPi.arduino import Arduino
 from RPi.client import Client
-from RPi.recorder import Recorder
 from Algo.explore import Explore
 from Algo.image_recognition import ImageRecognition
 # from Algo.shortest_path import ShortestPath
@@ -74,15 +73,12 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
             # Send ack to Android device
+            # TODO: Tablet might not be able to send/receive array
             bt_conn.to_send_queue.put(['{} acknowledged'.format(mode)])
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
-            # TODO: Add function check_black_box() in Image Recognition to
-            #           1. draw box if object in front is >=10% black
-            #           2. save image if object in front is >= 25% black
-            #       This way Explore can be segregated from ImageRecognition
             if mode == 'Explore':
                 explore(arduino_conn, bt_conn, server_stream, server_send)
 
@@ -98,7 +94,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
                 server_send.queue.put(['Disconnect'])
-                arduino_conn.to_send_queue.put(['Disconnect'])
+                arduino_conn.send('Disconnect')
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
@@ -211,6 +207,8 @@ def pc(rpi_ip, log_string):
 
 def explore(arduino_conn, bt_conn, server_stream, server_send):
 
+    from RPi.recorder import Recorder
+
     # Start an instance of Recorder class
     recorder = Recorder()
 
@@ -235,7 +233,7 @@ def explore(arduino_conn, bt_conn, server_stream, server_send):
         # TODO: For streaming, input from camera (index = 0), explored map (index = 1) and
         #       current position of robot (index = 2) are sent together in an array
         # Try get feedback from arduino
-        feedback = arduino_conn.have_recv_queue.get()
+        feedback = arduino_conn.recv()
 
         # If arduino senses something in front, draw box and try to identify if there is an image
         if feedback:
