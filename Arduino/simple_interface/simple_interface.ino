@@ -6,6 +6,8 @@ int val = 0;
 int temp = 0;
 #include "DualVNH5019MotorShield.h"
 
+//String a[2] = {"sdf", "sdfsd"};
+byte a[2] = {1,2};
 DualVNH5019MotorShield md;
 
 void stopIfFault()
@@ -24,6 +26,7 @@ void stopIfFault()
 
 void goStraight(){
   Serial.println("Going straight...");
+  Serial.println("Entedred");
   while(Serial.available() == 0){
     int spd = 200;
     md.setM1Speed(spd);
@@ -33,6 +36,7 @@ void goStraight(){
 
 void turnLeft(){
   Serial.println("Turning Left...");
+    
   int spd = 200;
   md.setM1Speed(spd);
   md.setM2Speed(spd);
@@ -64,10 +68,11 @@ void reportSensors(){
   val = analogRead(analogPin4);
   result += String("; left side:")+ val + "}"; 
   Serial.println(result);
+  Serial.println("extrainfo");
   }
 
 void setup() {
-  Serial.begin(9600); 
+  Serial.begin(57600); 
   Serial.println("Welcome Pi! Alduino here!");
   md.init();
 }
@@ -79,21 +84,23 @@ void loop() {
     char ch = Serial.read();
     cmd += ch;
     }
-
-  switch (cmd.toInt()){
+  if (cmd != ""){
+    switch (cmd.toInt()){
     case 1:
       goStraight();
       break;
     case 2:
-      turnLeft();
+      turnLeft(); 
       break;
     case 3:
       turnRight();
       break;
-    default:
+    default :
       stopRobot();
       reportSensors();
       break;
     }
+    }
+  
   cmd = "";
 }
