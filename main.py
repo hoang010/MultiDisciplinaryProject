@@ -53,9 +53,9 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     arduino_conn = Arduino(arduino_name, text_color)
 
     # Connect to PC
-    server_send = Server('server_send', 'send', rpi_ip, 80, text_color)
-    server_recv = Server('server_recv', 'recv', rpi_ip, 81, text_color)
-    server_stream = Server('server_stream', 'send', rpi_ip, 82, text_color)
+    server_send = Server('server_send', 'send', rpi_ip, 7777, text_color)
+    server_recv = Server('server_recv', 'recv', rpi_ip, 8888, text_color)
+    server_stream = Server('server_stream', 'send', rpi_ip, 9999, text_color)
     server_send.listen()
     server_recv.listen()
     server_stream.listen()
@@ -125,9 +125,9 @@ def pc(rpi_ip, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_send = Client('pc_send', 'send', rpi_ip, 80, text_color)
-    pc_recv = Client('pc_recv', 'recv', rpi_ip, 81, text_color)
-    pc_stream = Client('pc_stream', 'recv', rpi_ip, 82, text_color)
+    pc_send = Client('pc_send', 'send', rpi_ip, 7777, text_color)
+    pc_recv = Client('pc_recv', 'recv', rpi_ip, 8888, text_color)
+    pc_stream = Client('pc_stream', 'recv', rpi_ip, 9999, text_color)
 
     # Connect to Raspberry Pi
     pc_send.connect()
