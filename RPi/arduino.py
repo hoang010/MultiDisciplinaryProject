@@ -4,21 +4,18 @@ import time
 
 
 class Arduino:
-    def __init__(self, arduino_name, text_color, size=1, timeout=1):
+    def __init__(self, arduino_name, text_color, timeout=1):
         """
         Function to create an instance of the connection with Arduino
         :param arduino_name: String
                 String containing port name of Arduino device
         :param text_color: Class
                 Class for colourised print statements
-        :param size: int
-                Size of data for Serial instance to read at a time
         :param timeout: int
                 Timeout before connection gets cut by Raspberry Pi
         """
         self.arduino_name = arduino_name
         self.text_color = text_color
-        self.size = size
         self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Arduino Socket: ".format(time.asctime())\
@@ -54,9 +51,9 @@ class Arduino:
         Function to receive data from Arduino device
         :return:
         """
-
+        buf_size = self.arduino_serial.inWaiting()
         # Read data from connected socket
-        data = self.arduino_serial.read(self.size)
+        data = self.arduino_serial.read(buf_size)
 
         # Display feedback whenever something is received
         print(self.log_string + self.text_color.BOLD +
