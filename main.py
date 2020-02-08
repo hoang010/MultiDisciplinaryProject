@@ -64,6 +64,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
     bt_conn.listen()
+    map_size = init(arduino_conn, bt_conn)
 
     while True:
         # Receive data from tablet
@@ -81,7 +82,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
             if mode == 'Explore':
-                explore(arduino_conn, bt_conn, server_stream, server_send)
+                explore(map_size, arduino_conn, bt_conn, server_stream, server_send)
 
             elif mode == 'Image Recognition':
                 print(mode)
@@ -159,7 +160,6 @@ def pc(rpi_ip, log_string):
                 while True:
 
                     # Receive stream from socket
-                    # TODO: Do something with explored map (index = 1) and current robot position (index = 2)
                     stream = pc_stream.queue.get()[0]
 
                     # If end of stream (indicated with return value 0), break
@@ -176,19 +176,8 @@ def pc(rpi_ip, log_string):
                     # TODO: Rasp Pi array here!
                     real_map_hex = pc_recv.queue.get()[0]
 
-                # TODO: Rasp Pi array here!
-                exp_map_hex = pc_recv.queue.get()[0]
-
-                while not exp_map_hex:
-                    # TODO: Rasp Pi array here!
-                    exp_map_hex = pc_recv.queue.get()[0]
-
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
-                      + text_color.ENDC)
-
-                print(log_string + text_color.BOLD +
-                      'Explored Map Hexadecimal = {}'.format(exp_map_hex)
                       + text_color.ENDC)
 
             elif data == 'Image Recognition':
@@ -217,7 +206,7 @@ def pc(rpi_ip, log_string):
             pc_send.queue.put(['Send valid argument'])
 
 
-def explore(arduino_conn, bt_conn, server_stream, server_send):
+def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
 
     from RPi.recorder import Recorder
 
@@ -228,7 +217,7 @@ def explore(arduino_conn, bt_conn, server_stream, server_send):
     recorder.start()
 
     # Start an instance of Explore class
-    explorer = Explore(Direction)
+    explorer = Explore(map_size, Direction)
 
     # Start an instance of ImageRecognition class
     img_recognisor = ImageRecognition(text_color)
@@ -236,17 +225,47 @@ def explore(arduino_conn, bt_conn, server_stream, server_send):
     # While map is not complete, continue streaming data to PC
     while not explorer.is_map_complete():
 
+        # TODO: For go_to_min algo
+        explorer.update_min_coord()
+        x_diff, y_diff = explorer.coord_diff()
+        explorer.go_to_min(x_diff, y_diff)
+
         # Try get feedback from arduino
         feedback = arduino_conn.recv()
 
-        explorer.obstacle = feedback
+        if feedback:
+            explorer.obstacle = feedback
 
-        # TODO: Test both algos (wall hugging vs go to min)
+        # TODO: For right_wall_hugging algo
         explorer.right_wall_hugging()
 
+        # Send data to arduino everytime there is data in the queue
         if not explorer.dir_queue.empty():
             data = explorer.dir_queue.get()
             arduino_conn.send(data)
+            time.sleep(1.5)
+
+        hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+        # TODO: Bluetooth & Rasp Pi array here!
+        bt_conn.to_send_queue.put([hex_exp_map])
+        server_stream.queue.put([recorder.io.read1(1)])
+
+        hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+        server_send.queue.put([hex_real_map])
+        explorer.save_map(hex_real_map)
+
+
+def init(arduino_conn, bt_conn):
+    feedback = arduino_conn.recv()
+    while not feedback[2]:
+        arduino_conn.send('right')
+        time.sleep(2)
+        feedback = arduino_conn.recv()
+
+    # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
+    #       [rows, col]
+    map_size = bt_conn.have_recv_queue.get()
+    return map_size
 
 
 if __name__ == "__main__":
