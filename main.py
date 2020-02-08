@@ -252,12 +252,18 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
         explorer.save_map(hex_real_map)
 
 
+# This init is done assuming the robot does not start in a "room" in the corner
 def init(arduino_conn, bt_conn):
     feedback = arduino_conn.recv()
+
+    # While there is no obstacle on the right
     while not feedback[2]:
         arduino_conn.send('right')
         time.sleep(2)
         feedback = arduino_conn.recv()
+
+    if feedback[0] and feedback[1]:
+        arduino_conn.send('left')
 
     # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
     #       [rows, col]
