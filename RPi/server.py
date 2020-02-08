@@ -39,6 +39,9 @@ class Server:
         # Initialise queue to store data for sending to PC
         self.queue = queue.Queue()
 
+        # Set socket to be blocking while listening
+        self.sock.setblocking(True)
+
     def listen(self):
         """
         Function to listen for requests for wifi connection

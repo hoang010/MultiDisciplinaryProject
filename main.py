@@ -225,16 +225,14 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
     # While map is not complete, continue streaming data to PC
     while not explorer.is_map_complete():
 
-        # TODO: For go_to_min algo
-        explorer.update_min_coord()
-        x_diff, y_diff = explorer.coord_diff()
-        explorer.go_to_min(x_diff, y_diff)
-
         # Try get feedback from arduino
         feedback = arduino_conn.recv()
 
         if feedback:
-            explorer.obstacle = feedback
+            explorer.obstacle = feedback.split()
+
+        else:
+            explorer.obstacle = None
 
         # TODO: For right_wall_hugging algo
         explorer.right_wall_hugging()
@@ -243,7 +241,6 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
         if not explorer.dir_queue.empty():
             data = explorer.dir_queue.get()
             arduino_conn.send(data)
-            time.sleep(1.5)
 
         hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
         # TODO: Bluetooth & Rasp Pi array here!
