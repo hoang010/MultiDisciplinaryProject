@@ -1,5 +1,4 @@
 import serial
-import threading
 import time
 
 
@@ -16,7 +15,6 @@ class Arduino:
         """
         self.arduino_name = arduino_name
         self.text_color = text_color
-        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Arduino Socket: ".format(time.asctime())\
                           + self.text_color.ENDC
