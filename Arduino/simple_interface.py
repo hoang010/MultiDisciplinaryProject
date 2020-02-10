@@ -10,7 +10,7 @@ while True:
     tdata = ser.read()
     time.sleep(1)
     data_left = ser.inWaiting()
-    tdata += ser.read(data_left)
+    tdata += ser.rad(data_left)
     print("data read: ")
     print(bytes.decode(tdata))
     try:
