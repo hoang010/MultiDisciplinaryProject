@@ -12,7 +12,6 @@ from config.direction import Direction
 # Import libraries
 import time
 import cv2
-import os
 
 
 def main(sys_type):
@@ -72,7 +71,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         mode = bt_conn.have_recv_queue.get()[0]
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
+        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
 
             # Send ack to Android device
             # TODO: Bluetooth array here!
@@ -93,11 +92,14 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif mode == 'Manual':
                 print(mode)
 
+            elif mode == 'Info Passing':
+                pass_info(arduino_conn, bt_conn, server_send)
+
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
                 # TODO: Rasp Pi array here!
                 server_send.queue.put(['Disconnect'])
-                arduino_conn.send('Disconnect')
+                arduino_conn.to_send_queue.put('Disconnect')
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
@@ -147,7 +149,7 @@ def pc(rpi_ip, log_string):
         data = pc_recv.queue.get()[0]
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-        if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
+        if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
 
             # Send ack to Raspberry Pi
             # TODO: Rasp Pi array here!
@@ -172,10 +174,6 @@ def pc(rpi_ip, log_string):
                 # TODO: Rasp Pi array here!
                 real_map_hex = pc_recv.queue.get()[0]
 
-                while not real_map_hex:
-                    # TODO: Rasp Pi array here!
-                    real_map_hex = pc_recv.queue.get()[0]
-
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
                       + text_color.ENDC)
@@ -189,7 +187,20 @@ def pc(rpi_ip, log_string):
             elif data == 'Manual':
                 print(data)
 
+            elif data == 'Info Passing':
+                # Wait for 15s
+                time.sleep(15)
+
+                # Get information from pc_recv queue
+                info = pc_recv.queue.get()
+
+                # Display info received
+                print(log_string + text_color.BOLD +
+                      'Info received = {}'.format(info)
+                      + text_color.ENDC)
+
             elif data == 'Disconnect':
+                # Disconnect from Raspberry Pi
                 pc_send.disconnect()
                 pc_recv.disconnect()
                 pc_stream.disconnect()
@@ -206,7 +217,57 @@ def pc(rpi_ip, log_string):
             pc_send.queue.put(['Send valid argument'])
 
 
+# This init is done assuming the robot does not start in a "room" in the corner
+def init(arduino_conn, bt_conn):
+    """
+    Function to init robot
+    :param arduino_conn: Serial
+            Serial class containing connection to Arduino
+    :param bt_conn: Socket
+            Socket containing connection to tablet0
+    :return:
+    """
+    # Get feedback from Arduino
+    feedback = arduino_conn.have_recv_queue.get()
+
+    # While there is no obstacle on the right
+    while not feedback[2]:
+
+        # If there is no obstacle on the right, tell Arduino to turn right
+        arduino_conn.to_send_queue.put('right')
+
+        # Sleep for 2s while Arduino turns
+        time.sleep(2)
+
+        # Refresh variables in freedback
+        feedback = arduino_conn.have_recv_queue.get()
+
+    # If robot is facing corner, turn left
+    if feedback[0] and feedback[1]:
+        arduino_conn.to_send_queue.put('left')
+
+    # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
+    #       [rows, col]
+    # Get map size from tablet, i.e. (15, 20) or (20, 15)
+    map_size = bt_conn.have_recv_queue.get()
+    return map_size
+
+
 def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
+    """
+    Function to run explore algorithm
+    :param map_size: Array
+            Array containing map size to be used for explore algorithm (15, 20) or (20, 15)
+    :param arduino_conn: Serial
+            Serial class containing connection to Arduino board
+    :param bt_conn: Socket
+            Bluetooth Socket containing connection to tablet
+    :param server_stream: Socket
+            Socket containing connection to PC on port 9999
+    :param server_send: Socket
+            Socker containing connection to PC on port 8888
+    :return:
+    """
 
     from RPi.recorder import Recorder
 
@@ -226,11 +287,14 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
     while not explorer.is_map_complete():
 
         # Try get feedback from arduino
-        feedback = arduino_conn.recv()
+        feedback = arduino_conn.have_recv_queue.get()
 
+        # If there is feedback, split it into array
+        # Since Arduino connection can only handle strings
         if feedback:
             explorer.obstacle = feedback.split()
 
+        # Otherwise, set it to None to prevent updating of explorer.real_map
         else:
             explorer.obstacle = None
 
@@ -240,35 +304,46 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
         # Send data to arduino everytime there is data in the queue
         if not explorer.dir_queue.empty():
             data = explorer.dir_queue.get()
-            arduino_conn.send(data)
+            arduino_conn.to_send_queue.put(data)
 
+        # Convert explored map into hex
         hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+
         # TODO: Bluetooth & Rasp Pi array here!
+        # Send hex explored map to tablet
         bt_conn.to_send_queue.put([hex_exp_map])
+
+        # Send stream to PC
         server_stream.queue.put([recorder.io.read1(1)])
 
+        # Convert real map into hex
         hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+
+        # Send hex real map to PC
         server_send.queue.put([hex_real_map])
-        explorer.save_map(hex_real_map)
+
+    # Save real map once done exploring
+    explorer.save_map(hex_real_map)
 
 
-# This init is done assuming the robot does not start in a "room" in the corner
-def init(arduino_conn, bt_conn):
-    feedback = arduino_conn.recv()
+def pass_info(arduino_conn, bt_conn, server_send):
+    # Sleep for 5s while tablet gets input and send to Raspberry Pi
+    time.sleep(5)
 
-    # While there is no obstacle on the right
-    while not feedback[2]:
-        arduino_conn.send('right')
-        time.sleep(2)
-        feedback = arduino_conn.recv()
+    # Receive info from tablet
+    info = bt_conn.have_recv_queue.get()
 
-    if feedback[0] and feedback[1]:
-        arduino_conn.send('left')
+    # Send info to Arduino
+    arduino_conn.to_send_queue.put(info)
 
-    # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
-    #       [rows, col]
-    map_size = bt_conn.have_recv_queue.get()
-    return map_size
+    # Sleep for 5s while Arduino increments data and sends it back
+    time.sleep(5)
+
+    # Receive updated info from Arduino
+    new_info = arduino_conn.have_recv_queue.get()
+
+    # Send to PC
+    server_send.queue.put(new_info)
 
 
 if __name__ == "__main__":

@@ -10,10 +10,6 @@ class Explore:
         self.dir_queue = queue.Queue()
         self.real_map = np.zeros(map_size)
         self.explored_map = self.real_map
-        self.round = 0
-
-        # For go_to_min algo
-        self.min_coord = None
 
         # (x, y, z):
         #   x = left front obstacle
@@ -23,7 +19,8 @@ class Explore:
         self.path = (0, 0)
 
         # If map is (15, 20) then coordinates are as follows:
-        # (14, 18)[front left], (14, 19)[front left], (13, 18)[back left], (13, 19)[back right]
+        # (14, 18)[front left], (14, 19)[front right],
+        # (13, 18)[back left], (13, 19)[back right]
         # This is done assuming the robot starts at the bottom right of the map
         self.start = [(len(self.real_map) - 1, len(self.real_map[0]) - 2),
                       (len(self.real_map) - 1, len(self.real_map[0]) - 1),
