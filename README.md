@@ -46,7 +46,7 @@ first person view
 * [x] Obstacle avoidance and position recovery (straight line)
 * [ ] Arena exploration simulator
 * [ ] Fastest path computation simulator
-* [ ] Generate map descriptor
+* [x] Generate map descriptor
 * [ ] Time and coverage-limited exploration simulation
 * [ ] (Extension) Obstacle avoidance and position recovery (obstacle)
 * [ ] (Extension) Generate and display map on PC
@@ -121,15 +121,15 @@ send/receive data.
 ### Serial Connection
 The Serial class is used for interfacing with the Arduino board.
 Raspberry Pi creates an instance of Serial object using the name 
-of the port connected to the Arduino board. 
+of the port connected to the Arduino board. Like the Bluetooth 
+socket, the Serial Connection creates 2 queues and 2 threads; 1
+ queue for sending, 1 queue for receiving and 1 thread for each 
+ queue. This method of implementation is done as Serial.read()
+ is a blocking function.
 
-Unlike the Bluetooth Socket, there are no threads or queues 
-created for this connection. 
-
-For the recv function, it checks 
-the buffer size for the size of the data in there before reading
-all the data in the buffer and returns it to the function calling
-recv. 
+For the recv function, it checks the buffer size for the size 
+of the data in there before reading all the data in the buffer 
+and returns it to the function calling recv. 
 
 For the send function, the msg to be sent is directly written
 to the Serial Connection. As mentioned in the Data Standards table,

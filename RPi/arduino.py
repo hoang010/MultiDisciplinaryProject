@@ -1,5 +1,7 @@
 import serial
 import time
+import queue
+import threading
 
 
 class Arduino:
@@ -15,6 +17,9 @@ class Arduino:
         """
         self.arduino_name = arduino_name
         self.text_color = text_color
+        self.have_recv_queue = queue.Queue()
+        self.to_send_queue = queue.Queue()
+        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Arduino Socket: ".format(time.asctime())\
                           + self.text_color.ENDC
@@ -34,6 +39,12 @@ class Arduino:
                   'Connected to {}'.format(self.arduino_name)
                   + self.text_color.ENDC)
 
+            # Once connected, start a thread for sending data to Arduino
+            threading.Thread(target=self.recv_channel).start()
+
+            # Once connected, start a thread for receiving data from Arduino
+            threading.Thread(target=self.send_channel()).start()
+
         except serial.SerialException:
             print(self.log_string + self.text_color.FAIL +
                   'Connection failed, check connection with Arduino!'
@@ -44,36 +55,61 @@ class Arduino:
                   'Connection failed, check parameter values!'
                   + self.text_color.ENDC)
 
-    def recv(self):
+    def recv_channel(self):
         """
         Function to receive data from Arduino device
         :return:
         """
-        buf_size = self.arduino_serial.inWaiting()
-        # Read data from connected socket
-        data = self.arduino_serial.read(buf_size)
+        while True:
 
-        # Display feedback whenever something is received
-        print(self.log_string + self.text_color.BOLD +
-              'Received "{}"'.format(data)
-              + self.text_color.ENDC)
+            # Check buffer if there is any data there
+            buf_size = self.arduino_serial.inWaiting()
 
-        return data
+            # If there is
+            if buf_size:
 
-    def send(self, msg):
+                # Get the lock
+                self.lock.acquire()
+
+                # Read all data from connected socket
+                data = self.arduino_serial.read(buf_size)
+
+                # Display feedback whenever something is received
+                print(self.log_string + self.text_color.BOLD +
+                      'Received "{}"'.format(data)
+                      + self.text_color.ENDC)
+
+                # Put into queue
+                self.have_recv_queue.put(data)
+
+                # Release lock
+                self.lock.release()
+
+    def send_channel(self):
         """
         Function to send data to Arduino device
-        :param msg: String or int
-                Data to send to arduino using serial.read()
         :return:
         """
-        # Display feedback whenever something is to be sent
-        print(self.log_string + self.text_color.BOLD +
-              'Sending "{}"'.format(msg)
-              + self.text_color.ENDC)
+        while True:
+            # Get data from queue
+            data = self.to_send_queue.get()
 
-        # Finally, send the data to the Arduino device
-        self.arduino_serial.write(msg)
+            # If there is data
+            if data:
+
+                # Get the lock
+                self.lock.acquire()
+
+                # Display feedback whenever something is to be sent
+                print(self.log_string + self.text_color.BOLD +
+                      'Sending "{}"'.format(data)
+                      + self.text_color.ENDC)
+
+                # Send the data to the Arduino device
+                self.arduino_serial.write(data)
+
+                # Release the lock
+                self.lock.release()
 
     def disconnect(self):
         """
@@ -87,46 +123,3 @@ class Arduino:
         print(self.log_string + self.text_color.OKGREEN +
               'Arduino serial closed successfully'
               + self.text_color.ENDC)
-
-    def turn_left(self):
-        """
-        Function to send String to arduino to turn left
-        :return:
-        """
-        # Send the string indicating left to the Arduino device
-        # Display feedback whenever something is to be sent
-        print(self.log_string + self.text_color.BOLD +
-              'Sending "{}"'.format('left')
-              + self.text_color.ENDC)
-
-        # Send left to arduino
-        self.arduino_serial.write('left')
-
-    def turn_right(self):
-        """
-        Function to send String to arduino to turn right
-        :return:
-        """
-        # Send the string indicating left to the Arduino device
-        # Display feedback whenever something is to be sent
-        print(self.log_string + self.text_color.BOLD +
-              'Sending "{}"'.format('right')
-              + self.text_color.ENDC)
-
-        # Send right to arduino
-        self.arduino_serial.write('right')
-
-    def advance(self, num=1):
-        """
-        Function to send String to arduino to advance num grids
-        :param num: int
-                Integer to represent how much should arduino advance
-        :return:
-        """
-        # Display feedback whenever something is to be sent
-        print(self.log_string + self.text_color.BOLD +
-              'Sending "{}"'.format(num)
-              + self.text_color.ENDC)
-
-        # Send the int indicating how much to move forward to the Arduino device
-        self.arduino_serial.write(num)
