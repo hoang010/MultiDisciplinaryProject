@@ -105,7 +105,7 @@ class Explore:
             for x, y in obstacle:
                 self.real_map[x][y] = 1
 
-    def update_dir(self, left):
+    def update_dir(self, left_turn):
 
         def left():
             # If current direction is North, North turning to left is West
@@ -149,7 +149,7 @@ class Explore:
                 # Change current direction to South
                 self.direction = self.direction_class.S
 
-        if left:
+        if left_turn:
             left()
         else:
             right()
