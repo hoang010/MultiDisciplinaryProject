@@ -4,6 +4,9 @@ import queue
 
 
 class Explore:
+    # TODO: Add a return to start function
+    # TODO: Check if there is enough space to accomodate for a front long range sensor
+    # TODO: If enough sensors to be able to put one on the left, use that sensor to explore the left side of robot
     def __init__(self, map_size, direction_class):
         self.direction_class = direction_class
         self.direction = self.direction_class.N
