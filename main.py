@@ -350,22 +350,37 @@ def pass_info(arduino_conn, bt_conn, server_send):
 
 
 def init_graph(map_size, start_pos, goal_pos):
-    i = 0
+    cost = 0
     mdp_graph = Graph(np.zeros(map_size))
     prev_node = None
     while not mdp_graph.complete():
 
-        node = Node(prev_node, [Direction.N, Direction.E], i, start_pos, goal_pos)
+        node = Node(prev_node, [Direction.N, Direction.E], cost, start_pos, goal_pos)
         if node.ref_pt[0] < 0 or node.ref_pt[1] < 0:
             if not node.prev_node:
                 return -1
+
             prev_node = node.prev_node
+
+            if node.ref_pt[0] < 0:
+                prev_node.dir = [Direction.N]
+            elif node.ref_pt[1] < 0:
+                prev_node.dir = [Direction.E]
+            else:
+                prev_node.dir = []
+
+            start_pos = prev_node.next_coord[1]
+
+        elif node.ref_pt == prev_node.next_coord[1]:
+            mdp_graph.update(node)
+            start_pos = prev_node.prev_node.next_coord[1]
+            cost -= 1
+
         else:
             mdp_graph.update(node)
-            i += 1
-
+            cost += 1
             start_pos = node.next_coord[0]
-
+            prev_node = node
 
 
 if __name__ == "__main__":
