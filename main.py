@@ -18,6 +18,12 @@ import cv2
 
 
 def main(sys_type):
+    """
+    Main function of MDP Project, execute this file to start
+    :param sys_type: String
+            String containing System Type (Windows, Linux or Mac)
+    :return:
+    """
 
     # Initialise required stuff here
     rpi_ip = '192.168.17.17'
@@ -330,6 +336,16 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
 
 
 def pass_info(arduino_conn, bt_conn, server_send):
+    """
+    Function to demonstrate information passing
+    :param arduino_conn: Serial
+            Serial containing connection to Arduino board
+    :param bt_conn: Socket
+            Socket containing Bluetooth connection to tablet
+    :param server_send: Socket
+            Socket containing Wifi connection to tablet
+    :return:
+    """
     # Sleep for 5s while tablet gets input and send to Raspberry Pi
     time.sleep(5)
 
@@ -349,36 +365,76 @@ def pass_info(arduino_conn, bt_conn, server_send):
     server_send.queue.put(new_info)
 
 
+# TODO: Verify this function
 def init_graph(map_size, start_pos, goal_pos):
+    """
+    Function to initialise Graph
+    :param map_size: Array
+            Array containing size of map
+    :param start_pos: Array
+            Array containing start position of robot
+    :param goal_pos: Array
+            Array containing goal position of robot
+    :return:
+    """
+
+    # Initialise variables here
     cost = 0
     mdp_graph = Graph(np.zeros(map_size))
     prev_node = None
+
+    # While graph is not complete
     while not mdp_graph.complete():
 
+        # Create a node with start position
         node = Node(prev_node, [Direction.N, Direction.E], cost, start_pos, goal_pos)
+
+        # If node reference point is beyond map
         if node.ref_pt[0] < 0 or node.ref_pt[1] < 0:
+
+            # If there is no previous node, return -1
+            # Might change to exception
             if not node.prev_node:
                 return -1
 
+            # Retrieve previous node
             prev_node = node.prev_node
 
-            if node.ref_pt[0] < 0:
-                prev_node.dir = [Direction.N]
-            elif node.ref_pt[1] < 0:
-                prev_node.dir = [Direction.E]
-            else:
+            # If both x and y coordinate exceeds map,
+            # then after reaching this map robot should not be able to move elsewhere
+            if node.ref_pt[0] < 0 and node.ref_pt[1] < 0:
                 prev_node.dir = []
 
+            # Else if x coordinate exceeds map, then restrict current node to be able to move only Northwards
+            elif node.ref_pt[0] < 0:
+                prev_node.dir = [Direction.N]
+
+            # Else if y coordinate exceeds map, then restrict current node to be able to move only Eastwards
+            elif node.ref_pt[1] < 0:
+                prev_node.dir = [Direction.E]
+
+            # Move start position to previous node and restart loop
             start_pos = prev_node.next_coord[1]
 
+        # Otherwise, if current node is the East coordinate of previous node
+        # the update graph with the node
         elif node.ref_pt == prev_node.next_coord[1]:
             mdp_graph.update(node)
+
+            # Set start_pos to East coordinate of 2 nodes before
             start_pos = prev_node.prev_node.next_coord[1]
+
+            # Reduce cost by 1 (travel backwards by 2, advance 1)
             cost -= 1
 
+        # Else, if node is within map, then update graph with node
         else:
             mdp_graph.update(node)
+
+            # Increment cost for next node
             cost += 1
+
+            # Set start position to the coordinate in the North
             start_pos = node.next_coord[0]
             prev_node = node
 

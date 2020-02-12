@@ -25,6 +25,10 @@ class Node:
         self.next_coord = []
 
     def get_next_coord(self):
+        """
+        Function to get next coordinates
+        :return:
+        """
         # If direction is facing North, then previous coordinate must be 1y up
         north_coord = [(self.pos[0][0], self.pos[0][1] - 1),
                       (self.pos[1][0], self.pos[1][1] - 1),

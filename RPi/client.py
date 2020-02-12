@@ -35,6 +35,12 @@ class Client:
                           + self.text_color.ENDC
 
     def connect(self):
+        """
+        Function to connect to Raspberry Pi
+
+        Will create a thread to handle queue upon successful connection
+        :return:
+        """
         try:
             print(self.log_string + self.text_color.BOLD +
                   'Connecting to ' + self.rpi_ip + ':' + self.port
