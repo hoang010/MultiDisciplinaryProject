@@ -5,7 +5,7 @@ import queue
 
 class Explore:
     # TODO: Add a return to start function
-    # TODO: Check if there is enough space to accomodate for a front long range sensor
+    # TODO: Check if there is enough space to accommodate for a front long range sensor
     # TODO: If enough sensors to be able to put one on the left, use that sensor to explore the left side of robot
     def __init__(self, map_size, direction_class):
         self.direction_class = direction_class
@@ -24,7 +24,7 @@ class Explore:
         # If map is (15, 20) then coordinates are as follows:
         # (14, 18)[front left], (14, 19)[front right],
         # (13, 18)[back left], (13, 19)[back right]
-        # This is done assuming the robot starts at the bottom right of the map
+        # This is done assuming the robot starts at the bottom right of the map wrt numpy array
         self.start = [(len(self.real_map) - 1, len(self.real_map[0]) - 2),
                       (len(self.real_map) - 1, len(self.real_map[0]) - 1),
                       (len(self.real_map) - 2, len(self.real_map[0]) - 1),
@@ -47,7 +47,7 @@ class Explore:
             self.dir_queue.put('right')
 
             # Update robot direction
-            self.update_dir(left=False)
+            self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
         elif front_left_obstacle or front_right_obstacle:
@@ -61,7 +61,7 @@ class Explore:
             self.dir_queue.put('left')
 
             # Update robot direction
-            self.update_dir(left=True)
+            self.update_dir(left_turn=True)
 
         # If no obstacle
         else:

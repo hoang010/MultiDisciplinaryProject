@@ -8,8 +8,11 @@ from Algo.image_recognition import ImageRecognition
 # from Algo.shortest_path import ShortestPath
 from config.text_color import TextColor as text_color
 from config.direction import Direction
+from config.graph import Graph
+from config.node import Node
 
 # Import libraries
+import numpy as np
 import time
 import cv2
 
@@ -63,7 +66,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
     bt_conn.listen()
-    map_size = init(arduino_conn, bt_conn)
+    map_size = robo_init(arduino_conn, bt_conn)
 
     while True:
         # Receive data from tablet
@@ -218,7 +221,7 @@ def pc(rpi_ip, log_string):
 
 
 # This init is done assuming the robot does not start in a "room" in the corner
-def init(arduino_conn, bt_conn):
+def robo_init(arduino_conn, bt_conn):
     """
     Function to init robot
     :param arduino_conn: Serial
@@ -344,6 +347,25 @@ def pass_info(arduino_conn, bt_conn, server_send):
 
     # Send to PC
     server_send.queue.put(new_info)
+
+
+def init_graph(map_size, start_pos, goal_pos):
+    i = 0
+    mdp_graph = Graph(np.zeros(map_size))
+    prev_node = None
+    while not mdp_graph.complete():
+
+        node = Node(prev_node, [Direction.N, Direction.E], i, start_pos, goal_pos)
+        if node.ref_pt[0] < 0 or node.ref_pt[1] < 0:
+            if not node.prev_node:
+                return -1
+            prev_node = node.prev_node
+        else:
+            mdp_graph.update(node)
+            i += 1
+
+            start_pos = node.next_coord[0]
+
 
 
 if __name__ == "__main__":
