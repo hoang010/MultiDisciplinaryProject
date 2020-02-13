@@ -6,6 +6,8 @@ ser.flushInput()
 #command list
 #1. Check connection
 #2. Retrieve Sensor Values
+#Format is: Comma seperated, beginning with X_SENDDATA:
+#e.g.: X_SENDDATA: {TopRight:14.00; TopLeft:8.00; RightSide:6.00; LeftSide:26.00; TopCenter:16.00}
 #3. Move Forward
 #4. Turn Left
 #5. Turn Right
