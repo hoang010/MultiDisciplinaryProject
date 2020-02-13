@@ -171,6 +171,9 @@ def pc(rpi_ip, log_string):
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
 
+                    if not stream:
+                        break
+
                 # TODO: Rasp Pi array here!
                 real_map_hex = pc_recv.queue.get()[0]
 
