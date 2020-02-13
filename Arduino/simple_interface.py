@@ -3,7 +3,13 @@ import time
 port = "COM5"
 ser = serial.Serial("COM5",115200)
 ser.flushInput()
-
+#command list
+#1. Check connection
+#2. Retrieve Sensor Values
+#3. Move Forward
+#4. Turn Left
+#5. Turn Right
+#6. Move Backward
 
 while True:
     tdata = ser.read()
