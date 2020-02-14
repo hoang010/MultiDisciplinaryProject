@@ -76,48 +76,130 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
         # Pass info
         if choice == 1:
-            pass_info(arduino_conn_demo, bt_conn_demo, server_send_demo)
+
+            server_send_demo.queue.put(''.join(hex(ord(c))[2:] for c in str(choice)))
+
+            print(log_string + text_color.OKGREEN + 'Info passing' + text_color.ENDC)
+
+            # Receive info from tablet
+            info = bt_conn_demo.have_recv_queue.get()
+
+            while not info:
+                info = bt_conn_demo.have_recv_queue.get()
+
+            # Send info to Arduino
+            arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in info))
+
+            # Sleep for 5s while Arduino increments data and sends it back
+            time.sleep(5)
+
+            # Receive updated info from Arduino
+            new_info = arduino_conn_demo.have_recv_queue.get()
+
+            while not new_info:
+                new_info = bt_conn_demo.have_recv_queue.get()
+
+            # Send to PC
+            server_send_demo.queue.put(''.join(hex(ord(c))[2:] for c in new_info))
 
         # Straight line motion
         elif choice == 2:
-            # Connect to Tablet
-            bt_conn_test = Bluetooth(rpi_mac_addr, text_color)
-            bt_conn_test.listen()
+
+            print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
+            arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '2'))
+
+            dist = get_sensor_data(arduino_conn_demo)
+            print(log_string + text_color.OKGREEN + 'Distance: {}'.format(dist) + text_color.ENDC)
+
+            dist = int(dist)/10
+            i = 1
+
+            while dist > 0:
+                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '3'))
+
+                get_sensor_data(arduino_conn_demo)
+
+                print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
+
+                i += 1
+                dist -= 1
 
         # Rotation
         elif choice == 3:
-            # Connect to PC
-            server_send_test = Server('server_send_test', 'send', rpi_ip, 7777, text_color)
-            server_recv_test = Server('server_recv_test', 'recv', rpi_ip, 8888, text_color)
-            server_stream_test = Server('server_stream_test', 'send', rpi_ip, 9999, text_color)
-            server_send_test.listen()
-            server_recv_test.listen()
-            server_stream_test.listen()
+
+            for i in range(2):
+                print(log_string + text_color.OKGREEN + 'Turning left by 180 degrees' + text_color.ENDC)
+                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '7'))
+
+                dist = get_sensor_data(arduino_conn_demo)
+
+                print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
+
+            for i in range(2):
+                print(log_string + text_color.OKGREEN + 'Turning right by 180 degrees' + text_color.ENDC)
+                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '8'))
+
+                get_sensor_data()
+
+                print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
         # Obstacle avoidance and position recovery
         elif choice == 4:
-            arduino_conn_test.to_send_queue.put(''.join(hex(ord(c))[2:] for c in message))
-            recv_string = arduino_conn_test.have_recv_queue.get()
 
-            while not recv_string:
-                recv_string = arduino_conn_test.have_recv_queue.get()
+            # Declare variables here
+            total_dist = 15
+            i = 1
 
-            recv_string = recv_string.decode("hex")
+            print(log_string + text_color.OKGREEN + 'Obstacle avoidance and position recovery' + text_color.ENDC)
+            arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '2'))
 
-            print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
+            obs_dist = get_sensor_data(arduino_conn_demo)
+
+            print(log_string + text_color.OKGREEN + 'Obstacle at distance: {}'.format(obs_dist) + text_color.ENDC)
+
+            obs_dist = (int(obs_dist) / 10) - 1
+
+            while obs_dist > 0:
+                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '3'))
+
+                get_sensor_data(arduino_conn_demo)
+
+                print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
+
+                i += 1
+                obs_dist -= 1
+
+            check_left_obs = get_sensor_data(arduino_conn_demo)
+
+            if not check_left_obs:
+                action_order = ['4', '3', '5', '3', '3', '5', '3', '4']
+
+            else:
+                action_order = ['5', '3', '4', '3', '3', '4', '3', '5']
+
+            # Declare variables here again
+            remain_dist = total_dist - obs_dist
+            i = 0
+
+            for num in action_order:
+                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in action_order[int(num)]))
+
+                get_sensor_data(arduino_conn_demo)
+
+            while remain_dist > 0:
+                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '3'))
+
+                get_sensor_data(arduino_conn_demo)
+
+                print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
+
+                i += 1
+                remain_dist -= 1
 
         # Extension: Obstacle avoidance with diagonal movement
         elif choice == 5:
-            # TODO: RPi message to Tablet here!
-            bt_conn_test.to_send_queue.put(''.join(hex(ord(c))[2:] for c in message))
-            recv_string = bt_conn_test.have_recv_queue.get()
-
-            while not recv_string:
-                recv_string = bt_conn_test.have_recv_queue.get()
-
-            recv_string = recv_string.decode("hex")
-
-            print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
+            # TODO: Check if Arduino is able to move diagonally
+            pass
 
         elif choice == 6:
             server_send_demo.disconnect()
@@ -201,34 +283,15 @@ def pc(rpi_ip, log_string):
             pc_send_test.queue.put('"{}" returned!'.format(msg))
 
 
-def pass_info(arduino_conn, bt_conn, server_send):
-    """
-    Function to demonstrate information passing
-    :param arduino_conn: Serial
-            Serial containing connection to Arduino board
-    :param bt_conn: Socket
-            Socket containing Bluetooth connection to tablet
-    :param server_send: Socket
-            Socket containing Wifi connection to tablet
-    :return:
-    """
-    # Sleep for 5s while tablet gets input and send to Raspberry Pi
-    time.sleep(5)
+def get_sensor_data(arduino_conn_demo):
+    data = arduino_conn_demo.have_recv_queue.get()
 
-    # Receive info from tablet
-    info = bt_conn.have_recv_queue.get()
+    while not data:
+        data = arduino_conn_demo.have_recv_queue.get()
 
-    # Send info to Arduino
-    arduino_conn.to_send_queue.put(info)
+    data = data.decode("hex")
 
-    # Sleep for 5s while Arduino increments data and sends it back
-    time.sleep(5)
-
-    # Receive updated info from Arduino
-    new_info = arduino_conn.have_recv_queue.get()
-
-    # Send to PC
-    server_send.queue.put(new_info)
+    return data
 
 
 if __name__ == "__main__":
