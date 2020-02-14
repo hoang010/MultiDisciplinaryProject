@@ -345,36 +345,6 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
     explorer.save_map(hex_real_map)
 
 
-def pass_info(arduino_conn, bt_conn, server_send):
-    """
-    Function to demonstrate information passing
-    :param arduino_conn: Serial
-            Serial containing connection to Arduino board
-    :param bt_conn: Socket
-            Socket containing Bluetooth connection to tablet
-    :param server_send: Socket
-            Socket containing Wifi connection to tablet
-    :return:
-    """
-    # Sleep for 5s while tablet gets input and send to Raspberry Pi
-    time.sleep(5)
-
-    # Receive info from tablet
-    info = bt_conn.have_recv_queue.get()
-
-    # Send info to Arduino
-    arduino_conn.to_send_queue.put(info)
-
-    # Sleep for 5s while Arduino increments data and sends it back
-    time.sleep(5)
-
-    # Receive updated info from Arduino
-    new_info = arduino_conn.have_recv_queue.get()
-
-    # Send to PC
-    server_send.queue.put(new_info)
-
-
 # TODO: Verify this function
 def init_graph(map_size, start_pos, goal_pos):
     """
