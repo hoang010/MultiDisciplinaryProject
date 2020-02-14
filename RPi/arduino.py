@@ -28,7 +28,7 @@ class Arduino:
 
             # Display feedback so that user knows this function is called
             print(self.log_string + self.text_color.BOLD +
-                  'Connecting to {}'.format(self.arduino_name)
+                  'Connecting via {}'.format(self.arduino_name)
                   + self.text_color.ENDC)
 
             # Try to connect to the Arduino device

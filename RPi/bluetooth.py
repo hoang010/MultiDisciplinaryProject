@@ -48,7 +48,7 @@ class Bluetooth:
 
         # Display feedback so that user knows this function is called
         print(self.log_string + self.text_color.OKGREEN +
-              'Bluetooth listening on port ' + self.port
+              'Bluetooth listening on port {}'.format(self.port)
               + self.text_color.ENDC)
 
         # Listen for requests
