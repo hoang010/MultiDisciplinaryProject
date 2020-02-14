@@ -62,7 +62,7 @@ class Server:
 
             # Display feedback to let user know that a connection has been established
             print(self.log_string + self.text_color.OKGREEN +
-                  'Connected to {}:{}'.format(addr, self.port)
+                  'Connected to {}:{}'.format(addr[0], self.port)
                   + self.text_color.ENDC)
 
             # Once connected, start a thread for sending data to PC

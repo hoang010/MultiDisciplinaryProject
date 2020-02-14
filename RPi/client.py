@@ -43,13 +43,13 @@ class Client:
         """
         try:
             print(self.log_string + self.text_color.BOLD +
-                  'Connecting to ' + self.rpi_ip + ':' + self.port
+                  'Connecting to {}:{}'.format(self.rpi_ip, self.port)
                   + self.text_color.ENDC)
 
             self.sock.connect((self.rpi_ip, self.port))
 
             print(self.log_string + self.text_color.OKGREEN +
-                  'Connected to ' + self.rpi_ip + ':' + self.port
+                  'Connected to {}:{}'.format(self.rpi_ip, self.port)
                   + self.text_color.ENDC)
 
             # Once connected, start a thread for sending data to Raspberry Pi

@@ -74,7 +74,6 @@ following libraries to execute on a Linux, Windows and Darwin
 environment:
 * Python 3
 * Numpy
-* Matplotlib
 * PyBluez 0.23
 * OpenCV 4.2.0
 * PySerial 3.4
@@ -93,9 +92,9 @@ each connection.
 
 | Connection Type | Data Type |
 | :---: | :---: |
-| Bluetooth | Arrays |
-| Wifi | Arrays | 
-| Serial | Strings | 
+| Bluetooth | Byte |
+| Wifi | Byte | 
+| Serial | Byte | 
 
 ## System architecture
 A simplified system architecture diagram is as follows:

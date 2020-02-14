@@ -15,6 +15,7 @@ from config.node import Node
 import numpy as np
 import time
 import cv2
+import os
 
 
 def main(sys_type):
@@ -77,14 +78,16 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     while True:
         # Receive data from tablet
         # TODO: Bluetooth array here!
-        mode = bt_conn.have_recv_queue.get()[0]
+        mode = bt_conn.have_recv_queue.get()
+
+        mode = mode.decode("hex")
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
         if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
 
             # Send ack to Android device
             # TODO: Bluetooth array here!
-            bt_conn.to_send_queue.put(['{} acknowledged'.format(mode)])
+            bt_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '{} acknowledged'.format(mode)))
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
@@ -107,8 +110,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
                 # TODO: Rasp Pi array here!
-                server_send.queue.put(['Disconnect'])
-                arduino_conn.to_send_queue.put('Disconnect')
+                server_send.queue.put(''.join(hex(ord(c))[2:] for c in 'Disconnect'))
+                arduino_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Disconnect'))
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
@@ -129,7 +132,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             # Add data into queue for sending to tablet
             # TODO: Bluetooth array here!
-            bt_conn.to_send_queue.put(['Send valid argument'])
+            bt_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Send valid argument'))
 
 
 def pc(rpi_ip, log_string):
@@ -155,14 +158,16 @@ def pc(rpi_ip, log_string):
 
         # Receive data from Raspberry Pi
         # TODO: Rasp Pi array here!
-        data = pc_recv.queue.get()[0]
+        data = pc_recv.queue.get()
+
+        data = data.decode("hex")
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
         if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
 
             # Send ack to Raspberry Pi
             # TODO: Rasp Pi array here!
-            pc_send.queue.put(['{} acknowledged'.format(data)])
+            pc_send.queue.put(''.join(hex(ord(c))[2:] for c in '{} acknowledged'.format(data)))
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -171,7 +176,7 @@ def pc(rpi_ip, log_string):
                 while True:
 
                     # Receive stream from socket
-                    stream = pc_stream.queue.get()[0]
+                    stream = pc_stream.queue.get()
 
                     # If end of stream (indicated with return value 0), break
                     if not stream:
@@ -180,8 +185,11 @@ def pc(rpi_ip, log_string):
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
 
+                    if not stream:
+                        break
+
                 # TODO: Rasp Pi array here!
-                real_map_hex = pc_recv.queue.get()[0]
+                real_map_hex = pc_recv.queue.get()
 
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
@@ -203,6 +211,8 @@ def pc(rpi_ip, log_string):
                 # Get information from pc_recv queue
                 info = pc_recv.queue.get()
 
+                info = info.decode("hex")
+
                 # Display info received
                 print(log_string + text_color.BOLD +
                       'Info received = {}'.format(info)
@@ -223,7 +233,7 @@ def pc(rpi_ip, log_string):
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition
             # TODO: Rasp Pi array here!
-            pc_send.queue.put(['Send valid argument'])
+            pc_send.queue.put(''.join(hex(ord(c))[2:] for c in 'Send valid argument'))
 
 
 # This init is done assuming the robot does not start in a "room" in the corner
@@ -441,4 +451,8 @@ def init_graph(map_size, start_pos, goal_pos):
 
 if __name__ == "__main__":
     import platform
-    main(platform.system())
+    try:
+        main(platform.system())
+        # main('Windows')
+    except KeyboardInterrupt:
+        os.system('pkill -9 python')
