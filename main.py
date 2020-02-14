@@ -83,7 +83,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         mode = mode.decode("hex")
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
+        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
             # Send ack to Android device
             # TODO: Bluetooth array here!
@@ -103,9 +103,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             elif mode == 'Manual':
                 print(mode)
-
-            elif mode == 'Info Passing':
-                pass_info(arduino_conn, bt_conn, server_send)
 
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
@@ -179,8 +176,10 @@ def pc(rpi_ip, log_string):
                     stream = pc_stream.queue.get()
 
                     # If end of stream (indicated with return value 0), break
-                    if not stream:
-                        break
+                    while not stream:
+                        stream = pc_stream.queue.get()
+
+                    stream = stream.decode("hex")
 
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
@@ -191,6 +190,9 @@ def pc(rpi_ip, log_string):
                 # TODO: Rasp Pi array here!
                 real_map_hex = pc_recv.queue.get()
 
+                while not real_map_hex:
+                    real_map_hex = pc_recv.queue.get()
+
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
                       + text_color.ENDC)
@@ -199,24 +201,10 @@ def pc(rpi_ip, log_string):
                 pass
 
             elif data == 'Shortest Path':
-                print(data)
+                pass
 
             elif data == 'Manual':
-                print(data)
-
-            elif data == 'Info Passing':
-                # Wait for 15s
-                time.sleep(15)
-
-                # Get information from pc_recv queue
-                info = pc_recv.queue.get()
-
-                info = info.decode("hex")
-
-                # Display info received
-                print(log_string + text_color.BOLD +
-                      'Info received = {}'.format(info)
-                      + text_color.ENDC)
+                pass
 
             elif data == 'Disconnect':
                 # Disconnect from Raspberry Pi

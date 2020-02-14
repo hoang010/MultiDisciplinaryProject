@@ -81,6 +81,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             print(log_string + text_color.OKGREEN + 'Info passing' + text_color.ENDC)
 
+            bt_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Get info'))
+
             # Receive info from tablet
             info = bt_conn_demo.have_recv_queue.get()
 
@@ -269,7 +271,7 @@ def pc(rpi_ip, log_string):
                 if not stream:
                     break
 
-        if msg == 'disconnect':
+        elif msg == 'disconnect':
             pc_send_test.disconnect()
             print(log_string + text_color.BOLD + 'Client send diconnected' + text_color.ENDC)
 
