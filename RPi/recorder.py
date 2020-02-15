@@ -6,11 +6,18 @@ import os
 
 class Recorder:
     def __init__(self):
+        """
+        Function to initialise a Recorder class
+        """
         self.camera = picamera.PiCamera()
         self.camera.resolution = (640, 480)
         self.io = picamera.CircularIO(size=10)
 
     def start(self):
+        """
+        Function to start recording
+        :return:
+        """
         self.camera.start_recording(self.io)
 
     def draw_box(self):
@@ -27,5 +34,9 @@ class Recorder:
         cv2.rectangle(self.io, (5, 10), (20, 10), (255, 0, 0), 0)
 
     def stop(self):
+        """
+        Function to stop recording
+        :return:
+        """
         self.camera.stop_recording()
         self.camera.close()

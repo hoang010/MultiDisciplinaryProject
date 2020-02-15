@@ -8,14 +8,23 @@ from Algo.image_recognition import ImageRecognition
 # from Algo.shortest_path import ShortestPath
 from config.text_color import TextColor as text_color
 from config.direction import Direction
+from config.graph import Graph
+from config.node import Node
 
 # Import libraries
+import numpy as np
 import time
 import cv2
 import os
 
 
 def main(sys_type):
+    """
+    Main function of MDP Project, execute this file to start
+    :param sys_type: String
+            String containing System Type (Windows, Linux or Mac)
+    :return:
+    """
 
     # Initialise required stuff here
     rpi_ip = '192.168.17.17'
@@ -64,21 +73,21 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
     bt_conn.listen()
-    map_size = init(arduino_conn, bt_conn)
+    map_size = robo_init(arduino_conn, bt_conn)
 
     while True:
         # Receive data from tablet
         # TODO: Bluetooth array here!
         mode = bt_conn.have_recv_queue.get()
 
-        mode = mode.decode("hex")
+        mode = mode.decode()
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
+        if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
             # Send ack to Android device
             # TODO: Bluetooth array here!
-            bt_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '{} acknowledged'.format(mode)))
+            bt_conn.to_send_queue.put(('{} acknowledged'.format(mode)).encode())
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
@@ -95,14 +104,11 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif mode == 'Manual':
                 print(mode)
 
-            elif mode == 'Info Passing':
-                pass_info(arduino_conn, bt_conn, server_send)
-
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
                 # TODO: Rasp Pi array here!
-                server_send.queue.put(''.join(hex(ord(c))[2:] for c in 'Disconnect'))
-                arduino_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Disconnect'))
+                server_send.queue.put('Disconnect'.encode())
+                arduino_conn.to_send_queue.put('Disconnect'.encode())
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
@@ -123,7 +129,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             # Add data into queue for sending to tablet
             # TODO: Bluetooth array here!
-            bt_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Send valid argument'))
+            bt_conn.to_send_queue.put('Send valid argument'.encode())
 
 
 def pc(rpi_ip, log_string):
@@ -151,14 +157,14 @@ def pc(rpi_ip, log_string):
         # TODO: Rasp Pi array here!
         data = pc_recv.queue.get()
 
-        data = data.decode("hex")
+        data = data.decode()
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
         if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
 
             # Send ack to Raspberry Pi
             # TODO: Rasp Pi array here!
-            pc_send.queue.put(''.join(hex(ord(c))[2:] for c in '{} acknowledged'.format(data)))
+            pc_send.queue.put(('{} acknowledged'.format(data)).encode())
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -170,8 +176,10 @@ def pc(rpi_ip, log_string):
                     stream = pc_stream.queue.get()
 
                     # If end of stream (indicated with return value 0), break
-                    if not stream:
-                        break
+                    while not stream:
+                        stream = pc_stream.queue.get()
+
+                    stream = stream.decode()
 
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
@@ -182,6 +190,11 @@ def pc(rpi_ip, log_string):
                 # TODO: Rasp Pi array here!
                 real_map_hex = pc_recv.queue.get()
 
+                while not real_map_hex:
+                    real_map_hex = pc_recv.queue.get()
+
+                real_map_hex = real_map_hex.decode()
+
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
                       + text_color.ENDC)
@@ -190,24 +203,10 @@ def pc(rpi_ip, log_string):
                 pass
 
             elif data == 'Shortest Path':
-                print(data)
+                pass
 
             elif data == 'Manual':
-                print(data)
-
-            elif data == 'Info Passing':
-                # Wait for 15s
-                time.sleep(15)
-
-                # Get information from pc_recv queue
-                info = pc_recv.queue.get()
-
-                info = info.decode("hex")
-
-                # Display info received
-                print(log_string + text_color.BOLD +
-                      'Info received = {}'.format(info)
-                      + text_color.ENDC)
+                pass
 
             elif data == 'Disconnect':
                 # Disconnect from Raspberry Pi
@@ -224,11 +223,11 @@ def pc(rpi_ip, log_string):
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition
             # TODO: Rasp Pi array here!
-            pc_send.queue.put(''.join(hex(ord(c))[2:] for c in 'Send valid argument'))
+            pc_send.queue.put('Send valid argument'.encode())
 
 
 # This init is done assuming the robot does not start in a "room" in the corner
-def init(arduino_conn, bt_conn):
+def robo_init(arduino_conn, bt_conn):
     """
     Function to init robot
     :param arduino_conn: Serial
@@ -336,24 +335,78 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
     explorer.save_map(hex_real_map)
 
 
-def pass_info(arduino_conn, bt_conn, server_send):
-    # Sleep for 5s while tablet gets input and send to Raspberry Pi
-    time.sleep(5)
+# TODO: Verify this function
+def init_graph(map_size, start_pos, goal_pos):
+    """
+    Function to initialise Graph
+    :param map_size: Array
+            Array containing size of map
+    :param start_pos: Array
+            Array containing start position of robot
+    :param goal_pos: Array
+            Array containing goal position of robot
+    :return:
+    """
 
-    # Receive info from tablet
-    info = bt_conn.have_recv_queue.get()
+    # Initialise variables here
+    cost = 0
+    mdp_graph = Graph(np.zeros(map_size))
+    prev_node = None
 
-    # Send info to Arduino
-    arduino_conn.to_send_queue.put(info)
+    # While graph is not complete
+    while not mdp_graph.complete():
 
-    # Sleep for 5s while Arduino increments data and sends it back
-    time.sleep(5)
+        # Create a node with start position
+        node = Node(prev_node, [Direction.N, Direction.E], cost, start_pos, goal_pos)
 
-    # Receive updated info from Arduino
-    new_info = arduino_conn.have_recv_queue.get()
+        # If node reference point is beyond map
+        if node.ref_pt[0] < 0 or node.ref_pt[1] < 0:
 
-    # Send to PC
-    server_send.queue.put(new_info)
+            # If there is no previous node, return -1
+            # Might change to exception
+            if not node.prev_node:
+                return -1
+
+            # Retrieve previous node
+            prev_node = node.prev_node
+
+            # If both x and y coordinate exceeds map,
+            # then after reaching this map robot should not be able to move elsewhere
+            if node.ref_pt[0] < 0 and node.ref_pt[1] < 0:
+                prev_node.dir = []
+
+            # Else if x coordinate exceeds map, then restrict current node to be able to move only Northwards
+            elif node.ref_pt[0] < 0:
+                prev_node.dir = [Direction.N]
+
+            # Else if y coordinate exceeds map, then restrict current node to be able to move only Eastwards
+            elif node.ref_pt[1] < 0:
+                prev_node.dir = [Direction.E]
+
+            # Move start position to previous node and restart loop
+            start_pos = prev_node.next_coord[1]
+
+        # Otherwise, if current node is the East coordinate of previous node
+        # the update graph with the node
+        elif node.ref_pt == prev_node.next_coord[1]:
+            mdp_graph.update(node)
+
+            # Set start_pos to East coordinate of 2 nodes before
+            start_pos = prev_node.prev_node.next_coord[1]
+
+            # Reduce cost by 1 (travel backwards by 2, advance 1)
+            cost -= 1
+
+        # Else, if node is within map, then update graph with node
+        else:
+            mdp_graph.update(node)
+
+            # Increment cost for next node
+            cost += 1
+
+            # Set start position to the coordinate in the North
+            start_pos = node.next_coord[0]
+            prev_node = node
 
 
 if __name__ == "__main__":

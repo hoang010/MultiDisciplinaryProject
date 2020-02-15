@@ -1,5 +1,5 @@
 class Direction:
     N = 0
-    S = 1
-    E = 2
+    E = 1
+    S = 2
     W = 3
