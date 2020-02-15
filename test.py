@@ -85,43 +85,43 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             server_stream_test.listen()
 
         elif choice == 4:
-            arduino_conn_test.to_send_queue.put(''.join(hex(ord(c))[2:] for c in message))
+            arduino_conn_test.to_send_queue.put(message.encode())
             recv_string = arduino_conn_test.have_recv_queue.get()
 
             while not recv_string:
                 recv_string = arduino_conn_test.have_recv_queue.get()
 
-            recv_string = recv_string.decode("hex")
+            recv_string = recv_string.decode()
 
             print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
         elif choice == 5:
             # TODO: RPi message to Tablet here!
-            bt_conn_test.to_send_queue.put(''.join(hex(ord(c))[2:] for c in message))
+            bt_conn_test.to_send_queue.put(message.encode())
             recv_string = bt_conn_test.have_recv_queue.get()
 
             while not recv_string:
                 recv_string = bt_conn_test.have_recv_queue.get()
 
-            recv_string = recv_string.decode("hex")
+            recv_string = recv_string.decode()
 
             print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
         elif choice == 6:
             # TODO: RPi message to PC here!
-            server_send_test.queue.put(''.join(hex(ord(c))[2:] for c in message))
+            server_send_test.queue.put(message.encode())
             recv_string = server_recv_test.queue.get()
 
             while not recv_string:
                 recv_string = server_recv_test.queue.get()
 
-            recv_string = recv_string.decode("hex")
+            recv_string = recv_string.decode()
 
             print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
         elif choice == 7:
             # TODO: RPi array here!
-            server_send_test.queue.put(''.join(hex(ord(c))[2:] for c in 'Stream'))
+            server_send_test.queue.put('Stream'.encode())
             print(log_string + text_color.BOLD + 'Recorder init' + text_color.ENDC)
             from RPi.recorder import Recorder
             recorder = Recorder()
@@ -194,9 +194,9 @@ def pc(rpi_ip, log_string):
         msg = pc_recv_test.queue.get()
 
         while not msg:
-            msg = pc_recv_test.queue.get()[0]
+            msg = pc_recv_test.queue.get()
 
-        msg = msg.decode("hex")
+        msg = msg.decode()
 
         print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
 
@@ -209,7 +209,7 @@ def pc(rpi_ip, log_string):
                 while not stream:
                     stream = pc_stream_test.queue.get()
 
-                stream = stream.decode("hex")
+                stream = stream.decode()
 
                 # Display stream in a window
                 cv2.imshow('Stream from Pi', stream)
@@ -229,7 +229,7 @@ def pc(rpi_ip, log_string):
             print(log_string + text_color.BOLD + 'Client stream disconnected' + text_color.ENDC)
 
         else:
-            pc_send_test.queue.put('"{}" returned!'.format(msg))
+            pc_send_test.queue.put(('"{}" returned!'.format(msg)).encode())
 
 
 if __name__ == "__main__":

@@ -77,11 +77,9 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         # Pass info
         if choice == 1:
 
-            server_send_demo.queue.put(''.join(hex(ord(c))[2:] for c in str(choice)))
-
             print(log_string + text_color.OKGREEN + 'Info passing' + text_color.ENDC)
 
-            bt_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Get info'))
+            bt_conn_demo.to_send_queue.put('Get info'.encode())
 
             # Receive info from tablet
             info = bt_conn_demo.have_recv_queue.get()
@@ -90,7 +88,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 info = bt_conn_demo.have_recv_queue.get()
 
             # Send info to Arduino
-            arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in info))
+            arduino_conn_demo.to_send_queue.put(info.encode())
 
             # Sleep for 5s while Arduino increments data and sends it back
             time.sleep(5)
@@ -102,26 +100,26 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 new_info = bt_conn_demo.have_recv_queue.get()
 
             # Send to PC
-            server_send_demo.queue.put(''.join(hex(ord(c))[2:] for c in new_info))
+            server_send_demo.queue.put(new_info.encode())
 
         # Straight line motion
         elif choice == 2:
 
             print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
-            arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '2'))
+            arduino_conn_demo.to_send_queue.put('2'.encode())
 
             dist = get_sensor_data(arduino_conn_demo)
-            print(log_string + text_color.OKGREEN + 'Distance: {}'.format(dist) + text_color.ENDC)
+            print(log_string + text_color.OKGREEN + 'Distance to move: {} cm'.format(dist) + text_color.ENDC)
 
             dist = int(dist)/10
             i = 1
 
             while dist > 0:
-                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '3'))
+                arduino_conn_demo.to_send_queue.put('3'.encode())
 
                 get_sensor_data(arduino_conn_demo)
 
-                print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
+                print(log_string + text_color.OKGREEN + 'Moved by {} grid'.format(i) + text_color.ENDC)
 
                 i += 1
                 dist -= 1
@@ -131,17 +129,17 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             for i in range(2):
                 print(log_string + text_color.OKGREEN + 'Turning left by 180 degrees' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '7'))
+                arduino_conn_demo.to_send_queue.put('7'.encode())
 
-                dist = get_sensor_data(arduino_conn_demo)
+                get_sensor_data(arduino_conn_demo)
 
                 print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
             for i in range(2):
                 print(log_string + text_color.OKGREEN + 'Turning right by 180 degrees' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '8'))
+                arduino_conn_demo.to_send_queue.put('8'.encode())
 
-                get_sensor_data()
+                get_sensor_data(arduino_conn_demo)
 
                 print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
@@ -153,7 +151,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             i = 1
 
             print(log_string + text_color.OKGREEN + 'Obstacle avoidance and position recovery' + text_color.ENDC)
-            arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '2'))
+            arduino_conn_demo.to_send_queue.put('2'.encode())
 
             obs_dist = get_sensor_data(arduino_conn_demo)
 
@@ -162,7 +160,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             obs_dist = (int(obs_dist) / 10) - 1
 
             while obs_dist > 0:
-                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '3'))
+                arduino_conn_demo.to_send_queue.put('3'.encode())
 
                 get_sensor_data(arduino_conn_demo)
 
@@ -184,12 +182,12 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             i = 0
 
             for num in action_order:
-                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in action_order[int(num)]))
+                arduino_conn_demo.to_send_queue.put(num.encode())
 
                 get_sensor_data(arduino_conn_demo)
 
             while remain_dist > 0:
-                arduino_conn_demo.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '3'))
+                arduino_conn_demo.to_send_queue.put('3'.encode())
 
                 get_sensor_data(arduino_conn_demo)
 
@@ -247,9 +245,9 @@ def pc(rpi_ip, log_string):
         msg = pc_recv_test.queue.get()
 
         while not msg:
-            msg = pc_recv_test.queue.get()[0]
+            msg = pc_recv_test.queue.get()
 
-        msg = msg.decode("hex")
+        msg = msg.decode()
 
         print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
 
@@ -262,7 +260,7 @@ def pc(rpi_ip, log_string):
                 while not stream:
                     stream = pc_stream_test.queue.get()
 
-                stream = stream.decode("hex")
+                stream = stream.decode()
 
                 # Display stream in a window
                 cv2.imshow('Stream from Pi', stream)
@@ -282,7 +280,7 @@ def pc(rpi_ip, log_string):
             print(log_string + text_color.BOLD + 'Client stream disconnected' + text_color.ENDC)
 
         else:
-            pc_send_test.queue.put('"{}" returned!'.format(msg))
+            pc_send_test.queue.put(('"{}" returned!'.format(msg)).encode())
 
 
 def get_sensor_data(arduino_conn_demo):
@@ -291,7 +289,7 @@ def get_sensor_data(arduino_conn_demo):
     while not data:
         data = arduino_conn_demo.have_recv_queue.get()
 
-    data = data.decode("hex")
+    data = data.decode()
 
     return data
 

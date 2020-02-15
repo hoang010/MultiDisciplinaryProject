@@ -80,14 +80,14 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         # TODO: Bluetooth array here!
         mode = bt_conn.have_recv_queue.get()
 
-        mode = mode.decode("hex")
+        mode = mode.decode()
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
         if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
             # Send ack to Android device
             # TODO: Bluetooth array here!
-            bt_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in '{} acknowledged'.format(mode)))
+            bt_conn.to_send_queue.put(('{} acknowledged'.format(mode)).encode())
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
@@ -107,8 +107,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif mode == 'Disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
                 # TODO: Rasp Pi array here!
-                server_send.queue.put(''.join(hex(ord(c))[2:] for c in 'Disconnect'))
-                arduino_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Disconnect'))
+                server_send.queue.put('Disconnect'.encode())
+                arduino_conn.to_send_queue.put('Disconnect'.encode())
 
                 # Wait for 5s to ensure that PC and Arduino receives the message
                 time.sleep(5)
@@ -129,7 +129,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             # Add data into queue for sending to tablet
             # TODO: Bluetooth array here!
-            bt_conn.to_send_queue.put(''.join(hex(ord(c))[2:] for c in 'Send valid argument'))
+            bt_conn.to_send_queue.put('Send valid argument'.encode())
 
 
 def pc(rpi_ip, log_string):
@@ -157,14 +157,14 @@ def pc(rpi_ip, log_string):
         # TODO: Rasp Pi array here!
         data = pc_recv.queue.get()
 
-        data = data.decode("hex")
+        data = data.decode()
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
         if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
 
             # Send ack to Raspberry Pi
             # TODO: Rasp Pi array here!
-            pc_send.queue.put(''.join(hex(ord(c))[2:] for c in '{} acknowledged'.format(data)))
+            pc_send.queue.put(('{} acknowledged'.format(data)).encode())
 
             # Display on screen the mode getting executed
             print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -179,7 +179,7 @@ def pc(rpi_ip, log_string):
                     while not stream:
                         stream = pc_stream.queue.get()
 
-                    stream = stream.decode("hex")
+                    stream = stream.decode()
 
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
@@ -192,6 +192,8 @@ def pc(rpi_ip, log_string):
 
                 while not real_map_hex:
                     real_map_hex = pc_recv.queue.get()
+
+                real_map_hex = real_map_hex.decode()
 
                 print(log_string + text_color.BOLD +
                       'Real Map Hexadecimal = {}'.format(real_map_hex)
@@ -221,7 +223,7 @@ def pc(rpi_ip, log_string):
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition
             # TODO: Rasp Pi array here!
-            pc_send.queue.put(''.join(hex(ord(c))[2:] for c in 'Send valid argument'))
+            pc_send.queue.put('Send valid argument'.encode())
 
 
 # This init is done assuming the robot does not start in a "room" in the corner
