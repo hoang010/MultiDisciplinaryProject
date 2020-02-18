@@ -292,44 +292,72 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
     # Start an instance of ImageRecognition class
     img_recognisor = ImageRecognition(text_color)
 
-    # While map is not complete, continue streaming data to PC
+    # While map is not complete
     while not explorer.is_map_complete():
 
-        # Try get feedback from arduino
-        feedback = arduino_conn.have_recv_queue.get()
+        # While round is not complete
+        while explorer.check_round_complete():
 
-        # If there is feedback, split it into array
-        # Since Arduino connection can only handle strings
-        if feedback:
-            explorer.obstacle = feedback.split()
+            # Get sensor data
+            send_param = '2'.encode()
+            arduino_conn.to_send_queue.put(send_param)
+            sensor_data = arduino_conn.have_recv_queue.get()
+            while not sensor_data:
+                sensor_data = arduino_conn.have_recv_queue.get()
 
-        # Otherwise, set it to None to prevent updating of explorer.real_map
-        else:
-            explorer.obstacle = None
+            # Split sensor_data into array
+            sensor_data = sensor_data.split()
 
-        # TODO: For right_wall_hugging algo
-        explorer.right_wall_hugging()
+            # TODO: For right_wall_hugging algo
+            explorer.right_wall_hugging(sensor_data)
 
-        # Send data to arduino everytime there is data in the queue
-        if not explorer.dir_queue.empty():
-            data = explorer.dir_queue.get()
-            arduino_conn.to_send_queue.put(data)
+            # Get next movement
+            movement = explorer.move_queue.get()
 
-        # Convert explored map into hex
-        hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+            # Encode before sending to arduino
+            movement = movement.encode()
+            arduino_conn.to_send_queue.put(movement)
 
-        # TODO: Bluetooth & Rasp Pi array here!
-        # Send hex explored map to tablet
-        bt_conn.to_send_queue.put([hex_exp_map])
+            # Get feedback from Arduino
+            feedback = arduino_conn.have_recv_queue.get()
+            while not feedback:
+                feedback = arduino_conn.have_recv_queue.get()
 
-        # Send stream to PC
-        server_stream.queue.put([recorder.io.read1(1)])
+            # Convert explored map into hex
+            hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+            hex_exp_map = hex_exp_map.encode()
 
-        # Convert real map into hex
+            # Send hex explored map to tablet
+            bt_conn.to_send_queue.put(hex_exp_map)
+
+            # Get camera input and encode it into hex
+            stream = recorder.io.read1(1)
+            stream_byte = stream.encode()
+
+            # Send stream to PC
+            server_stream.queue.put(stream_byte)
+
+        # If round is complete, shift starting position
+        explorer.update_start(3)
+
+        # Actually move to new start position
+        move_to_start(arduino_conn, explorer, explorer.start)
+
+        # Convert real map to hex
         hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
-        # Send hex real map to PC
-        server_send.queue.put([hex_real_map])
+        # Shift start by 3 positions diagonally
+        explorer.update_start(3)
+
+        # If start has obstacle, shift again
+        while not check_start(explorer, explorer.start):
+            explorer.update_start(1)
+
+        # Move to new start
+        move_to_start(arduino_conn, explorer, explorer.start)
+
+    # Move to initial start
+    move_to_start(arduino_conn, explorer, explorer.true_start)
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
@@ -407,6 +435,95 @@ def init_graph(map_size, start_pos, goal_pos):
             # Set start position to the coordinate in the North
             start_pos = node.next_coord[0]
             prev_node = node
+
+
+def check_start(explorer, start):
+    for i in range(len(start)):
+        for x, y in start[i]:
+            if explorer.real_map[y][x] == 1:
+                return False
+    return True
+
+
+def move_to_start(arduino_conn, explorer, start):
+
+    # Get difference between x and y coordinates of current position
+    # and start position
+    x_diff = abs(start[1] - explorer.current_pos[1])
+    y_diff = abs(start[0] - explorer.current_pos[0])
+
+    # Execute loop while difference is not zero
+    while x_diff != 0 or y_diff != 0:
+
+        # Get info about surrounding
+        send_param = '2'.encode()
+        arduino_conn.to_send_queue.put(send_param)
+        sensor_data = arduino_conn.have_recv_queue.get()
+        while not sensor_data:
+            sensor_data = arduino_conn.have_recv_queue.get()
+
+        # Split feedback into array
+        sensor_data = sensor_data.split()
+
+        # Seperate sensor_data string
+        front_left_obstacle = int(sensor_data[0])
+        front_mid_obstacle = int(sensor_data[1])
+        front_right_obstacle = int(sensor_data[2])
+        mid_left_obstacle = int(sensor_data[3])
+        mid_right_obstacle = int(sensor_data[4])
+
+        # If there is an obstacle in front
+        if front_right_obstacle or front_mid_obstacle or front_left_obstacle:
+
+            # If there is no obstacle on the left
+            if not mid_left_obstacle:
+
+                # Tell Arduino to turn left
+                movement = '4'.encode()
+
+                # Update direction
+                explorer.update_dir(True)
+
+            # If there is obstacle on both left and right
+            elif mid_right_obstacle:
+
+                # This shouldn't happen, but raise error if it does
+                raise Exception('GG: Dead End!')
+
+            # If there is obstacle in front and no obstacle on right
+            else:
+
+                # Turn right
+                movement = '5'.encode()
+
+                # Update direction
+                explorer.update_dir(False)
+
+        # If no obstacle in front
+        else:
+
+            # Advance
+            movement = '3'.encode()
+
+            # Update difference in y or x
+            if explorer.direction == Direction.N:
+                y_diff -= 1
+            elif explorer.direction == Direction.S:
+                y_diff += 1
+            elif explorer.direction == Direction.E:
+                x_diff -= 1
+            else:
+                x_diff += 1
+
+        # Tell arduino desired movement
+        arduino_conn.to_send_queue.put(movement)
+
+        # Get feedback
+        feedback = arduino_conn.have_recv_queue.get()
+
+        # Only move after feedback is received
+        while not feedback:
+            feedback = arduino_conn.have_recv_queue.get()
 
 
 if __name__ == "__main__":
