@@ -5,10 +5,10 @@ from RPi.arduino import Arduino
 from RPi.client import Client
 from Algo.explore import Explore
 from Algo.image_recognition import ImageRecognition
+from Algo.a_star import AStar
 # from Algo.shortest_path import ShortestPath
 from config.text_color import TextColor as text_color
 from config.direction import Direction
-from config.graph import Graph
 
 # Import libraries
 import numpy as np
@@ -57,6 +57,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             String containing format of log to be used
     :return:
     """
+    # Initialise variables here
+    explorer = None
     
     # Connect to Arduino
     arduino_conn = Arduino(arduino_name, text_color)
@@ -92,13 +94,17 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
             if mode == 'Explore':
-                explore(map_size, arduino_conn, bt_conn, server_stream, server_send)
+                explorer = explore(map_size, arduino_conn, bt_conn, server_stream)
 
             elif mode == 'Image Recognition':
                 print(mode)
 
             elif mode == 'Shortest Path':
-                print(mode)
+                algo = AStar(explorer.real_map, explorer.goal)
+                algo.find_path()
+                path = algo.path
+                for node in path:
+                    move_to_point(arduino_conn, explorer, node.ref_pt)
 
             elif mode == 'Manual':
                 print(mode)
@@ -351,7 +357,7 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
         explorer.update_start(3)
 
         # Actually move to new start position
-        move_to_start(arduino_conn, explorer, explorer.start)
+        move_to_point(arduino_conn, explorer, explorer.start)
 
         # Convert real map to hex
         hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
@@ -364,13 +370,15 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
             explorer.update_start(1)
 
         # Move to new start
-        move_to_start(arduino_conn, explorer, explorer.start)
+        move_to_point(arduino_conn, explorer, explorer.start)
 
     # Move to initial start
-    move_to_start(arduino_conn, explorer, explorer.true_start)
+    move_to_point(arduino_conn, explorer, explorer.true_start)
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
+
+    return explorer
 
 
 def check_start(explorer, start):
@@ -381,7 +389,7 @@ def check_start(explorer, start):
     return True
 
 
-def move_to_start(arduino_conn, explorer, start):
+def move_to_point(arduino_conn, explorer, start):
 
     # Get difference between x and y coordinates of current position
     # and start position

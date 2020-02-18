@@ -1,10 +1,8 @@
-class Graph:
+class AStar:
     class Node:
         def __init__(self, current_cost, pos, goal, prev_node=None):
             """
             Function to init a Node
-            :param node_dir: Direction
-                    Direction the node can be facing
             :param current_cost: int
                     Integer representing how much cost has been incurred up to current position
             :param pos: Array
@@ -43,7 +41,7 @@ class Graph:
 
         @staticmethod
         def search_near(cost, x, y, node):
-            near_node = Graph.Node(cost+1, (node.ref_pt[0] + x, node.ref_pt[1] + y), node)
+            near_node = AStar.Node(cost+1, (node.ref_pt[0] + x, node.ref_pt[1] + y), node)
             return near_node
 
     def __init__(self, real_map, goal):
@@ -55,20 +53,10 @@ class Graph:
         self.path = []
         self.visited = []
         self.to_visit = []
-        self.real_map = (real_map[0] - 1, real_map[1] -1)
+        self.real_map = (real_map[0] - 1, real_map[1] - 1)
         self.goal = goal
         self.goal_ref_pt = (goal[4][0], goal[4][1])
-        self.to_visit.append(Graph.Node(0, (0, 0), self.goal_ref_pt))
-        # cost = 0
-        #
-        # # For each row (y)
-        # for y in range(len(self.real_map) - 1):
-        #     # For each column (x)
-        #     for x in range(len(self.real_map[y]) - 1):
-        #         if self.real_map[x][y] != 1:
-        #             self.to_visit.append(Graph.Node(cost, (x, y), goal))
-        #         cost += 1
-        #     cost = y + 1
+        self.to_visit.append(AStar.Node(0, (0, 0), self.goal_ref_pt))
 
     def check_visited(self, node):
         if node in self.visited:
@@ -78,6 +66,11 @@ class Graph:
     def check_not_visited(self, node):
         if node in self.to_visit:
             return node
+        return True
+
+    def check_obstacle(self, node):
+        if self.real_map[node.ref_pt[0]][node.ref_pt[1]] == 1:
+            return True
         return False
 
     def check_nearby(self, node):
@@ -91,10 +84,12 @@ class Graph:
 
             if node_temp.ref_pt == self.goal_ref_pt:
                 return 1
+            elif self.check_obstacle(node_temp):
+                pass
             elif self.check_visited(node_temp):
                 pass
-            elif not self.check_not_visited(node_temp):
-                node_temp.father = node
+            elif self.check_not_visited(node_temp) is True:
+                node_temp.parent = node
                 self.to_visit.append(node_temp)
             else:
                 if node_temp.fx < self.check_not_visited(node_temp).fx:
@@ -102,54 +97,22 @@ class Graph:
                     node_temp.parent = node
                     self.to_visit.append(node_temp)
 
-    def find_path(self):
+        return 0
+
+    def visit_node(self):
+        min_fx = 999999999
+        temp = None
         for node in self.to_visit:
-            self.check_nearby(node)
+            if node.fx < min_fx:
+                min_fx = node.fx
+                temp = node
+        self.path.append(temp)
+        self.to_visit.remove(temp)
+        self.visited.append(temp)
+        return temp
 
-
-    @staticmethod
-    def convert_string_to_coord(string):
-        """
-        Function to convert dictionary key back into coordinate
-        :param string: String
-                String containing coordinates of reference point in String
-        :return: coord: Array
-                Array containing reference coordinate of node
-        """
-        # Initialise coordinate Array
-        coord = ['', '']
-
-        # Initialise required index for coordinate array
-        j = 0
-
-        # Add each element of string into coordinate Array as string
-        # If separator (,) is added, remove it and increment index j
-        for i in range(len(string)):
-            coord[j] += string[i]
-            if string[i] == ',':
-                coord[j] = coord[j][:-1]
-                j += 1
-
-        # Convert String to Integer
-        coord = (int(coord[0]), int(coord[1]))
-        return coord
-
-    @staticmethod
-    def convert_coord_to_string(coord):
-        """
-        Function to convert coordinated into dictionary key
-        :param coord: Array
-                Array containing reference coordinate of node
-        :return: string: String
-                String containing coordinates of reference point in String
-        """
-        # Initialise key
-        string = ''
-
-        # Add element into key as string
-        # If (15, 20) is passed, this function should return 15,20 as key
-        for i in range(len(coord)):
-            string += str(coord[i])
-            if i == 0:
-                string += ','
-        return string
+    def find_path(self):
+        found = 0
+        while not found:
+            current_node = self.visit_node()
+            found = self.check_nearby(current_node)
