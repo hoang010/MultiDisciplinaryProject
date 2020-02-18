@@ -4,9 +4,6 @@ import queue
 
 
 class Explore:
-    # TODO: Add a return to start function
-    # TODO: Check if there is enough space to accommodate for a front long range sensor
-    # TODO: If enough sensors to be able to put one on the left, use that sensor to explore the left side of robot
     def __init__(self, map_size, direction_class):
         """
         Function to initialise an instance of Explore
@@ -18,75 +15,130 @@ class Explore:
         """
         self.direction_class = direction_class
         self.direction = self.direction_class.N
-        self.dir_queue = queue.Queue()
+        self.move_queue = queue.Queue()
         self.map_size = map_size
         self.real_map = np.zeros(self.map_size)
         self.explored_map = self.real_map
-
-        # (x, y, z):
-        #   x = left front obstacle
-        #   y = right front obstacle
-        #   z = right side obstacle
-        self.obstacle = None
+        self.round = 0
         self.path = (0, 0)
 
-        # If map is (15, 20) then coordinates are as follows:
-        # (14, 18)[front left], (14, 19)[front right],
-        # (13, 18)[back left], (13, 19)[back right]
-        # This is done assuming the robot starts at the bottom right of the map wrt numpy array
-        self.start = [(len(self.real_map) - 1, len(self.real_map[0]) - 2),
-                      (len(self.real_map) - 1, len(self.real_map[0]) - 1),
-                      (len(self.real_map) - 2, len(self.real_map[0]) - 1),
-                      (len(self.real_map) - 2, len(self.real_map[0]) - 2)]
+        self.true_start = [(2, 2), (1, 2), (0, 2),
+                           (2, 1), (1, 1), (0, 1),
+                           (2, 0), (1, 0), (0, 0)]
 
-        self.goal = [(0, 0), (0, 1), (1, 0), (1, 1)]
+        self.start = self.true_start
+
+        # Follows format (y, x)
+        # If map is (15, 20) then coordinates are as follows:
+        # (17, 12)[front left], (17, 13)[front middle], (17, 14)[front right],
+        # (18, 12)[middle left], (18, 13)[middle middle], (18, 14)[middle right],
+        # (19, 12)[back left], (19, 13)[back middle], (19, 14)[back right]
+        # This is done assuming the goal is at the bottom right of the map wrt numpy array
+        self.goal = [(len(self.real_map) - 3, len(self.real_map[0]) - 3),
+                     (len(self.real_map) - 2, len(self.real_map) - 3),
+                     (len(self.real_map) - 1, len(self.real_map) - 3),
+
+                     (len(self.real_map) - 3, len(self.real_map) - 2),
+                     (len(self.real_map) - 2, len(self.real_map) - 2),
+                     (len(self.real_map) - 1, len(self.real_map) - 2),
+
+                     (len(self.real_map) - 3, len(self.real_map) - 1),
+                     (len(self.real_map) - 2, len(self.real_map) - 1),
+                     (len(self.real_map) - 1, len(self.real_map) - 1)]
+
         self.current_pos = self.start
 
-    def right_wall_hugging(self):
+    def right_wall_hugging(self, sensor_data):
         """
         Function to execute right wall hugging
+        :param sensor_data: Array
+                Array containing sensor data in boolean array
         :return:
         """
 
-        front_left_obstacle = self.obstacle[0]
-        front_right_obstacle = self.obstacle[1]
-        right_obstacle = self.obstacle[2]
+        # TODO: Check format of sensors
+        #       Currently expecting array of
+        #       [front_left_obs,
+        #       front_mid_obs,
+        #       front_right_obs,
+        #       middle_left obs,
+        #       middle_right_obs]
+        front_left_obstacle = int(sensor_data[0])
+        front_mid_obstacle = int(sensor_data[1])
+        front_right_obstacle = int(sensor_data[2])
+        mid_left_obstacle = int(sensor_data[3])
+        mid_right_obstacle = int(sensor_data[4])
         obstacle_coord = None
+        explored_coord = self.current_pos
 
         # If there is no obstacle on the right
-        if not right_obstacle:
+        if not mid_right_obstacle:
+
+            movement = '5'
 
             # Put the command 'right' into queue for main() to read
-            self.dir_queue.put('right')
+            self.move_queue.put(movement)
 
             # Update robot direction
             self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
-        elif front_left_obstacle or front_right_obstacle:
+        elif front_left_obstacle or front_mid_obstacle or front_right_obstacle:
 
-            # Get obstacle coordinate
-            # If left_obstacle, get obstacle coordinate wrt front left robot coordinate
-            # Else get obstacle coordinate wrt front right robot coordinate
-            obstacle_coord = self.get_obstacle_coord(0 if front_left_obstacle else 1)
+            movement = '4'
+
+            # Since there is an obstacle on the right, get the coordinates
+            right_coord = self.get_coord('right')
+
+            # Check if right side coordinates are within boundaries
+            if right_coord[0] >= 0 or right_coord[1] >= 0:
+                if right_coord[0] < self.real_map[0] or right_coord[1] < self.real_map[1]:
+                    # Add into array for obstacle coordinates
+                    obstacle_coord.append(right_coord)
+
+            # Get obstacle coordinates and add into array for obstacle coordinates
+            obstacle_coord.append(self.get_obstacle_coord(front_left_obstacle,
+                                                          front_mid_obstacle,
+                                                          front_right_obstacle))
 
             # Put the command 'left' into queue for main() to read
-            self.dir_queue.put('left')
+            self.move_queue.put(movement)
 
             # Update robot direction
             self.update_dir(left_turn=True)
 
-        # If no obstacle
+        # If obstacle on right and no obstacle in front
         else:
+            # Since there is an obstacle on the right, get the coordinates
+            right_coord = self.get_coord('right')
+
+            # Check if right side coordinates are within boundaries
+            if right_coord[0] >= 0 or right_coord[1] >= 0:
+                if right_coord[0] < self.real_map[0] or right_coord[1] < self.real_map[1]:
+                    # Add into array for obstacle coordinates
+                    obstacle_coord.append(right_coord)
+
+            movement = '3'
 
             # Put the command 'advance' into queue for main() to read
-            self.dir_queue.put('advance')
+            self.move_queue.put(movement)
 
-            # Update robot position
-            self.update_pos()
+        # Get left side coordinates
+        left_coord = self.get_coord('left')
+
+        # If it is an obstacle, append to array for obstacle
+        if mid_left_obstacle:
+            obstacle_coord.append(left_coord)
+
+        # Otherwise append to array for explore map
+        else:
+            explored_coord.append(left_coord)
 
         # Update map once done
-        self.update_map(self.current_pos, obstacle_coord)
+        self.update_map(explored_coord, obstacle_coord)
+
+        if not self.round and movement == '3':
+            self.round = 1
 
     def update_pos(self):
         """
@@ -97,25 +149,25 @@ class Explore:
         if self.direction == self.direction_class.N:
             # Return (x, y+1)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][1] += 1
+                self.current_pos[i][0] += 1
 
         # If current direction is South
         elif self.direction == self.direction_class.S:
             # Return (x, y-1)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][1] -= 1
+                self.current_pos[i][0] -= 1
 
         # If current direction is East
         elif self.direction == self.direction_class.E:
             # Return (x-1, y)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][0] -= 1
+                self.current_pos[i][1] -= 1
 
         # If current direction is West
         else:
             # Return (x+1, y)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][0] += 1
+                self.current_pos[i][1] += 1
 
     def update_map(self, coord_array, obstacle):
         """
@@ -128,14 +180,14 @@ class Explore:
         """
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
-        for x, y in coord_array:
-            self.explored_map[x][y] = 1
+        for y, x in coord_array:
+            self.explored_map[y][x] = 1
 
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         if obstacle:
-            for x, y in obstacle:
-                self.real_map[x][y] = 1
+            for y, x in obstacle:
+                self.real_map[y][x] = 1
 
     def update_dir(self, left_turn):
         """
@@ -193,37 +245,102 @@ class Explore:
         else:
             right()
 
-    def get_obstacle_coord(self, left_obstacle):
+    def get_obstacle_coord(self, front_left, front_mid, front_right):
         """
         Function to get obstacle coordinate
-        :param left_obstacle: Integer
-                0 if obstacle is on front left,
+        :param front_left: Boolean
+                0 if no obstacle is on front left,
+                1 if obstacle is on front left
+                should not take any other value
+        :param front_mid: Boolean
+                0 if no obstacle is on front mid,
+                1 if obstacle is on front mid
+                should not take any other value
+        :param front_right: Boolean
+                0 if no obstacle is on front right,
                 1 if obstacle is on front right
                 should not take any other value
         :return: obstacle: Array
                 obstacle coordinates
         """
-        # If current direction is North
-        if self.direction == self.direction_class.N:
-            # Return (x, y+1)
-            obstacle = (self.current_pos[left_obstacle][0], self.current_pos[left_obstacle][1] + 1)
 
-        # If current direction is South
-        elif self.direction == self.direction_class.S:
-            # Return (x, y-1)
-            obstacle = (self.current_pos[left_obstacle][0], self.current_pos[left_obstacle][1] - 1)
+        obs_bool = [front_left, front_mid, front_right]
+        obstacle = []
 
-        # If current direction is East
-        elif self.direction == self.direction_class.E:
-            # Return (x-1, y)
-            obstacle = (self.current_pos[left_obstacle][0] - 1, self.current_pos[left_obstacle][1])
+        for i in range(2, -1, -1):
+            if obs_bool[i]:
+                # If current direction is North
+                if self.direction == self.direction_class.N:
+                    # Return (y+1, x)
+                    obstacle.append((self.current_pos[i][1], self.current_pos[i][0] + 1))
 
-        # If current direction is West
-        else:
-            # Return (x+1, y)
-            obstacle = (self.current_pos[left_obstacle][0] + 1, self.current_pos[left_obstacle][1])
+                # If current direction is South
+                elif self.direction == self.direction_class.S:
+                    # Return (y-1, x)
+                    obstacle.append((self.current_pos[i][1], self.current_pos[i][0] - 1))
+
+                # If current direction is East
+                elif self.direction == self.direction_class.E:
+                    # Return (y, x-1)
+                    obstacle.append((self.current_pos[i][1] - 1, self.current_pos[i][0]))
+
+                # If current direction is West
+                else:
+                    # Return (y, x+1)
+                    obstacle.append((self.current_pos[i][1] + 1, self.current_pos[i][0]))
 
         return obstacle
+
+    def get_coord(self, direction):
+
+        def left():
+            if self.direction == self.direction_class.N:
+                # Return (x+1, y)
+                coord = (self.current_pos[4][0] + 1, self.current_pos[4][1])
+
+            # If current direction is South
+            elif self.direction == self.direction_class.S:
+                # Return (x-1, y)
+                coord = (self.current_pos[4][0] - 1, self.current_pos[4][1])
+
+            # If current direction is East
+            elif self.direction == self.direction_class.E:
+                # Return (x, y -1)
+                coord = (self.current_pos[4][0], self.current_pos[4][1] + 1)
+
+            # If current direction is West
+            else:
+                # Return (x, y + 1)
+                coord = (self.current_pos[4][0], self.current_pos[4][1] - 1)
+
+            return coord
+
+        def right():
+            if self.direction == self.direction_class.N:
+                # Return (x-1, y)
+                coord = (self.current_pos[6][0] - 1, self.current_pos[6][1])
+
+            # If current direction is South
+            elif self.direction == self.direction_class.S:
+                # Return (x+1, y)
+                coord = (self.current_pos[6][0] + 1, self.current_pos[6][1])
+
+            # If current direction is East
+            elif self.direction == self.direction_class.E:
+                # Return (x, y+1)
+                coord = (self.current_pos[6][0], self.current_pos[6][1] - 1)
+
+            # If current direction is West
+            else:
+                # Return (x, y + 1)
+                coord = (self.current_pos[6][0], self.current_pos[6][1] + 1)
+
+            return coord
+
+        if direction == 'left':
+            return left()
+        else:
+            return right()
 
     def is_map_complete(self):
         """
@@ -238,6 +355,22 @@ class Explore:
             self.save_map(self.real_map)
             return True
         return False
+
+    def check_round_complete(self):
+        count = 0
+        for i in range(len(self.current_pos)):
+            if self.current_pos[i] in self.start:
+                count += 1
+
+        if count == 9 and self.round == 1:
+            return True
+        return False
+
+    def update_start(self, amt):
+        for i in range(len(self.start)):
+            self.start[i][0] += amt
+            self.start[i][1] += amt
+        self.current_pos = self.start
 
     def reset(self):
         """
