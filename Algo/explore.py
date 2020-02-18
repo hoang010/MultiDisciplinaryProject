@@ -29,22 +29,23 @@ class Explore:
         self.start = self.true_start
 
         # Follows format (y, x)
-        # If map is (15, 20) then coordinates are as follows:
+        # If map is (15, 20), i.e. 15 rows x 20 columns then lim(y) = 15, lim(x) = 20,
+        # then coordinates are as follows:
         # (17, 12)[front left], (17, 13)[front middle], (17, 14)[front right],
         # (18, 12)[middle left], (18, 13)[middle middle], (18, 14)[middle right],
         # (19, 12)[back left], (19, 13)[back middle], (19, 14)[back right]
         # This is done assuming the goal is at the bottom right of the map wrt numpy array
-        self.goal = [(len(self.real_map) - 3, len(self.real_map[0]) - 3),
-                     (len(self.real_map) - 2, len(self.real_map) - 3),
-                     (len(self.real_map) - 1, len(self.real_map) - 3),
+        self.goal = [(len(self.real_map[0]) - 3, len(self.real_map) - 3),
+                     (len(self.real_map[0]) - 2, len(self.real_map) - 3),
+                     (len(self.real_map[0]) - 1, len(self.real_map) - 3),
 
-                     (len(self.real_map) - 3, len(self.real_map) - 2),
-                     (len(self.real_map) - 2, len(self.real_map) - 2),
-                     (len(self.real_map) - 1, len(self.real_map) - 2),
+                     (len(self.real_map[0]) - 3, len(self.real_map) - 2),
+                     (len(self.real_map[0]) - 2, len(self.real_map) - 2),
+                     (len(self.real_map[0]) - 1, len(self.real_map) - 2),
 
-                     (len(self.real_map) - 3, len(self.real_map) - 1),
-                     (len(self.real_map) - 2, len(self.real_map) - 1),
-                     (len(self.real_map) - 1, len(self.real_map) - 1)]
+                     (len(self.real_map[0]) - 3, len(self.real_map) - 1),
+                     (len(self.real_map[0]) - 2, len(self.real_map) - 1),
+                     (len(self.real_map[0]) - 1, len(self.real_map) - 1)]
 
         self.current_pos = self.start
 
@@ -123,6 +124,8 @@ class Explore:
             # Put the command 'advance' into queue for main() to read
             self.move_queue.put(movement)
 
+            self.update_pos()
+
         # Get left side coordinates
         left_coord = self.get_coord('left')
 
@@ -149,25 +152,25 @@ class Explore:
         if self.direction == self.direction_class.N:
             # Return (x, y+1)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][0] += 1
+                self.current_pos[i][1] += 1
 
         # If current direction is South
         elif self.direction == self.direction_class.S:
             # Return (x, y-1)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][0] -= 1
+                self.current_pos[i][1] -= 1
 
         # If current direction is East
         elif self.direction == self.direction_class.E:
             # Return (x-1, y)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][1] -= 1
+                self.current_pos[i][0] -= 1
 
         # If current direction is West
         else:
             # Return (x+1, y)
             for i in range(len(self.current_pos)):
-                self.current_pos[i][1] += 1
+                self.current_pos[i][0] += 1
 
     def update_map(self, coord_array, obstacle):
         """
@@ -180,14 +183,14 @@ class Explore:
         """
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
-        for y, x in coord_array:
-            self.explored_map[y][x] = 1
+        for x, y in coord_array:
+            self.explored_map[x][y] = 1
 
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         if obstacle:
-            for y, x in obstacle:
-                self.real_map[y][x] = 1
+            for x, y in obstacle:
+                self.real_map[x][y] = 1
 
     def update_dir(self, left_turn):
         """
@@ -271,23 +274,23 @@ class Explore:
             if obs_bool[i]:
                 # If current direction is North
                 if self.direction == self.direction_class.N:
-                    # Return (y+1, x)
-                    obstacle.append((self.current_pos[i][1], self.current_pos[i][0] + 1))
+                    # Return (x, y+1)
+                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] + 1))
 
                 # If current direction is South
                 elif self.direction == self.direction_class.S:
-                    # Return (y-1, x)
-                    obstacle.append((self.current_pos[i][1], self.current_pos[i][0] - 1))
+                    # Return (x, y-1)
+                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] - 1))
 
                 # If current direction is East
                 elif self.direction == self.direction_class.E:
-                    # Return (y, x-1)
-                    obstacle.append((self.current_pos[i][1] - 1, self.current_pos[i][0]))
+                    # Return (x-1, y)
+                    obstacle.append((self.current_pos[i][0] - 1, self.current_pos[i][1]))
 
                 # If current direction is West
                 else:
-                    # Return (y, x+1)
-                    obstacle.append((self.current_pos[i][1] + 1, self.current_pos[i][0]))
+                    # Return (x+1, y)
+                    obstacle.append((self.current_pos[i][0] + 1, self.current_pos[i][1]))
 
         return obstacle
 
@@ -357,12 +360,7 @@ class Explore:
         return False
 
     def check_round_complete(self):
-        count = 0
-        for i in range(len(self.current_pos)):
-            if self.current_pos[i] in self.start:
-                count += 1
-
-        if count == 9 and self.round == 1:
+        if self.current_pos[4] == self.start[4] and self.round == 1:
             return True
         return False
 

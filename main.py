@@ -9,7 +9,6 @@ from Algo.image_recognition import ImageRecognition
 from config.text_color import TextColor as text_color
 from config.direction import Direction
 from config.graph import Graph
-from config.node import Node
 
 # Import libraries
 import numpy as np
@@ -239,30 +238,43 @@ def robo_init(arduino_conn, bt_conn):
     # Get feedback from Arduino
     feedback = arduino_conn.have_recv_queue.get()
 
+    while not feedback:
+        feedback = arduino_conn.have_recv_queue.get()
+
+    feedback = feedback.decode().split()
+
     # While there is no obstacle on the right
-    while not feedback[2]:
+    while not feedback[-1]:
 
         # If there is no obstacle on the right, tell Arduino to turn right
-        arduino_conn.to_send_queue.put('right')
-
-        # Sleep for 2s while Arduino turns
-        time.sleep(2)
+        arduino_conn.to_send_queue.put('5'.encode())
 
         # Refresh variables in freedback
         feedback = arduino_conn.have_recv_queue.get()
 
+        while not feedback:
+            feedback = arduino_conn.have_recv_queue.get()
+
+        feedback = feedback.decode().split()
+
     # If robot is facing corner, turn left
-    if feedback[0] and feedback[1]:
-        arduino_conn.to_send_queue.put('left')
+    if (feedback[0] or feedback[1] or feedback[2]) and feedback[1]:
+        arduino_conn.to_send_queue.put('4'.encode())
 
     # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
     #       [rows, col]
     # Get map size from tablet, i.e. (15, 20) or (20, 15)
     map_size = bt_conn.have_recv_queue.get()
+
+    while not map_size:
+        map_size = bt_conn.have_recv_queue.get()
+
+    map_size = map_size.decode()
+
     return map_size
 
 
-def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
+def explore(map_size, arduino_conn, bt_conn, server_stream):
     """
     Function to run explore algorithm
     :param map_size: Array
@@ -273,8 +285,6 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
             Bluetooth Socket containing connection to tablet
     :param server_stream: Socket
             Socket containing connection to PC on port 9999
-    :param server_send: Socket
-            Socker containing connection to PC on port 8888
     :return:
     """
 
@@ -363,80 +373,6 @@ def explore(map_size, arduino_conn, bt_conn, server_stream, server_send):
     explorer.save_map(hex_real_map)
 
 
-# TODO: Verify this function
-def init_graph(map_size, start_pos, goal_pos):
-    """
-    Function to initialise Graph
-    :param map_size: Array
-            Array containing size of map
-    :param start_pos: Array
-            Array containing start position of robot
-    :param goal_pos: Array
-            Array containing goal position of robot
-    :return:
-    """
-
-    # Initialise variables here
-    cost = 0
-    mdp_graph = Graph(np.zeros(map_size))
-    prev_node = None
-
-    # While graph is not complete
-    while not mdp_graph.complete():
-
-        # Create a node with start position
-        node = Node(prev_node, [Direction.N, Direction.E], cost, start_pos, goal_pos)
-
-        # If node reference point is beyond map
-        if node.ref_pt[0] < 0 or node.ref_pt[1] < 0:
-
-            # If there is no previous node, return -1
-            # Might change to exception
-            if not node.prev_node:
-                return -1
-
-            # Retrieve previous node
-            prev_node = node.prev_node
-
-            # If both x and y coordinate exceeds map,
-            # then after reaching this map robot should not be able to move elsewhere
-            if node.ref_pt[0] < 0 and node.ref_pt[1] < 0:
-                prev_node.dir = []
-
-            # Else if x coordinate exceeds map, then restrict current node to be able to move only Northwards
-            elif node.ref_pt[0] < 0:
-                prev_node.dir = [Direction.N]
-
-            # Else if y coordinate exceeds map, then restrict current node to be able to move only Eastwards
-            elif node.ref_pt[1] < 0:
-                prev_node.dir = [Direction.E]
-
-            # Move start position to previous node and restart loop
-            start_pos = prev_node.next_coord[1]
-
-        # Otherwise, if current node is the East coordinate of previous node
-        # the update graph with the node
-        elif node.ref_pt == prev_node.next_coord[1]:
-            mdp_graph.update(node)
-
-            # Set start_pos to East coordinate of 2 nodes before
-            start_pos = prev_node.prev_node.next_coord[1]
-
-            # Reduce cost by 1 (travel backwards by 2, advance 1)
-            cost -= 1
-
-        # Else, if node is within map, then update graph with node
-        else:
-            mdp_graph.update(node)
-
-            # Increment cost for next node
-            cost += 1
-
-            # Set start position to the coordinate in the North
-            start_pos = node.next_coord[0]
-            prev_node = node
-
-
 def check_start(explorer, start):
     for i in range(len(start)):
         for x, y in start[i]:
@@ -462,7 +398,7 @@ def move_to_start(arduino_conn, explorer, start):
         while not sensor_data:
             sensor_data = arduino_conn.have_recv_queue.get()
 
-        # Split feedback into array
+        # Split sensor_data into array
         sensor_data = sensor_data.split()
 
         # Seperate sensor_data string

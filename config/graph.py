@@ -1,59 +1,111 @@
 class Graph:
-    def __init__(self, real_map):
+    class Node:
+        def __init__(self, current_cost, pos, goal, prev_node=None):
+            """
+            Function to init a Node
+            :param node_dir: Direction
+                    Direction the node can be facing
+            :param current_cost: int
+                    Integer representing how much cost has been incurred up to current position
+            :param pos: Array
+                    Array containing coordinates of current position
+            :param goal: Array
+                    Array containing coordinates of goal position
+            :param prev_node: Node
+                    Parent Node
+            """
+            self.parent = prev_node
+            self.ref_pt = (pos[0], pos[1])
+            self.pos = pos
+            self.goal = goal
+            self.next_coord = []
+            self.hx = self.heuristic_fn()
+            self.gx = current_cost
+            self.fx = self.gx + self.hx
+
+        def heuristic_fn(self):
+            """
+            Function to calculate heuristic function of Node
+            Currently, heuristic function of Node is taken to be the shortest DIRECT path to goal
+            instead of accounting for obstacles
+
+            :return: Manhattan distance
+            """
+            # Get x and y values of top right corner of goal
+            goal_x = self.goal[4][0]
+            goal_y = self.goal[4][1]
+
+            # Get x and y values of top right of current position
+            start_x = self.ref_pt[0]
+            start_y = self.ref_pt[1]
+
+            return start_x - goal_x, start_y - goal_y
+
+        @staticmethod
+        def search_near(cost, x, y, node):
+            near_node = Graph.Node(cost+1, (node.ref_pt[0] + x, node.ref_pt[1] + y), node)
+            return near_node
+
+    def __init__(self, real_map, goal):
         """
         Function to init a Graph
         :param real_map: Array
                 Array containing numpy representation of real map
         """
-        self.real_map = real_map
-        self.graph = {}
+        self.path = []
+        self.visited = []
+        self.to_visit = []
+        self.real_map = (real_map[0] - 1, real_map[1] -1)
+        self.goal = goal
+        self.goal_ref_pt = (goal[4][0], goal[4][1])
+        self.to_visit.append(Graph.Node(0, (0, 0), self.goal_ref_pt))
+        # cost = 0
+        #
+        # # For each row (y)
+        # for y in range(len(self.real_map) - 1):
+        #     # For each column (x)
+        #     for x in range(len(self.real_map[y]) - 1):
+        #         if self.real_map[x][y] != 1:
+        #             self.to_visit.append(Graph.Node(cost, (x, y), goal))
+        #         cost += 1
+        #     cost = y + 1
 
-    def complete(self):
-        """
-        Function to check if graph has (300 - length of real_map) unique nodes
-        :return: boolean
-                True if complete, False otherwise
-        """
-        unique_ref_pt = []
-        for key, value in self.graph.items():
-            unique_ref_pt.append(key)
-            for item in value:
-                unique_ref_pt.append(item)
+    def check_visited(self, node):
+        if node in self.visited:
+            return True
+        return False
 
-        num_of_nodes = len(set(unique_ref_pt))
+    def check_not_visited(self, node):
+        if node in self.to_visit:
+            return node
+        return False
 
-        # There is one whole column in which the reference point will not reach,
-        # hence remove one whole columns' worth
-        if num_of_nodes != (300 - len(self.real_map)):
-            return False
-        return True
+    def check_nearby(self, node):
+        ud = [1, -1, 0, 0, 1, 1, -1, -1]
+        rl = [0, 0, 1, -1, 1, -1, 1, -1]
 
-    def update(self, node):
-        """
-        Function to update graph given a node
-        :param node: Node
-                Node containing properties of a certain location in real map
-        :return: Int
-                1 if added, -1 otherwise
-        """
-        # For every (x, y) in node, check if it is an obstacle or if it exceeds map dimensions
-        # If it is, return -1 to tell main to display message accordingly
-        for x, y in node:
-            if x < 0 or y < 0 or self.real_map[x][y] == 1:
-                return -1
+        coord = list(zip(ud, rl))
 
-        # If node does not overlap with an obstacle, convert reference point into key
-        graph_key = self.convert_coord_to_string(node.prev_node.ref_pt)
+        for x, y in coord:
+            node_temp = node.search_near(node.gx, x, y, node)
 
-        # Append node using reference point as key
-        if graph_key not in self.graph.keys():
-            self.graph[graph_key] = [node]
+            if node_temp.ref_pt == self.goal_ref_pt:
+                return 1
+            elif self.check_visited(node_temp):
+                pass
+            elif not self.check_not_visited(node_temp):
+                node_temp.father = node
+                self.to_visit.append(node_temp)
+            else:
+                if node_temp.fx < self.check_not_visited(node_temp).fx:
+                    self.to_visit.remove(self.check_not_visited(node_temp))
+                    node_temp.parent = node
+                    self.to_visit.append(node_temp)
 
-        else:
-            self.graph[graph_key].append(node)
+    def find_path(self):
+        for node in self.to_visit:
+            self.check_nearby(node)
 
-        # Return 1 to tell main to display message accordingly
-        return 1
 
     @staticmethod
     def convert_string_to_coord(string):

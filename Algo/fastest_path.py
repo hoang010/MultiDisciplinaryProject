@@ -35,7 +35,7 @@ class Map2d:
         self.data[point.x][point.y] = 6
 
 
-#A* algorithm
+# A* algorithm
 class AStar:
     # set all nodes
     class Node:
@@ -53,10 +53,10 @@ class AStar:
             near_node = AStar.Node(near_point, self.endpoint, self.g + 1)
             return near_node
 
-    def __init__(self, start_point, end_point,map): # pass to class
+    def __init__(self, start_point, end_point, map):  # pass to class
         self.path = []
         self.close_list = []  # store visited node
-        self.open_list = []  # store to-visited node
+        self.open_list = []  # store to-visit node
         self.current = 0  # current node
         self.start_point = start_point
         self.end_point = end_point
@@ -92,149 +92,27 @@ class AStar:
         return 0
 
     def near_explore(self, node):
-        ud = 1
-        rl = 0
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
+        ud = [1, -1, 0, 0, 1, 1, -1, -1]
+        rl = [0, 0, 1, -1, 1, -1, 1, -1]
 
-        ud = -1
-        rl = 0
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
+        coord = list(zip(ud, rl))
 
-        ud = 0
-        rl = 1
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
+        for item in coord:
+            node_temp = node.search_near(item[0], item[1])
+            if node_temp.point == end_point:
+                return 1
+            elif self.is_in_close_list(node_temp):
+                pass
+            elif self.is_obstacle(node_temp):
+                pass
+            elif self.is_in_open_list(node_temp) == 0:
                 node_temp.father = node
                 self.open_list.append(node_temp)
-
-        ud = 0
-        rl = -1
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
-
-        ud = 1
-        rl = 1
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
-
-        ud = 1
-        rl = -1
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
-
-        ud = -1
-        rl = 1
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
-
-        ud = -1
-        rl = -1
-        node_temp = node.search_near(ud,rl)
-        if node_temp.point == end_point:
-            return 1
-        elif self.is_in_close_list(node_temp):
-            pass
-        elif self.is_obstacle(node_temp):
-            pass
-        elif self.is_in_open_list(node_temp) == 0:
-            node_temp.father = node
-            self.open_list.append(node_temp)
-        else:
-            if node_temp.f < (self.is_in_open_list(node_temp)).f:
-                self.open_list.remove(self.is_in_open_list(node_temp))
-                node_temp.father = node
-                self.open_list.append(node_temp)
+            else:
+                if node_temp.f < (self.is_in_open_list(node_temp)).f:
+                    self.open_list.remove(self.is_in_open_list(node_temp))
+                    node_temp.father = node
+                    self.open_list.append(node_temp)
 
         return 0
 
