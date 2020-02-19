@@ -94,7 +94,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
             if mode == 'Explore':
-                explorer = explore(map_size, arduino_conn, bt_conn, server_stream)
+                explorer = explore(log_string, map_size, arduino_conn, bt_conn, server_stream)
 
             elif mode == 'Image Recognition':
                 print(mode)
@@ -280,9 +280,11 @@ def robo_init(arduino_conn, bt_conn):
     return map_size
 
 
-def explore(map_size, arduino_conn, bt_conn, server_stream):
+def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
     """
     Function to run explore algorithm
+    :param log_string: String
+            Format of log
     :param map_size: Array
             Array containing map size to be used for explore algorithm (15, 20) or (20, 15)
     :param arduino_conn: Serial
@@ -308,11 +310,17 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
     # Start an instance of ImageRecognition class
     img_recognisor = ImageRecognition(text_color)
 
+    print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
+
     # While map is not complete
     while not explorer.is_map_complete():
 
         # While round is not complete
         while explorer.check_round_complete():
+
+            print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
+
+            print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
             # Get sensor data
             send_param = '2'.encode()
@@ -320,6 +328,8 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
             sensor_data = arduino_conn.have_recv_queue.get()
             while not sensor_data:
                 sensor_data = arduino_conn.have_recv_queue.get()
+
+            print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
             # Split sensor_data into array
             sensor_data = sensor_data.split()
@@ -330,6 +340,17 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
             # Get next movement
             movement = explorer.move_queue.get()
 
+            if movement == '5':
+                log_movement = 'right'
+
+            elif movement == '4':
+                log_movement = 'left'
+
+            else:
+                log_movement = 'forward'
+
+            print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
+
             # Encode before sending to arduino
             movement = movement.encode()
             arduino_conn.to_send_queue.put(movement)
@@ -339,12 +360,19 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
             while not feedback:
                 feedback = arduino_conn.have_recv_queue.get()
 
+            print(log_string + text_color.OKGREEN + 'Arduino ack received' + text_color.ENDC)
+
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+
+            print(log_string + text_color.BOLD + 'Explore hex map: {}'.format(hex_exp_map) + text_color.ENDC)
+
             hex_exp_map = hex_exp_map.encode()
 
             # Send hex explored map to tablet
             bt_conn.to_send_queue.put(hex_exp_map)
+
+            print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
 
             # Get camera input and encode it into hex
             stream = recorder.io.read1(1)
@@ -353,27 +381,35 @@ def explore(map_size, arduino_conn, bt_conn, server_stream):
             # Send stream to PC
             server_stream.queue.put(stream_byte)
 
+            print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
+
+        print(log_string + text_color.OKGREEN + 'Round completed' + text_color.ENDC)
+
         # If round is complete, shift starting position
         explorer.update_start(3)
 
-        # Actually move to new start position
-        move_to_point(arduino_conn, explorer, explorer.start)
+        print(log_string + text_color.BOLD + 'Updated start by 3' + text_color.ENDC)
 
-        # Convert real map to hex
-        hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+        # Actually move to new start position
+        move_to_point(log_string, arduino_conn, explorer, explorer.start)
 
         # Shift start by 3 positions diagonally
         explorer.update_start(3)
 
         # If start has obstacle, shift again
         while not check_start(explorer, explorer.start):
+            print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
             explorer.update_start(1)
+            print(log_string + text_color.BOLD + 'Updated start by 1' + text_color.ENDC)
 
         # Move to new start
-        move_to_point(arduino_conn, explorer, explorer.start)
+        move_to_point(log_string, arduino_conn, explorer, explorer.start)
+
+    # Convert real map to hex
+    hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
     # Move to initial start
-    move_to_point(arduino_conn, explorer, explorer.true_start)
+    move_to_point(log_string, arduino_conn, explorer, explorer.true_start)
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
@@ -389,15 +425,19 @@ def check_start(explorer, start):
     return True
 
 
-def move_to_point(arduino_conn, explorer, start):
+def move_to_point(log_string, arduino_conn, explorer, start):
 
     # Get difference between x and y coordinates of current position
     # and start position
-    x_diff = abs(start[1] - explorer.current_pos[1])
-    y_diff = abs(start[0] - explorer.current_pos[0])
+    x_diff = abs(start[4][0] - explorer.current_pos[4][0])
+    y_diff = abs(start[4][1] - explorer.current_pos[4][1])
+
+    print(log_string + text_color.WARNING + 'Move to point {}'.start[4] + text_color.ENDC)
 
     # Execute loop while difference is not zero
     while x_diff != 0 or y_diff != 0:
+
+        print(log_string + text_color.BOLD + 'Get sensor data' + text_color.ENDC)
 
         # Get info about surrounding
         send_param = '2'.encode()
@@ -405,6 +445,8 @@ def move_to_point(arduino_conn, explorer, start):
         sensor_data = arduino_conn.have_recv_queue.get()
         while not sensor_data:
             sensor_data = arduino_conn.have_recv_queue.get()
+
+        print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
         # Split sensor_data into array
         sensor_data = sensor_data.split()
@@ -422,6 +464,8 @@ def move_to_point(arduino_conn, explorer, start):
             # If there is no obstacle on the left
             if not mid_left_obstacle:
 
+                print(log_string + text_color.BOLD + 'Turning left' + text_color.ENDC)
+
                 # Tell Arduino to turn left
                 movement = '4'.encode()
 
@@ -437,6 +481,7 @@ def move_to_point(arduino_conn, explorer, start):
             # If there is obstacle in front and no obstacle on right
             else:
 
+                print(log_string + text_color.BOLD + 'Turning right' + text_color.ENDC)
                 # Turn right
                 movement = '5'.encode()
 
@@ -446,6 +491,7 @@ def move_to_point(arduino_conn, explorer, start):
         # If no obstacle in front
         else:
 
+            print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
             # Advance
             movement = '3'.encode()
 
@@ -465,7 +511,7 @@ def move_to_point(arduino_conn, explorer, start):
         # Get feedback
         feedback = arduino_conn.have_recv_queue.get()
 
-        # Only move after feedback is received
+        # Only continue after feedback is received
         while not feedback:
             feedback = arduino_conn.have_recv_queue.get()
 
