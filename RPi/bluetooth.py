@@ -61,7 +61,7 @@ class Bluetooth:
 
             # Display feedback to let user know that a connection has been established
             print(self.log_string + self.text_color.OKGREEN +
-                  'Connected to ' + client_info
+                  'Connected to {}'.format(client_info)
                   + self.text_color.ENDC)
 
             # Once connected, start a thread for sending data to PC
@@ -91,6 +91,7 @@ class Bluetooth:
 
             # Read data from connected socket
             data = client_sock.recv(self.size)
+
             print(self.log_string + self.text_color.BOLD +
                   'Received "{}" from {}'.format(data, client_info)
                   + self.text_color.ENDC)

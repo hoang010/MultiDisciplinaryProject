@@ -86,10 +86,10 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
         elif choice == 4:
             arduino_conn_test.to_send_queue.put(message.encode())
-            recv_string = arduino_conn_test.have_recv_queue.get()
 
-            while not recv_string:
-                recv_string = arduino_conn_test.have_recv_queue.get()
+            print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
+
+            recv_string = arduino_conn_test.have_recv_queue.get()
 
             recv_string = recv_string.decode()
 
@@ -98,10 +98,10 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         elif choice == 5:
             # TODO: RPi message to Tablet here!
             bt_conn_test.to_send_queue.put(message.encode())
-            recv_string = bt_conn_test.have_recv_queue.get()
 
-            while not recv_string:
-                recv_string = bt_conn_test.have_recv_queue.get()
+            print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
+
+            recv_string = bt_conn_test.have_recv_queue.get()
 
             recv_string = recv_string.decode()
 
@@ -110,10 +110,10 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
         elif choice == 6:
             # TODO: RPi message to PC here!
             server_send_test.queue.put(message.encode())
-            recv_string = server_recv_test.queue.get()
 
-            while not recv_string:
-                recv_string = server_recv_test.queue.get()
+            print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
+
+            recv_string = server_recv_test.queue.get()
 
             recv_string = recv_string.decode()
 
@@ -193,9 +193,6 @@ def pc(rpi_ip, log_string):
         # TODO: Array here!
         msg = pc_recv_test.queue.get()
 
-        while not msg:
-            msg = pc_recv_test.queue.get()
-
         msg = msg.decode()
 
         print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
@@ -205,9 +202,6 @@ def pc(rpi_ip, log_string):
 
                 # Receive stream from socket
                 stream = pc_stream_test.queue.get()
-
-                while not stream:
-                    stream = pc_stream_test.queue.get()
 
                 stream = stream.decode()
 
@@ -235,7 +229,7 @@ def pc(rpi_ip, log_string):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')

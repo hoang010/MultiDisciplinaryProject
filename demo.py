@@ -84,9 +84,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             # Receive info from tablet
             info = bt_conn_demo.have_recv_queue.get()
 
-            while not info:
-                info = bt_conn_demo.have_recv_queue.get()
-
             # Send info to Arduino
             arduino_conn_demo.to_send_queue.put(info.encode())
 
@@ -95,9 +92,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             # Receive updated info from Arduino
             new_info = arduino_conn_demo.have_recv_queue.get()
-
-            while not new_info:
-                new_info = bt_conn_demo.have_recv_queue.get()
 
             # Send to PC
             server_send_demo.queue.put(new_info.encode())
@@ -244,9 +238,6 @@ def pc(rpi_ip, log_string):
         # TODO: Array here!
         msg = pc_recv_test.queue.get()
 
-        while not msg:
-            msg = pc_recv_test.queue.get()
-
         msg = msg.decode()
 
         print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
@@ -256,9 +247,6 @@ def pc(rpi_ip, log_string):
 
                 # Receive stream from socket
                 stream = pc_stream_test.queue.get()
-
-                while not stream:
-                    stream = pc_stream_test.queue.get()
 
                 stream = stream.decode()
 
@@ -285,9 +273,6 @@ def pc(rpi_ip, log_string):
 
 def get_sensor_data(arduino_conn_demo):
     data = arduino_conn_demo.have_recv_queue.get()
-
-    while not data:
-        data = arduino_conn_demo.have_recv_queue.get()
 
     data = data.decode()
 

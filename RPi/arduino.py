@@ -32,7 +32,7 @@ class Arduino:
                   + self.text_color.ENDC)
 
             # Try to connect to the Arduino device
-            self.arduino_serial = serial.Serial(self.arduino_name, timeout)
+            self.arduino_serial = serial.Serial(self.arduino_name, 115200, timeout)
 
             # Display feedback
             print(self.log_string + self.text_color.BOLD +

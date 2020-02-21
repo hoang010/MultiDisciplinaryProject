@@ -180,10 +180,6 @@ def pc(rpi_ip, log_string):
                     # Receive stream from socket
                     stream = pc_stream.queue.get()
 
-                    # If end of stream (indicated with return value 0), break
-                    while not stream:
-                        stream = pc_stream.queue.get()
-
                     stream = stream.decode()
 
                     # Display stream in a window
@@ -194,9 +190,6 @@ def pc(rpi_ip, log_string):
 
                 # TODO: Rasp Pi array here!
                 real_map_hex = pc_recv.queue.get()
-
-                while not real_map_hex:
-                    real_map_hex = pc_recv.queue.get()
 
                 real_map_hex = real_map_hex.decode()
 
@@ -244,9 +237,6 @@ def robo_init(arduino_conn, bt_conn):
     # Get feedback from Arduino
     feedback = arduino_conn.have_recv_queue.get()
 
-    while not feedback:
-        feedback = arduino_conn.have_recv_queue.get()
-
     feedback = feedback.decode().split()
 
     # While there is no obstacle on the right
@@ -258,9 +248,6 @@ def robo_init(arduino_conn, bt_conn):
         # Refresh variables in freedback
         feedback = arduino_conn.have_recv_queue.get()
 
-        while not feedback:
-            feedback = arduino_conn.have_recv_queue.get()
-
         feedback = feedback.decode().split()
 
     # If robot is facing corner, turn left
@@ -271,9 +258,6 @@ def robo_init(arduino_conn, bt_conn):
     #       [rows, col]
     # Get map size from tablet, i.e. (15, 20) or (20, 15)
     map_size = bt_conn.have_recv_queue.get()
-
-    while not map_size:
-        map_size = bt_conn.have_recv_queue.get()
 
     map_size = map_size.decode()
 
@@ -326,8 +310,6 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
             send_param = '2'.encode()
             arduino_conn.to_send_queue.put(send_param)
             sensor_data = arduino_conn.have_recv_queue.get()
-            while not sensor_data:
-                sensor_data = arduino_conn.have_recv_queue.get()
 
             print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
@@ -354,8 +336,6 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
 
             # Get feedback from Arduino
             feedback = arduino_conn.have_recv_queue.get()
-            while not feedback:
-                feedback = arduino_conn.have_recv_queue.get()
 
             print(log_string + text_color.OKGREEN + 'Arduino ack received' + text_color.ENDC)
 
@@ -440,13 +420,8 @@ def move_to_point(log_string, arduino_conn, explorer, start):
         send_param = '2'.encode()
         arduino_conn.to_send_queue.put(send_param)
         sensor_data = arduino_conn.have_recv_queue.get()
-        while not sensor_data:
-            sensor_data = arduino_conn.have_recv_queue.get()
 
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
-
-        # Split sensor_data into array
-        sensor_data = sensor_data.split()
 
         # Seperate sensor_data string
         front_left_obstacle = int(sensor_data[0])
@@ -507,10 +482,6 @@ def move_to_point(log_string, arduino_conn, explorer, start):
 
         # Get feedback
         feedback = arduino_conn.have_recv_queue.get()
-
-        # Only continue after feedback is received
-        while not feedback:
-            feedback = arduino_conn.have_recv_queue.get()
 
 
 if __name__ == "__main__":

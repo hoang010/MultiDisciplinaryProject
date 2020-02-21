@@ -28,11 +28,11 @@ class Client:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
-        self.lock = threading.Lock()
         self.queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
+        self.sock.setblocking(True)
 
     def connect(self):
         """
@@ -46,14 +46,14 @@ class Client:
                   'Connecting to {}:{}'.format(self.rpi_ip, self.port)
                   + self.text_color.ENDC)
 
-            self.sock.connect((self.rpi_ip, self.port))
+            self.sock.connect(self.rpi_ip)
+
+            # Once connected, start a thread for sending data to Raspberry Pi
+            threading.Thread(target=self.channel, args=(self.sock, self.rpi_ip)).start()
 
             print(self.log_string + self.text_color.OKGREEN +
                   'Connected to {}:{}'.format(self.rpi_ip, self.port)
                   + self.text_color.ENDC)
-
-            # Once connected, start a thread for sending data to Raspberry Pi
-            threading.Thread(target=self.channel, args=(self.sock, self.rpi_ip)).start()
 
         except:
             raise Exception(self.log_string + "Connection to {}:{} failed".format(self.rpi_ip, self.port))
@@ -67,6 +67,7 @@ class Client:
                 Contains IP address of connected device
         :return:
         """
+
         if self.conn_type == 'recv':
 
             while True:
