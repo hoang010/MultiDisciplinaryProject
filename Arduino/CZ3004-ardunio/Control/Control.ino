@@ -39,19 +39,21 @@ void setup() {
   md.init();                                                                            //Initialisation of motor shield
   bot = new Motion(targetRPM, initialSetSpeed1, E1B, initialSetSpeed2, E2A, md);        //Construction of Motion object
   //calibrateBot = new Calibration(calibrationSetSpeed1, calibrationSetSpeed2, md);       //Construction of Calibration object
-  Serial.println("Hi. I am Ardunio!");
+  //Serial.println("Hi. I am Ardunio!");
 }
 
 
 void loop() {
   
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-
-  if (Serial.available() > 0)                   //RPi to Arduino
+  delay(2000);
+ controlBot(4, secondVal);
+  if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
     controlBot(instructions, secondVal);
   }
+  delay(2000);
 }
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
@@ -87,7 +89,7 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTDONE");
       break;
     case 4:  // Turn Left
-      bot->turnLeft(90);
+      bot->turnLeft(360);
       Serial.println("X_BOTDONE");
       break;
     case 5:  // Turn Right

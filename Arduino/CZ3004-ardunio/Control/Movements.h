@@ -74,7 +74,7 @@ float Motion::runningTime(float distance) {
 /* Calculates time required rotate right or left by the bot in milliseconds. 
 Note: in order to change rotate angle, simply change radius (Bot Radius), wheelRadius and offset */
 float Motion::rotateTime(float angle) {
-  float radius = 8.25;//.52;
+  float radius = 8.52;//.52;
   float wheelRadius = 2.89;
   float offset = 5;
   
