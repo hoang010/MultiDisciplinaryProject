@@ -33,6 +33,8 @@ class Client:
                           "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
         self.sock.setblocking(True)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self.queue_thread = None
 
     def connect(self):
         """
@@ -49,7 +51,8 @@ class Client:
             self.sock.connect(self.rpi_ip)
 
             # Once connected, start a thread for sending data to Raspberry Pi
-            threading.Thread(target=self.channel, args=(self.sock, self.rpi_ip)).start()
+            self.queue_thread = threading.Thread(target=self.channel, args=(self.sock, self.rpi_ip))
+            self.queue_thread.start()
 
             print(self.log_string + self.text_color.OKGREEN +
                   'Connected to {}:{}'.format(self.rpi_ip, self.port)
@@ -68,11 +71,35 @@ class Client:
         :return:
         """
 
+        # Print message to show that thread is started
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for PC {} started".format(self.name.upper())
+              + self.text_color.ENDC)
+
         if self.conn_type == 'recv':
 
             while True:
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for PC {} alive".format(self.name.upper())
+                      + self.text_color.ENDC)
+
+                # Delay for 1s to prevent overloading the CPU
+                time.sleep(1)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.WARNING +
+                      "Waiting for data to receive"
+                      + self.text_color.ENDC)
+
                 # Read data from connected socket
                 data = conn_socket.recv(self.size)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data received from socket"
+                      + self.text_color.ENDC)
 
                 # Display feedback whenever something is to be received
                 print(self.log_string + self.text_color.BOLD +
@@ -85,23 +112,50 @@ class Client:
         else:
             while True:
 
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for PC {} alive".format(self.name.upper())
+                      + self.text_color.ENDC)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.WARNING +
+                      "Waiting for data to send"
+                      + self.text_color.ENDC)
+
                 data = self.queue.get()
-                # Checks if there is anything in the queue
-                if data:
 
-                    # Display feedback whenever something is to be sent
-                    print(self.log_string + self.text_color.BOLD +
-                          'Sending "{}" to {}'.format(data, addr)
-                          + self.text_color.ENDC)
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data received from queue"
+                      + self.text_color.ENDC)
 
-                    # Finally, send the data to PC
-                    conn_socket.send(data)
+                # Display feedback whenever something is to be sent
+                print(self.log_string + self.text_color.BOLD +
+                      'Sending "{}" to {}'.format(data, addr)
+                      + self.text_color.ENDC)
+
+                # Finally, send the data to PC
+                conn_socket.send(data)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data sent"
+                      + self.text_color.ENDC)
+
 
     def disconnect(self):
         """
         Function to safely disconnect from Raspberry Pi
         :return:
         """
+        self.queue_thread.join()
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKGREEN +
+              'PC {} thread closed successfully'.format(self.name.upper())
+              + self.text_color.ENDC)
+
+        # Shutdown socket
+        self.sock.shutdown(socket.SHUT_RDWR)
 
         # Close the socket
         self.sock.close()

@@ -2,6 +2,7 @@ import bluetooth
 import queue
 import threading
 import time
+import socket
 
 
 class Bluetooth:
@@ -40,6 +41,9 @@ class Bluetooth:
         # Initialise queue to store data received from PC
         self.have_recv_queue = queue.Queue()
 
+        self.send_thread = None
+        self.recv_thread = None
+
     def listen(self):
         """
         Function to listen for requests for bluetooth connection
@@ -65,10 +69,13 @@ class Bluetooth:
                   + self.text_color.ENDC)
 
             # Once connected, start a thread for sending data to PC
-            threading.Thread(target=self.send_channel, args=(client_sock, client_info)).start()
+            self.send_thread = threading.Thread(target=self.send_channel, args=(client_sock, client_info))
 
             # Once connected, start a thread for receiving data from PC
-            threading.Thread(target=self.recv_channel, args=(client_sock, client_info)).start()
+            self.recv_thread = threading.Thread(target=self.recv_channel, args=(client_sock, client_info))
+
+            self.send_thread.start()
+            self.recv_thread.start()
 
         except:
             raise Exception(self.log_string + 'An error occurred while establishing connection')
@@ -84,10 +91,24 @@ class Bluetooth:
                 Contains MAC address of connected device
         :return:
         """
+
+        # Print message to show that thread is started
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for Bluetooth recv_channel started"
+              + self.text_color.ENDC)
+
         while True:
 
-            while not self.lock.acquire(blocking=True):
-                pass
+            # Print message to show that thread is alive
+            print(self.log_string + self.text_color.OKBLUE +
+                  "Thread for Bluetooth recv_channel alive"
+                  + self.text_color.ENDC)
+
+            # Delay for 1s in case there is stuff to send
+            time.sleep(1)
+
+            # Get the lock
+            self.lock.acquire()
 
             # Read data from connected socket
             data = client_sock.recv(self.size)
@@ -113,13 +134,24 @@ class Bluetooth:
                 Contains MAC address of connected device
         :return:
         """
+
+        # Print message to show that thread is started
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for Bluetooth recv_channel started"
+              + self.text_color.ENDC)
+
         while True:
 
-            # Checks if there is anything in the queue
-            if self.to_send_queue:
+            # Print message to show that thread is alive
+            print(self.log_string + self.text_color.OKBLUE +
+                  "Thread for Bluetooth send_channel alive"
+                  + self.text_color.ENDC)
 
-                while not self.lock.acquire(blocking=True):
-                    pass
+            # Checks if there is anything in the queue
+            if not self.to_send_queue.empty():
+
+                # Get the lock
+                self.lock.acquire()
 
                 # De-queue the first item
                 data = self.to_send_queue.get()
@@ -132,6 +164,7 @@ class Bluetooth:
                 # Finally, send the data to PC
                 client_sock.send(data)
 
+                # Release the lock
                 self.lock.release()
 
     def disconnect(self):
@@ -139,6 +172,18 @@ class Bluetooth:
         Function to safely disconnect from connected tablet
         :return:
         """
+
+        # Close thread for recv channel
+        self.recv_thread.join()
+        print(self.log_string + self.text_color.OKGREEN +
+              'Bluetooth recv thread closed successfully'
+              + self.text_color.ENDC)
+
+        # Close thread for send channel
+        self.send_thread.join()
+        print(self.log_string + self.text_color.OKGREEN +
+              'Bluetooth send thread closed successfully'
+              + self.text_color.ENDC)
 
         # Close the socket
         self.server_socket.close()

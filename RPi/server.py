@@ -41,6 +41,8 @@ class Server:
 
         # Set socket to be blocking while listening
         self.sock.setblocking(True)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self.queue_thread = None
 
     def listen(self):
         """
@@ -66,7 +68,8 @@ class Server:
                   + self.text_color.ENDC)
 
             # Once connected, start a thread for sending data to PC
-            threading.Thread(target=self.channel, args=(conn_socket, addr)).start()
+            self.queue_thread = threading.Thread(target=self.channel, args=(conn_socket, addr))
+            self.queue_thread.start()
 
         except:
             raise Exception('Connection to {} failed/terminated'.format(addr))
@@ -84,11 +87,35 @@ class Server:
                 Contains name of type of connection
         :return:
         """
+        # Print message to show that thread is started
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for RPi {} started".format(self.name.upper())
+              + self.text_color.ENDC)
+
         if self.conn_type == 'recv':
 
             while True:
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for RPi {} alive".format(self.name.upper())
+                      + self.text_color.ENDC)
+
+                # Delay for 1s to prevent overloading the CPU
+                time.sleep(1)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.WARNING +
+                      "Waiting for data to receive"
+                      + self.text_color.ENDC)
+
                 # Read data from connected socket
                 data = conn_socket.recv(self.size)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data received from socket"
+                      + self.text_color.ENDC)
 
                 # Display feedback whenever something is to be received
                 print(self.log_string + self.text_color.BOLD +
@@ -101,18 +128,36 @@ class Server:
         else:
             while True:
 
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for RPi {} alive".format(self.name.upper())
+                      + self.text_color.ENDC)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.WARNING +
+                      "Waiting for data to send"
+                      + self.text_color.ENDC)
+
+                # Get data from socket
                 data = self.queue.get()
 
-                # Read data from connected socket
-                if data:
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data received from queue"
+                      + self.text_color.ENDC)
 
-                    # Display feedback whenever something is to be received
-                    print(self.log_string + self.text_color.BOLD +
-                          'Sent "{}" to {}'.format(data, addr)
-                          + self.text_color.ENDC)
+                # Display feedback whenever something is to be received
+                print(self.log_string + self.text_color.BOLD +
+                      'Sending "{}" to {}'.format(data, addr)
+                      + self.text_color.ENDC)
 
-                    # Finally, store data into self.have_recv_queue
-                    conn_socket.send(data)
+                # Finally, store data into self.have_recv_queue
+                conn_socket.send(data)
+
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data sent"
+                      + self.text_color.ENDC)
 
     def disconnect(self):
         """
@@ -120,10 +165,18 @@ class Server:
         :return:
         """
 
+        self.queue_thread.join()
+        print(self.log_string + self.text_color.OKGREEN +
+              'RPi {} thread closed successfully'.format(self.name.upper())
+              + self.text_color.ENDC)
+
+        # Shutdown socket
+        self.sock.shutdown(socket.SHUT_RDWR)
+
         # Close the socket
         self.sock.close()
 
         # Display feedback to let user know that this function is called successfully
         print(self.log_string + self.text_color.OKGREEN +
-              '{} wifi socket closed successfully'.format(self.name)
+              '{} wifi socket closed successfully'.format(self.name.upper())
               + self.text_color.ENDC)
