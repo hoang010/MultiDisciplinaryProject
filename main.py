@@ -331,9 +331,6 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
 
             print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
-            # Split sensor_data into array
-            sensor_data = sensor_data.split()
-
             # TODO: For right_wall_hugging algo
             explorer.right_wall_hugging(sensor_data)
 

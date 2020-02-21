@@ -64,16 +64,16 @@ class Explore:
         #       front_right_obs,
         #       middle_left obs,
         #       middle_right_obs]
-        front_left_obstacle = int(sensor_data[0])
-        front_mid_obstacle = int(sensor_data[1])
-        front_right_obstacle = int(sensor_data[2])
-        mid_left_obstacle = int(sensor_data[3])
-        mid_right_obstacle = int(sensor_data[4])
+        front_left_obstacle = int(sensor_data["TopLeft"])/10
+        front_mid_obstacle = int(sensor_data["TopMiddle"])/10
+        front_right_obstacle = int(sensor_data["TopRight"])/10
+        mid_left_obstacle = int(sensor_data["LeftSide"])/10
+        mid_right_obstacle = int(sensor_data["RightSide"])/10
         obstacle_coord = None
         explored_coord = self.current_pos
 
         # If there is no obstacle on the right
-        if not mid_right_obstacle:
+        if mid_right_obstacle > 2:
 
             movement = '5'
 
@@ -84,7 +84,7 @@ class Explore:
             self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
-        elif front_left_obstacle or front_mid_obstacle or front_right_obstacle:
+        elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
             movement = '4'
 

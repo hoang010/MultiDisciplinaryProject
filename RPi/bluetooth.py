@@ -29,7 +29,7 @@ class Bluetooth:
         self.server_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
 
         # Declare Bluetooth connection port
-        self.port = bluetooth.PORT_ANY
+        self.port = 3
 
         # Bind Raspberry Pi's own mac and port to the socket
         self.server_socket.bind((self.rpi_mac_addr, self.port))
