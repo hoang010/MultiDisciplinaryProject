@@ -55,7 +55,7 @@ class Server:
               + self.text_color.ENDC)
 
         # Listen to requests for connecting
-        self.sock.listen()
+        self.sock.listen(1)
 
         try:
 
