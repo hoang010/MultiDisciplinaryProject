@@ -28,7 +28,6 @@ class Server:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
-        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
@@ -41,7 +40,11 @@ class Server:
 
         # Set socket to be blocking while listening
         self.sock.setblocking(True)
+
+        # Set socket to keep alive
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        # Initialise variable for threads
         self.queue_thread = None
 
     def listen(self):
@@ -67,8 +70,10 @@ class Server:
                   'Connected to {}:{}'.format(addr[0], self.port)
                   + self.text_color.ENDC)
 
-            # Once connected, start a thread for sending data to PC
+            # Once connected, create a thread for sending data to PC
             self.queue_thread = threading.Thread(target=self.channel, args=(conn_socket, addr))
+
+            # Start the thread
             self.queue_thread.start()
 
         except:
@@ -100,9 +105,6 @@ class Server:
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for RPi {} alive".format(self.name.upper())
                       + self.text_color.ENDC)
-
-                # Delay for 1s to prevent overloading the CPU
-                time.sleep(1)
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.WARNING +

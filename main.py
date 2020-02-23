@@ -78,7 +78,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     try:
         while True:
             # Receive data from tablet
-            # TODO: Bluetooth array here!
             mode = bt_conn.have_recv_queue.get()
 
             mode = mode.decode()
@@ -87,7 +86,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
 
                 # Send ack to Android device
-                # TODO: Bluetooth array here!
                 bt_conn.to_send_queue.put(('{} acknowledged'.format(mode)).encode())
 
                 # Display on screen the mode getting executed
@@ -111,7 +109,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 elif mode == 'Disconnect':
                     # Send message to PC and Arduino to tell them to disconnect
-                    # TODO: Rasp Pi array here!
                     server_send.queue.put('Disconnect'.encode())
                     arduino_conn.to_send_queue.put('Disconnect'.encode())
 
@@ -133,7 +130,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                       + text_color.ENDC)
 
                 # Add data into queue for sending to tablet
-                # TODO: Bluetooth array here!
                 bt_conn.to_send_queue.put('Send valid argument'.encode())
 
     except KeyboardInterrupt:
@@ -184,13 +180,13 @@ def pc(rpi_ip, log_string):
                         # Receive stream from socket
                         stream = pc_stream.queue.get()
 
+                        if not stream:
+                            break
+
                         stream = stream.decode()
 
                         # Display stream in a window
                         cv2.imshow('Stream from Pi', stream)
-
-                        if not stream:
-                            break
 
                     # TODO: Rasp Pi array here!
                     real_map_hex = pc_recv.queue.get()
@@ -244,10 +240,15 @@ def robo_init(arduino_conn, bt_conn):
     # Get feedback from Arduino
     feedback = arduino_conn.have_recv_queue.get()
 
-    feedback = feedback.decode().split()
+    feedback = feedback.decode()
+
+    front_left_obstacle = int(feedback["TopLeft"]) / 10
+    front_mid_obstacle = int(feedback["TopMiddle"]) / 10
+    front_right_obstacle = int(feedback["TopRight"]) / 10
+    mid_right_obstacle = int(feedback["RightSide"]) / 10
 
     # While there is no obstacle on the right
-    while not feedback[-1]:
+    while mid_right_obstacle > 1:
 
         # If there is no obstacle on the right, tell Arduino to turn right
         arduino_conn.to_send_queue.put('5'.encode())
@@ -258,7 +259,7 @@ def robo_init(arduino_conn, bt_conn):
         feedback = feedback.decode().split()
 
     # If robot is facing corner, turn left
-    if (feedback[0] or feedback[1] or feedback[2]) and feedback[1]:
+    if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and mid_right_obstacle <= 1:
         arduino_conn.to_send_queue.put('4'.encode())
 
     # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
@@ -320,21 +321,19 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
 
             print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
-            # TODO: For right_wall_hugging algo
+            # Start hugging right wall to explore
             explorer.right_wall_hugging(sensor_data)
 
             # Get next movement
             movement = explorer.move_queue.get()
 
+            # Display message
             if movement == '5':
                 log_movement = 'right'
-
             elif movement == '4':
                 log_movement = 'left'
-
             else:
                 log_movement = 'forward'
-
             print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
             # Encode before sending to arduino
@@ -343,19 +342,15 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
 
             # Get feedback from Arduino
             feedback = arduino_conn.have_recv_queue.get()
-
             print(log_string + text_color.OKGREEN + 'Arduino ack received' + text_color.ENDC)
 
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
-
             print(log_string + text_color.BOLD + 'Explore hex map: {}'.format(hex_exp_map) + text_color.ENDC)
 
-            hex_exp_map = hex_exp_map.encode()
-
             # Send hex explored map to tablet
+            hex_exp_map = hex_exp_map.encode()
             bt_conn.to_send_queue.put(hex_exp_map)
-
             print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
 
             # Get camera input and encode it into hex
@@ -364,30 +359,27 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
 
             # Send stream to PC
             server_stream.queue.put(stream_byte)
-
             print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
 
-        print(log_string + text_color.OKGREEN + 'Round completed' + text_color.ENDC)
-
         # If round is complete, shift starting position
-        explorer.update_start(3)
-
+        explorer.update_start(3, 3)
+        print(log_string + text_color.OKGREEN + 'Round completed' + text_color.ENDC)
         print(log_string + text_color.BOLD + 'Updated start by 3' + text_color.ENDC)
 
         # Actually move to new start position
         move_to_point(log_string, arduino_conn, explorer, explorer.start)
 
-        # Shift start by 3 positions diagonally
-        explorer.update_start(3)
-
         # If start has obstacle, shift again
         while not check_start(explorer, explorer.start):
             print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
-            explorer.update_start(1)
-            print(log_string + text_color.BOLD + 'Updated start by 1' + text_color.ENDC)
+            explorer.update_start(1, 0)
+            print(log_string + text_color.BOLD + 'Updated start by 1 in x direction' + text_color.ENDC)
 
         # Move to new start
         move_to_point(log_string, arduino_conn, explorer, explorer.start)
+
+    # Send empty packet to tell PC that stream has stopped
+    server_stream.queue.put('')
 
     # Convert real map to hex
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
@@ -413,10 +405,15 @@ def move_to_point(log_string, arduino_conn, explorer, start):
 
     # Get difference between x and y coordinates of current position
     # and start position
-    x_diff = abs(start[4][0] - explorer.current_pos[4][0])
-    y_diff = abs(start[4][1] - explorer.current_pos[4][1])
+    if len(start) > 1:
+        start_ref = start[4]
+    else:
+        start_ref = start
 
-    print(log_string + text_color.WARNING + 'Move to point {}'.start[4] + text_color.ENDC)
+    x_diff = abs(start_ref[0] - explorer.current_pos[4][0])
+    y_diff = abs(start_ref[1] - explorer.current_pos[4][1])
+
+    print(log_string + text_color.WARNING + 'Move to point {}'.format(start_ref) + text_color.ENDC)
 
     # Execute loop while difference is not zero
     while x_diff != 0 or y_diff != 0:
@@ -470,8 +467,8 @@ def move_to_point(log_string, arduino_conn, explorer, start):
         # If no obstacle in front
         else:
 
-            print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
             # Advance
+            print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
             movement = '3'.encode()
 
             # Update difference in y or x

@@ -23,7 +23,6 @@ class Bluetooth:
         self.backlog = backlog
         self.size = size
         self.text_color = text_color
-        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + "{} | Bluetooth socket: ".format(time.asctime()) + self.text_color.ENDC
 
         # Declare Bluetooth connection protocol
@@ -41,6 +40,7 @@ class Bluetooth:
         # Initialise queue to store data received from PC
         self.have_recv_queue = queue.Queue()
 
+        # Intialise variable for threads
         self.send_thread = None
         self.recv_thread = None
 
@@ -68,12 +68,13 @@ class Bluetooth:
                   'Connected to {}'.format(client_info)
                   + self.text_color.ENDC)
 
-            # Once connected, start a thread for sending data to PC
+            # Once connected, create a thread for sending data to PC
             self.send_thread = threading.Thread(target=self.send_channel, args=(client_sock, client_info))
 
-            # Once connected, start a thread for receiving data from PC
+            # Once connected, create a thread for receiving data from PC
             self.recv_thread = threading.Thread(target=self.recv_channel, args=(client_sock, client_info))
 
+            # Start the threads
             self.send_thread.start()
             self.recv_thread.start()
 
@@ -104,12 +105,6 @@ class Bluetooth:
                   "Thread for Bluetooth recv_channel alive"
                   + self.text_color.ENDC)
 
-            # Delay for 1s in case there is stuff to send
-            time.sleep(1)
-
-            # Get the lock
-            self.lock.acquire()
-
             # Read data from connected socket
             data = client_sock.recv(self.size)
 
@@ -119,9 +114,6 @@ class Bluetooth:
 
             # Finally, store data into self.have_recv_queue
             self.have_recv_queue.put(data)
-
-            # Release lock once done
-            self.lock.release()
 
     def send_channel(self, client_sock, client_info):
         """
@@ -150,9 +142,6 @@ class Bluetooth:
             # Checks if there is anything in the queue
             if not self.to_send_queue.empty():
 
-                # Get the lock
-                self.lock.acquire()
-
                 # De-queue the first item
                 data = self.to_send_queue.get()
 
@@ -163,9 +152,6 @@ class Bluetooth:
 
                 # Finally, send the data to PC
                 client_sock.send(data)
-
-                # Release the lock
-                self.lock.release()
 
     def disconnect(self):
         """
