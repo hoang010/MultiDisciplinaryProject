@@ -217,6 +217,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     except KeyboardInterrupt:
         os.system('pkill -9 python')
 
+
 def pc(rpi_ip, log_string):
     """
     Function to start running code on PC
@@ -279,6 +280,13 @@ def pc(rpi_ip, log_string):
 
 
 def get_sensor_data(arduino_conn_demo):
+    """
+    Function to get sensor data
+    :param arduino_conn_demo: Serial
+            Serial port containing connection to Arduino
+    :return: Array
+            Array containing sensor data
+    """
     data = arduino_conn_demo.have_recv_queue.get()
 
     data = data.decode()

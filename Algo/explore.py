@@ -53,22 +53,39 @@ class Explore:
         """
         Function to execute right wall hugging
         :param sensor_data: Array
-                Array containing sensor data in boolean array
+                Array containing sensor data in cm
         :return:
         """
 
+        # Get the data
         front_left_obstacle = int(sensor_data["TopLeft"])/10
         front_mid_obstacle = int(sensor_data["TopMiddle"])/10
         front_right_obstacle = int(sensor_data["TopRight"])/10
         mid_left_obstacle = int(sensor_data["LeftSide"])/10
         mid_right_obstacle = int(sensor_data["RightSide"])/10
+
+        # Initialise variable for obstacle coordinates
         obstacle_coord = None
+
+        # Initialise variable for explored coordinates
         explored_coord = self.current_pos
+
+        # Get coordinates on the right
         right_x, right_y = self.get_coord('right')
 
-        # If there is no obstacle on the right
-        if mid_right_obstacle > 2 and self.explored_map[right_x][right_y] == 0:
+        # Check if coordinates on right is within map
+        if right_x < len(self.explored_map[0]) or right_y < len(self.explored_map):
+            if right_x >= 0 and right_y >= 0:
+                turn_right_condition = (mid_right_obstacle > 2 and self.explored_map[right_x][right_y] == 0)
 
+        # If not within map, then just check if robot is near right wall
+        else:
+            turn_right_condition = mid_right_obstacle > 2
+
+        # If there is no obstacle on the right
+        if turn_right_condition is True:
+
+            # Turn right (5 is the index to tell Arduino to turn right)
             movement = '5'
 
             # Put the command 'right' into queue for main() to read
@@ -80,16 +97,17 @@ class Explore:
         # If there is an obstacle in front and on the right
         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
+            # Turn left (4 is the index to tell Arduino to turn left)
             movement = '4'
 
             # Since there is an obstacle on the right, get the coordinates
-            right_coord = self.get_coord('right')
+            x_coord, y_coord = self.get_coord('right')
 
             # Check if right side coordinates are within boundaries
-            if right_coord[0] >= 0 or right_coord[1] >= 0:
-                if right_coord[0] < self.real_map[0] or right_coord[1] < self.real_map[1]:
+            if x_coord >= 0 or y_coord >= 0:
+                if x_coord < len(self.real_map[0]) or y_coord < len(self.real_map):
                     # Add into array for obstacle coordinates
-                    obstacle_coord.append(right_coord)
+                    obstacle_coord.append((x_coord, y_coord))
 
             # Get obstacle coordinates and add into array for obstacle coordinates
             obstacle_coord.append(self.get_obstacle_coord(front_left_obstacle,
@@ -105,19 +123,21 @@ class Explore:
         # If obstacle on right and no obstacle in front
         else:
             # Since there is an obstacle on the right, get the coordinates
-            right_coord = self.get_coord('right')
+            x_coord, y_coord = self.get_coord('right')
 
             # Check if right side coordinates are within boundaries
-            if right_coord[0] >= 0 or right_coord[1] >= 0:
-                if right_coord[0] < self.real_map[0] or right_coord[1] < self.real_map[1]:
+            if x_coord >= 0 or y_coord >= 0:
+                if x_coord < len(self.real_map[0]) or y_coord < len(self.real_map):
                     # Add into array for obstacle coordinates
-                    obstacle_coord.append(right_coord)
+                    obstacle_coord.append((x_coord, y_coord))
 
+            # Move forward (3 is the index to tell Arduino to move forward)
             movement = '3'
 
             # Put the command 'advance' into queue for main() to read
             self.move_queue.put(movement)
 
+            # Update position after moving
             self.update_pos()
 
         # Get left side coordinates
@@ -134,6 +154,7 @@ class Explore:
         # Update map once done
         self.update_map(explored_coord, obstacle_coord)
 
+        # if round is started and robot has moved from start position, set round to 1
         if not self.round and movement == '3':
             self.round = 1
 
@@ -189,7 +210,7 @@ class Explore:
     def update_dir(self, left_turn):
         """
         Function to update direction of robot
-        :param left_turn: Boolean
+        :param left_turn: String
                 True if robot took a left turn,
                 False otherwise
         :return:
@@ -245,18 +266,12 @@ class Explore:
     def get_obstacle_coord(self, front_left, front_mid, front_right):
         """
         Function to get obstacle coordinate
-        :param front_left: Boolean
-                0 if no obstacle is on front left,
-                1 if obstacle is on front left
-                should not take any other value
-        :param front_mid: Boolean
-                0 if no obstacle is on front mid,
-                1 if obstacle is on front mid
-                should not take any other value
-        :param front_right: Boolean
-                0 if no obstacle is on front right,
-                1 if obstacle is on front right
-                should not take any other value
+        :param front_left: String
+                number of obstacle is away from sensor
+        :param front_mid: String
+                number of obstacle is away from sensor
+        :param front_right: String
+                number of obstacle is away from sensor
         :return: obstacle: Array
                 obstacle coordinates
         """
@@ -265,30 +280,37 @@ class Explore:
         obstacle = []
 
         for i in range(2, -1, -1):
-            if obs_bool[i]:
+            if obs_bool[i] != 0:
                 # If current direction is North
                 if self.direction == self.direction_class.N:
                     # Return (x, y+1)
-                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] + 1))
+                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] + int(obs_bool[i])))
 
                 # If current direction is South
                 elif self.direction == self.direction_class.S:
                     # Return (x, y-1)
-                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] - 1))
+                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] - int(obs_bool[i])))
 
                 # If current direction is East
                 elif self.direction == self.direction_class.E:
                     # Return (x-1, y)
-                    obstacle.append((self.current_pos[i][0] - 1, self.current_pos[i][1]))
+                    obstacle.append((self.current_pos[i][0] - int(obs_bool[i]), self.current_pos[i][1]))
 
                 # If current direction is West
                 else:
                     # Return (x+1, y)
-                    obstacle.append((self.current_pos[i][0] + 1, self.current_pos[i][1]))
+                    obstacle.append((self.current_pos[i][0] + int(obs_bool[i]), self.current_pos[i][1]))
 
         return obstacle
 
     def get_coord(self, direction):
+        """
+        Function to get coordinates on left/right/front of robot based on direction robot is facing
+        :param direction: String
+                String containing the side of robot coordinates should be retrieved from
+        :return: coord: Array
+                Array containing coordinates
+        """
 
         def left():
             if self.direction == self.direction_class.N:
@@ -334,10 +356,42 @@ class Explore:
 
             return coord
 
+        def front():
+            if self.direction == self.direction_class.N:
+                # Return (x, y+1)
+                coord = [(self.current_pos[0][0], self.current_pos[0][1] + 1),
+                         (self.current_pos[1][0], self.current_pos[1][1] + 1),
+                         (self.current_pos[2][0], self.current_pos[2][1] + 1)]
+
+            # If current direction is South
+            elif self.direction == self.direction_class.S:
+                # Return (x, y-1)
+                coord = [(self.current_pos[0][0], self.current_pos[0][1] - 1),
+                         (self.current_pos[1][0], self.current_pos[1][1] - 1),
+                         (self.current_pos[2][0], self.current_pos[2][1] - 1)]
+
+            # If current direction is East
+            elif self.direction == self.direction_class.E:
+                # Return (x+1, y)
+                coord = [(self.current_pos[0][0] + 1, self.current_pos[0][1]),
+                         (self.current_pos[1][0] + 1, self.current_pos[1][1]),
+                         (self.current_pos[2][0] + 1, self.current_pos[2][1])]
+
+            # If current direction is West
+            else:
+                # Return (x-1, y)
+                coord = [(self.current_pos[0][0] - 1, self.current_pos[0][1]),
+                         (self.current_pos[1][0] - 1, self.current_pos[1][1]),
+                         (self.current_pos[2][0] - 1, self.current_pos[2][1])]
+
+            return coord
+
         if direction == 'left':
             return left()
-        else:
+        elif direction == 'right':
             return right()
+        else:
+            return front()
 
     def is_map_complete(self):
         """
@@ -354,14 +408,31 @@ class Explore:
         return False
 
     def check_round_complete(self):
+        """
+        Function to check if round is complete and reset self.round if round is complete
+        :return:
+        """
+
+        # If round is complete, reset self.round to 0
         if self.current_pos[4] == self.start[4] and self.round == 1:
-            return True
-        return False
+            self.round = 0
 
     def update_start(self, x, y):
+        """
+        Function to update start given a set of offsets
+        :param x: int
+                Integer containing how much to shift the start in the x direction
+        :param y: int
+                Integer containing how much to shift the start in the y direction
+        :return:
+        """
+
+        # Increment all coordinates of the robot by x, y amounts
         for i in range(len(self.start)):
             self.start[i][0] += x
             self.start[i][1] += y
+
+        # Finally, set the current position to be at the start
         self.current_pos = self.start
 
     def reset(self):

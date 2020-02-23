@@ -254,9 +254,7 @@ def robo_init(arduino_conn, bt_conn):
         arduino_conn.to_send_queue.put('5'.encode())
 
         # Refresh variables in freedback
-        feedback = arduino_conn.have_recv_queue.get()
-
-        feedback = feedback.decode().split()
+        _ = arduino_conn.have_recv_queue.get()
 
     # If robot is facing corner, turn left
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and mid_right_obstacle <= 1:
@@ -341,7 +339,7 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
             arduino_conn.to_send_queue.put(movement)
 
             # Get feedback from Arduino
-            feedback = arduino_conn.have_recv_queue.get()
+            _ = arduino_conn.have_recv_queue.get()
             print(log_string + text_color.OKGREEN + 'Arduino ack received' + text_color.ENDC)
 
             # Convert explored map into hex
@@ -393,15 +391,19 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
     return explorer
 
 
-def check_start(explorer, start):
-    for i in range(len(start)):
-        for x, y in start[i]:
-            if explorer.real_map[y][x] == 1:
-                return False
-    return True
-
-
 def move_to_point(log_string, arduino_conn, explorer, start):
+    """
+    Function to move robot to the specified point
+    :param log_string: String
+            String containing format for log
+    :param arduino_conn: Serial
+            Connection to Arduino via USB
+    :param explorer: Explorer class
+            Data in the explorer instance is required
+    :param start: Array
+            Start point, can be all 9 points of position or just 1 reference start point
+    :return:
+    """
 
     # Get difference between x and y coordinates of current position
     # and start position
@@ -410,13 +412,10 @@ def move_to_point(log_string, arduino_conn, explorer, start):
     else:
         start_ref = start
 
-    x_diff = abs(start_ref[0] - explorer.current_pos[4][0])
-    y_diff = abs(start_ref[1] - explorer.current_pos[4][1])
-
     print(log_string + text_color.WARNING + 'Move to point {}'.format(start_ref) + text_color.ENDC)
 
     # Execute loop while difference is not zero
-    while x_diff != 0 or y_diff != 0:
+    while not check_start(explorer, start):
 
         print(log_string + text_color.BOLD + 'Get sensor data' + text_color.ENDC)
 
@@ -427,15 +426,31 @@ def move_to_point(log_string, arduino_conn, explorer, start):
 
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
-        # Seperate sensor_data string
-        front_left_obstacle = int(sensor_data[0])
-        front_mid_obstacle = int(sensor_data[1])
-        front_right_obstacle = int(sensor_data[2])
-        mid_left_obstacle = int(sensor_data[3])
-        mid_right_obstacle = int(sensor_data[4])
+        # Get the data
+        front_left_obstacle = int(sensor_data["TopLeft"]) / 10
+        front_mid_obstacle = int(sensor_data["TopMiddle"]) / 10
+        front_right_obstacle = int(sensor_data["TopRight"]) / 10
+        mid_left_obstacle = int(sensor_data["LeftSide"]) / 10
+        mid_right_obstacle = int(sensor_data["RightSide"]) / 10
+
+        # Check if start has obstacle
+        front_coord = explorer.get_coord('front')
+        start_has_obstacle = ((front_coord[0][0] + front_left_obstacle) in start or
+                              (front_coord[1][0] + front_mid_obstacle) in start or
+                              (front_coord[2][0] + front_right_obstacle) in start)
+
+        # If there is, update start by 1 in x direction and skip the loop
+        if start_has_obstacle:
+            print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
+            explorer.update_start(1, 0)
+            print(log_string + text_color.BOLD + 'Updated start by 1 in x direction' + text_color.ENDC)
+            continue
+
+        # Check if front has obstacle
+        front_obstacle = (front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1)
 
         # If there is an obstacle in front
-        if front_right_obstacle or front_mid_obstacle or front_left_obstacle:
+        if front_obstacle:
 
             # If there is no obstacle on the left
             if not mid_left_obstacle:
@@ -471,21 +486,31 @@ def move_to_point(log_string, arduino_conn, explorer, start):
             print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
             movement = '3'.encode()
 
-            # Update difference in y or x
-            if explorer.direction == Direction.N:
-                y_diff -= 1
-            elif explorer.direction == Direction.S:
-                y_diff += 1
-            elif explorer.direction == Direction.E:
-                x_diff -= 1
-            else:
-                x_diff += 1
+            explorer.update_pos()
 
         # Tell arduino desired movement
         arduino_conn.to_send_queue.put(movement)
 
         # Get feedback
-        feedback = arduino_conn.have_recv_queue.get()
+        _ = arduino_conn.have_recv_queue.get()
+
+
+def check_start(explorer, start):
+    """
+    Function to check if robot is at shifted start
+    :param explorer: Explorer class
+            Explorer instance as data from it is needed
+    :param start: Array
+            Coordinates of start position
+    :return:
+    """
+    if len(start) > 2:
+        if explorer.current_pos[4] == start[4]:
+            return True
+    else:
+        if explorer.current_pos[4] == start:
+            return True
+    return False
 
 
 if __name__ == "__main__":

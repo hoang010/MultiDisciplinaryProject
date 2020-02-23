@@ -59,21 +59,43 @@ class AStar:
         self.to_visit.append(AStar.Node(0, (0, 0), self.goal_ref_pt))
 
     def check_visited(self, node):
+        """
+        Function to check if node is visited
+        :param node:
+        :return:
+        """
         if node in self.visited:
             return True
         return False
 
     def check_not_visited(self, node):
+        """
+        Function to check if node is not visited
+        If node is indeed not visited, return the node itself
+        :param node:
+        :return: Node
+                A node that is not yet visited
+        """
         if node in self.to_visit:
             return node
         return True
 
     def check_obstacle(self, node):
+        """
+        Function to check if node is an obstacle
+        :param node:
+        :return:
+        """
         if self.real_map[node.ref_pt[0]][node.ref_pt[1]] == 1:
             return True
         return False
 
     def check_nearby(self, node):
+        """
+        Function to check all directions of node
+        :param node:
+        :return:
+        """
         ud = [1, -1, 0, 0, 1, 1, -1, -1]
         rl = [0, 0, 1, -1, 1, -1, 1, -1]
 
@@ -100,6 +122,10 @@ class AStar:
         return 0
 
     def visit_node(self):
+        """
+        Function to visit node
+        :return:
+        """
         min_fx = 999999999
         temp = None
         for node in self.to_visit:
@@ -112,6 +138,10 @@ class AStar:
         return temp
 
     def find_path(self):
+        """
+        Function to find path
+        :return:
+        """
         found = 0
         while not found:
             current_node = self.visit_node()
