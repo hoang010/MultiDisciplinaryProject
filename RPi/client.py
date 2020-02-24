@@ -88,6 +88,8 @@ class Client:
 
             while True:
 
+                time.sleep(1)
+
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for PC {} alive".format(self.name.upper())
@@ -127,25 +129,28 @@ class Client:
                       "Waiting for data to send"
                       + self.text_color.ENDC)
 
-                data = self.queue.get()
+                time.sleep(1)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from queue"
-                      + self.text_color.ENDC)
+                if not self.queue.empty():
+                    data = self.queue.get()
 
-                # Display feedback whenever something is to be sent
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}" to {}'.format(data, addr)
-                      + self.text_color.ENDC)
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Data received from queue"
+                          + self.text_color.ENDC)
 
-                # Finally, send the data to PC
-                conn_socket.send(data)
+                    # Display feedback whenever something is to be sent
+                    print(self.log_string + self.text_color.BOLD +
+                          'Sending "{}" to {}'.format(data, addr)
+                          + self.text_color.ENDC)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data sent"
-                      + self.text_color.ENDC)
+                    # Finally, send the data to PC
+                    conn_socket.send(data)
+
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Data sent"
+                          + self.text_color.ENDC)
 
     def disconnect(self):
         """

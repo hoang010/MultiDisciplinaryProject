@@ -99,6 +99,8 @@ class Bluetooth:
 
         while True:
 
+            time.sleep(1)
+
             # Print message to show that thread is alive
             print(self.log_string + self.text_color.OKBLUE +
                   "Thread for Bluetooth recv_channel alive"
@@ -137,6 +139,8 @@ class Bluetooth:
             print(self.log_string + self.text_color.OKBLUE +
                   "Thread for Bluetooth send_channel alive"
                   + self.text_color.ENDC)
+
+            time.sleep(1)
 
             # Checks if there is anything in the queue
             if not self.to_send_queue.empty():

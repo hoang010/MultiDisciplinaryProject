@@ -71,6 +71,8 @@ class Arduino:
 
         while True:
 
+            time.sleep(1)
+
             # Print message to show that thread is alive
             print(self.log_string + self.text_color.OKBLUE +
                   "Thread for {} recv_channel alive".format(self.arduino_name)
@@ -125,6 +127,8 @@ class Arduino:
             print(self.log_string + self.text_color.OKBLUE +
                   "Thread for {} send_channel alive".format(self.arduino_name)
                   + self.text_color.ENDC)
+
+            time.sleep(1)
 
             # If there is data
             if not self.to_send_queue.empty():
