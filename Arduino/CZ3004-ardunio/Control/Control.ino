@@ -18,7 +18,7 @@ DualVNH5019MotorShield md;
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
 #define initialSetSpeed1 210
-#define initialSetSpeed2 220
+#define initialSetSpeed2 210
 #define calibrationSetSpeed1 315
 #define calibrationSetSpeed2 350
 
@@ -47,7 +47,7 @@ void loop() {
   
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
   delay(2000);
- controlBot(4, secondVal);
+  controlBot(3,120);
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
@@ -81,7 +81,7 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTREADY");
       break;
     case 2:  // Return Sensor data
-      sensorData = returnSensorData(8);
+      sensorData = returnSensorData(12);
       Serial.println("X_SENDDATA: " + sensorData);
       break;
     case 3:  // Move Forward

@@ -5,17 +5,12 @@
 #include "ArduinoSort.h"
 
 //Initial Sensor declaration
-SharpIR SR1(SharpIR::GP2Y0A21YK0F, A0); //top right
-SharpIR SR2(SharpIR::GP2Y0A21YK0F, A1); //top left
-SharpIR SR3(SharpIR::GP2Y0A21YK0F, A2); //below right looking right
-SharpIR LR4(SharpIR::GP2Y0A02YK0F, A3); //top right side, looking left 
-SharpIR LR5(SharpIR::GP2Y0A02YK0F, A5); //top right side, looking left 
-//SharpIR SR5(SharpIR::GP2Y0A21YK0F, A4); //top center
-//SharpIR SR5(SharpIR::GP2Y0A21YK0F, A0);
+SharpIR SR1(SharpIR::GP2Y0A21YK0F, A0); //front right
+SharpIR SR2(SharpIR::GP2Y0A21YK0F, A1); //front left
+SharpIR SR3(SharpIR::GP2Y0A21YK0F, A2); //looking right, front
+SharpIR SR4(SharpIR::GP2Y0A21YK0F, A3); //looking right, back
+SharpIR LR5(SharpIR::GP2Y0A02YK0F, A4); //looking right
 
-/*
-
-*/
 class Sensor {
   private:
     void printArray(String msg, int* arraySR1);
@@ -53,12 +48,12 @@ float returnLrDist (int count, SharpIR sensor, int offset) {
 
 String returnSensorData(int count) {
 
-  float SR1_distance = returnSrDist(count, SR1, 0);
-  float SR2_distance = returnSrDist(count, SR2, -1);
-  float SR3_distance = returnSrDist(count, SR3, 0);
-  float LR4_distance = returnLrDist(count, LR4, 1);
-  float LR5_distance = returnLrDist(count, LR5, -4);
+  float SR1_distance = returnSrDist(count, SR1, -5);
+  float SR2_distance = returnSrDist(count, SR2, -5);
+  float SR3_distance = returnSrDist(count, SR3, -3);
+  float SR4_distance = returnSrDist(count, SR4, -4);
+  float LR5_distance = returnLrDist(count, LR5, -17);
 
-  return "{TopRight:" + String(SR1_distance) + "; TopLeft:" + String(SR2_distance) + "; RightSide:" + String(SR3_distance) + "; LeftSide:" + String(LR4_distance) + "; TopCenter:" + String(LR5_distance)+'}';
+  return "{FrontRight:" + String(SR1_distance) + "; FrontLeft:" + String(SR2_distance) + "; RightFront:" + String(SR3_distance) + "; RightBack:" + String(SR4_distance) + "; LeftSide:" + String(LR5_distance)+'}';
 }
 #endif
