@@ -228,13 +228,13 @@ def pc(rpi_ip, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_send_test = Client('pc_send_test', 'send', rpi_ip, 7777, text_color)
-    pc_recv_test = Client('pc_recv_test', 'recv', rpi_ip, 8888, text_color)
+    pc_recv_test = Client('pc_recv_test', 'recv', rpi_ip, 7777, text_color)
+    pc_send_test = Client('pc_send_test', 'send', rpi_ip, 8888, text_color)
     pc_stream_test = Client('pc_stream_test', 'recv', rpi_ip, 9999, text_color)
 
     # Connect to Raspberry Pi
-    pc_send_test.connect()
     pc_recv_test.connect()
+    pc_send_test.connect()
     pc_stream_test.connect()
 
     try:

@@ -231,13 +231,13 @@ def pc(rpi_ip, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_send_test = Client('pc_send_test', 'send', rpi_ip, 7777, text_color)
-    pc_recv_test = Client('pc_recv_test', 'recv', rpi_ip, 8888, text_color)
+    pc_recv_test = Client('pc_recv_test', 'send', rpi_ip, 7777, text_color)
+    pc_send_test = Client('pc_send_test', 'recv', rpi_ip, 8888, text_color)
     pc_stream_test = Client('pc_stream_test', 'recv', rpi_ip, 9999, text_color)
 
     # Connect to Raspberry Pi
-    pc_send_test.connect()
     pc_recv_test.connect()
+    pc_send_test.connect()
     pc_stream_test.connect()
 
     try:
@@ -269,11 +269,11 @@ def pc(rpi_ip, log_string):
                     cv2.imshow('Stream from Pi', stream)
 
             elif msg == 'disconnect':
-                pc_send_test.disconnect()
-                print(log_string + text_color.BOLD + 'Client send diconnected' + text_color.ENDC)
-
                 pc_recv_test.disconnect()
-                print(log_string + text_color.BOLD + 'Client recv disconnected' + text_color.ENDC)
+                print(log_string + text_color.BOLD + 'Client recv diconnected' + text_color.ENDC)
+
+                pc_send_test.disconnect()
+                print(log_string + text_color.BOLD + 'Client send disconnected' + text_color.ENDC)
 
                 pc_stream_test.disconnect()
                 print(log_string + text_color.BOLD + 'Client stream disconnected' + text_color.ENDC)

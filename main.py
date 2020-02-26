@@ -102,7 +102,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     algo.find_path()
                     path = algo.path
                     for node in path:
-                        move_to_point(arduino_conn, explorer, node.ref_pt)
+                        move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
 
                 elif mode == 'Manual':
                     print(mode)
@@ -111,9 +111,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     # Send message to PC and Arduino to tell them to disconnect
                     server_send.queue.put('Disconnect'.encode())
                     arduino_conn.to_send_queue.put('Disconnect'.encode())
-
-                    # Wait for 5s to ensure that PC and Arduino receives the message
-                    time.sleep(5)
 
                     # Disconnect from wifi and bluetooth connection
                     server_send.disconnect()
@@ -146,13 +143,13 @@ def pc(rpi_ip, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_send = Client('pc_send', 'send', rpi_ip, 7777, text_color)
-    pc_recv = Client('pc_recv', 'recv', rpi_ip, 8888, text_color)
+    pc_recv = Client('pc_recv', 'recv', rpi_ip, 7777, text_color)
+    pc_send = Client('pc_send', 'send', rpi_ip, 8888, text_color)
     pc_stream = Client('pc_stream', 'recv', rpi_ip, 9999, text_color)
 
     # Connect to Raspberry Pi
-    pc_send.connect()
     pc_recv.connect()
+    pc_send.connect()
     pc_stream.connect()
 
     try:
