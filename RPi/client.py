@@ -32,8 +32,14 @@ class Client:
         self.log_string = self.text_color.OKBLUE + \
                           "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
+
+        # Set socket blocking to be True
         self.sock.setblocking(True)
+
+        # Set socket to keep alive
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        # Initialise variable to store thread
         self.queue_thread = None
 
     def connect(self):
@@ -50,8 +56,10 @@ class Client:
 
             self.sock.connect(self.rpi_ip)
 
-            # Once connected, start a thread for sending data to Raspberry Pi
+            # Once connected, create a thread for sending data to Raspberry Pi
             self.queue_thread = threading.Thread(target=self.channel, args=(self.sock, self.rpi_ip))
+
+            # Start the thread
             self.queue_thread.start()
 
             print(self.log_string + self.text_color.OKGREEN +
@@ -80,13 +88,12 @@ class Client:
 
             while True:
 
+                time.sleep(1)
+
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for PC {} alive".format(self.name.upper())
                       + self.text_color.ENDC)
-
-                # Delay for 1s to prevent overloading the CPU
-                time.sleep(1)
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.WARNING +
@@ -122,26 +129,28 @@ class Client:
                       "Waiting for data to send"
                       + self.text_color.ENDC)
 
-                data = self.queue.get()
+                time.sleep(1)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from queue"
-                      + self.text_color.ENDC)
+                if not self.queue.empty():
+                    data = self.queue.get()
 
-                # Display feedback whenever something is to be sent
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}" to {}'.format(data, addr)
-                      + self.text_color.ENDC)
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Data received from queue"
+                          + self.text_color.ENDC)
 
-                # Finally, send the data to PC
-                conn_socket.send(data)
+                    # Display feedback whenever something is to be sent
+                    print(self.log_string + self.text_color.BOLD +
+                          'Sending "{}" to {}'.format(data, addr)
+                          + self.text_color.ENDC)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data sent"
-                      + self.text_color.ENDC)
+                    # Finally, send the data to PC
+                    conn_socket.send(data)
 
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Data sent"
+                          + self.text_color.ENDC)
 
     def disconnect(self):
         """

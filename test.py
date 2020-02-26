@@ -3,11 +3,7 @@ from RPi.server import Server
 from RPi.bluetooth import Bluetooth
 from RPi.arduino import Arduino
 from RPi.client import Client
-from Algo.explore import Explore
-# from Algo.image_recognition import ImageRecognition
-# from Algo.shortest_path import ShortestPath
 from config.text_color import TextColor as text_color
-from config.direction import Direction
 
 # Import libraries
 import time
@@ -50,6 +46,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     try:
         while True:
 
+            # Menu
             print('1. Connect to Arduino')
             print('2. Connect via Bluetooth')
             print('3. Connect to PC')
@@ -61,8 +58,11 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             print('9. Disconnect Bluetooth')
             print('10. Disconnect PC')
             print('11. Disconnect all')
+
+            # Prompt for input
             choice = int(input('Choose an option: '))
 
+            # If sending string, get string from user
             if 3 < choice < 7:
                 message = input('Enter string: ')
 
@@ -71,78 +71,126 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 arduino_conn_test = Arduino(arduino_name, text_color)
 
             elif choice == 2:
-                # Connect to Tablet
+                # Initialise class
                 bt_conn_test = Bluetooth(rpi_mac_addr, text_color)
+
+                # Listen for device
                 bt_conn_test.listen()
 
             elif choice == 3:
-                # Connect to PC
+                # Initialise class
                 server_send_test = Server('server_send_test', 'send', rpi_ip, 7777, text_color)
                 server_recv_test = Server('server_recv_test', 'recv', rpi_ip, 8888, text_color)
                 server_stream_test = Server('server_stream_test', 'send', rpi_ip, 9999, text_color)
+
+                # Listen for requests for connection
                 server_send_test.listen()
                 server_recv_test.listen()
                 server_stream_test.listen()
 
             elif choice == 4:
+
+                # Send message to Arduino after encoding it in bytes
                 arduino_conn_test.to_send_queue.put(message.encode())
 
+                # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
+                # Wait for received message
                 recv_string = arduino_conn_test.have_recv_queue.get()
 
+                # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
 
+                # Display received message
                 print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
             elif choice == 5:
-                # TODO: RPi message to Tablet here!
+                # Send message to Tablet after encoding it in bytes
                 bt_conn_test.to_send_queue.put(message.encode())
 
+                # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
+                # Wait for received message
                 recv_string = bt_conn_test.have_recv_queue.get()
 
+                # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
 
+                # Display received message
                 print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
             elif choice == 6:
-                # TODO: RPi message to PC here!
+                # Send message to PC after encoding it in bytes
                 server_send_test.queue.put(message.encode())
 
+                # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
+                # Wait for received message
                 recv_string = server_recv_test.queue.get()
 
+                # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
 
+                # Display received message
                 print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
             elif choice == 7:
-                # TODO: RPi array here!
+                # Send message to PC after encoding it in bytes
                 server_send_test.queue.put('Stream'.encode())
+
+                # Display message
                 print(log_string + text_color.BOLD + 'Recorder init' + text_color.ENDC)
+
+                # Import relevant class
                 from RPi.recorder import Recorder
+
+                # Create an instance
                 recorder = Recorder()
+
+                # Display message
                 print(log_string + text_color.BOLD + 'Recorder start' + text_color.ENDC)
+
+                # Start recording
                 recorder.start()
+
+                # Display message
                 print(log_string + text_color.BOLD + 'Recorder running for 10s' + text_color.ENDC)
-                time.sleep(10)
+
+                # Set end time
+                record_end_time = time.time() + 10
+
+                # Keep recording for 10s
+                while time.time() < record_end_time:
+
+                    # Send stream to PC
+                    stream = recorder.io.read1(1)
+                    stream_byte = stream.encode()
+                    server_stream_test.queue.put(stream_byte)
+
+                # Send empty packet to tell PC that stream has stopped
+                server_stream_test.queue.put('')
+
+                # Stop recording
                 recorder.stop()
+
+                # Display message
                 print(log_string + text_color.BOLD + 'Recorder stop' + text_color.ENDC)
 
-
             elif choice == 8:
+                # Disconnect from Arduino only
                 arduino_conn_test.disconnect()
                 print(log_string + text_color.BOLD + 'Arduino disconnected' + text_color.ENDC)
 
             elif choice == 9:
-
+                # Disconnect from Tablet only
                 bt_conn_test.disconnect()
                 print(log_string + text_color.BOLD + 'Bluetooth disconnected' + text_color.ENDC)
 
             elif choice == 10:
+                # Disconnect from PC only
                 server_send_test.disconnect()
                 print(log_string + text_color.BOLD + 'Server send disconnected' + text_color.ENDC)
                 server_recv_test.disconnect()
@@ -151,6 +199,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 print(log_string + text_color.BOLD + 'Server stream disconnected' + text_color.ENDC)
 
             elif choice == 11:
+                # Disconnect from all
                 server_send_test.disconnect()
                 print(log_string + text_color.BOLD + 'Server send disconnected' + text_color.ENDC)
                 server_recv_test.disconnect()
@@ -165,6 +214,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 print(log_string + text_color.BOLD + 'Arduino disconnected' + text_color.ENDC)
 
             else:
+                # Display invalid choice number
                 print(log_string + text_color.FAIL + 'Invalid choice number {}'.format(choice) + text_color.ENDC)
 
     except KeyboardInterrupt:
@@ -193,11 +243,13 @@ def pc(rpi_ip, log_string):
     try:
         while True:
 
-            # TODO: Array here!
+            # Receive data from RPi
             msg = pc_recv_test.queue.get()
 
+            # Decode data (that is in bytes)
             msg = msg.decode()
 
+            # Display message
             print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
 
             if msg == 'stream':
@@ -206,16 +258,17 @@ def pc(rpi_ip, log_string):
                     # Receive stream from socket
                     stream = pc_stream_test.queue.get()
 
+                    # If end of stream (indicated with return value 0), break
+                    if not stream:
+                        break
+
+                    # Decode byte packet
                     stream = stream.decode()
 
                     # Display stream in a window
                     cv2.imshow('Stream from Pi', stream)
 
-                    # If end of stream (indicated with return value 0), break
-                    if not stream:
-                        break
-
-            if msg == 'disconnect':
+            elif msg == 'disconnect':
                 pc_send_test.disconnect()
                 print(log_string + text_color.BOLD + 'Client send diconnected' + text_color.ENDC)
 

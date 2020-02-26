@@ -28,7 +28,6 @@ class Server:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
-        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | {} socket: ".format(time.asctime(), self.name.upper())\
                           + self.text_color.ENDC
@@ -41,7 +40,11 @@ class Server:
 
         # Set socket to be blocking while listening
         self.sock.setblocking(True)
+
+        # Set socket to keep alive
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        # Initialise variable for threads
         self.queue_thread = None
 
     def listen(self):
@@ -55,7 +58,7 @@ class Server:
               + self.text_color.ENDC)
 
         # Listen to requests for connecting
-        self.sock.listen()
+        self.sock.listen(1)
 
         try:
 
@@ -67,8 +70,10 @@ class Server:
                   'Connected to {}:{}'.format(addr[0], self.port)
                   + self.text_color.ENDC)
 
-            # Once connected, start a thread for sending data to PC
+            # Once connected, create a thread for sending data to PC
             self.queue_thread = threading.Thread(target=self.channel, args=(conn_socket, addr))
+
+            # Start the thread
             self.queue_thread.start()
 
         except:
@@ -96,13 +101,11 @@ class Server:
 
             while True:
 
+                time.sleep(1)
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for RPi {} alive".format(self.name.upper())
                       + self.text_color.ENDC)
-
-                # Delay for 1s to prevent overloading the CPU
-                time.sleep(1)
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.WARNING +
@@ -138,26 +141,29 @@ class Server:
                       "Waiting for data to send"
                       + self.text_color.ENDC)
 
-                # Get data from socket
-                data = self.queue.get()
+                time.sleep(1)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from queue"
-                      + self.text_color.ENDC)
+                if not self.queue.empty():
+                    # Get data from socket
+                    data = self.queue.get()
 
-                # Display feedback whenever something is to be received
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}" to {}'.format(data, addr)
-                      + self.text_color.ENDC)
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Data received from queue"
+                          + self.text_color.ENDC)
 
-                # Finally, store data into self.have_recv_queue
-                conn_socket.send(data)
+                    # Display feedback whenever something is to be received
+                    print(self.log_string + self.text_color.BOLD +
+                          'Sending "{}" to {}'.format(data, addr)
+                          + self.text_color.ENDC)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data sent"
-                      + self.text_color.ENDC)
+                    # Finally, store data into self.have_recv_queue
+                    conn_socket.send(data)
+
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Data sent"
+                          + self.text_color.ENDC)
 
     def disconnect(self):
         """

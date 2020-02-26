@@ -19,7 +19,6 @@ class Arduino:
         self.text_color = text_color
         self.have_recv_queue = queue.Queue()
         self.to_send_queue = queue.Queue()
-        self.lock = threading.Lock()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Arduino Socket: ".format(time.asctime())\
                           + self.text_color.ENDC
@@ -42,12 +41,13 @@ class Arduino:
                   'Connected to {}'.format(self.arduino_name)
                   + self.text_color.ENDC)
 
-            # Once connected, start a thread for sending data to Arduino
+            # Once connected, create a thread for sending data to Arduino
             self.recv_thread = threading.Thread(target=self.recv_channel)
 
-            # Once connected, start a thread for receiving data from Arduino
+            # Once connected, create a thread for receiving data from Arduino
             self.send_thread = threading.Thread(target=self.send_channel())
 
+            # Start the threads
             self.recv_thread.start()
             self.send_thread.start()
 
@@ -73,6 +73,8 @@ class Arduino:
 
         while True:
 
+            time.sleep(1)
+
             # Print message to show that thread is alive
             print(self.log_string + self.text_color.OKBLUE +
                   "Thread for {} recv_channel alive".format(self.arduino_name)
@@ -88,9 +90,6 @@ class Arduino:
 
             # If there is
             if buf_size:
-
-                # Get the lock
-                self.lock.acquire()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
@@ -113,9 +112,6 @@ class Arduino:
                 # Put into queue
                 self.have_recv_queue.put(data)
 
-                # Release lock
-                self.lock.release()
-
     def send_channel(self):
         """
         Function to send data to Arduino device
@@ -134,11 +130,10 @@ class Arduino:
                   "Thread for {} send_channel alive".format(self.arduino_name)
                   + self.text_color.ENDC)
 
+            time.sleep(1)
+
             # If there is data
             if not self.to_send_queue.empty():
-
-                # Get the lock
-                self.lock.acquire()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.WARNING +
@@ -165,9 +160,6 @@ class Arduino:
                 print(self.log_string + self.text_color.OKBLUE +
                       "Data sent"
                       + self.text_color.ENDC)
-
-                # Release the lock
-                self.lock.release()
 
     def disconnect(self):
         """
