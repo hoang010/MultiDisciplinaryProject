@@ -248,14 +248,14 @@ def robo_init(arduino_conn, bt_conn):
     while mid_right_obstacle > 1:
 
         # If there is no obstacle on the right, tell Arduino to turn right
-        arduino_conn.to_send_queue.put('5'.encode())
+        arduino_conn.to_send_queue.put(b'5')
 
         # Refresh variables in freedback
         _ = arduino_conn.have_recv_queue.get()
 
     # If robot is facing corner, turn left
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and mid_right_obstacle <= 1:
-        arduino_conn.to_send_queue.put('4'.encode())
+        arduino_conn.to_send_queue.put(b'4')
 
     # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
     #       [rows, col]
@@ -310,7 +310,7 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
             print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
             # Get sensor data
-            send_param = '2'.encode()
+            send_param = b'2'
             arduino_conn.to_send_queue.put(send_param)
             sensor_data = arduino_conn.have_recv_queue.get()
 
@@ -323,16 +323,15 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
             movement = explorer.move_queue.get()
 
             # Display message
-            if movement == '5':
+            if movement == b'5':
                 log_movement = 'right'
-            elif movement == '4':
-                log_movement = 'left'
+            elif movement == b'4':
+                log_movement = b'left'
             else:
                 log_movement = 'forward'
             print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
-            # Encode before sending to arduino
-            movement = movement.encode()
+            # Send to arduino
             arduino_conn.to_send_queue.put(movement)
 
             # Get feedback from Arduino
@@ -417,7 +416,7 @@ def move_to_point(log_string, arduino_conn, explorer, start):
         print(log_string + text_color.BOLD + 'Get sensor data' + text_color.ENDC)
 
         # Get info about surrounding
-        send_param = '2'.encode()
+        send_param = b'2'
         arduino_conn.to_send_queue.put(send_param)
         sensor_data = arduino_conn.have_recv_queue.get()
 
@@ -455,7 +454,7 @@ def move_to_point(log_string, arduino_conn, explorer, start):
                 print(log_string + text_color.BOLD + 'Turning left' + text_color.ENDC)
 
                 # Tell Arduino to turn left
-                movement = '4'.encode()
+                movement = b'4'
 
                 # Update direction
                 explorer.update_dir(True)
@@ -471,7 +470,7 @@ def move_to_point(log_string, arduino_conn, explorer, start):
 
                 print(log_string + text_color.BOLD + 'Turning right' + text_color.ENDC)
                 # Turn right
-                movement = '5'.encode()
+                movement = b'5'
 
                 # Update direction
                 explorer.update_dir(False)
@@ -481,7 +480,7 @@ def move_to_point(log_string, arduino_conn, explorer, start):
 
             # Advance
             print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
-            movement = '3'.encode()
+            movement = b'3'
 
             explorer.update_pos()
 

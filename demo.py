@@ -101,7 +101,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif choice == 2:
 
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.put('2'.encode())
+                arduino_conn_demo.to_send_queue.put(b'2')
 
                 dist = get_sensor_data(arduino_conn_demo)
                 print(log_string + text_color.OKGREEN + 'Distance to move: {} cm'.format(dist) + text_color.ENDC)
@@ -110,7 +110,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 i = 1
 
                 while dist > 0:
-                    arduino_conn_demo.to_send_queue.put('3'.encode())
+                    arduino_conn_demo.to_send_queue.put(b'3')
 
                     get_sensor_data(arduino_conn_demo)
 
@@ -124,7 +124,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 for i in range(2):
                     print(log_string + text_color.OKGREEN + 'Turning left by 180 degrees' + text_color.ENDC)
-                    arduino_conn_demo.to_send_queue.put('7'.encode())
+                    arduino_conn_demo.to_send_queue.put(b'7')
 
                     get_sensor_data(arduino_conn_demo)
 
@@ -132,7 +132,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 for i in range(2):
                     print(log_string + text_color.OKGREEN + 'Turning right by 180 degrees' + text_color.ENDC)
-                    arduino_conn_demo.to_send_queue.put('8'.encode())
+                    arduino_conn_demo.to_send_queue.put(b'8')
 
                     get_sensor_data(arduino_conn_demo)
 
@@ -146,7 +146,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 i = 1
 
                 print(log_string + text_color.OKGREEN + 'Obstacle avoidance and position recovery' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.put('2'.encode())
+                arduino_conn_demo.to_send_queue.put(b'2')
 
                 obs_dist = get_sensor_data(arduino_conn_demo)
 
@@ -155,7 +155,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 obs_dist = (int(obs_dist) / 10) - 1
 
                 while obs_dist > 0:
-                    arduino_conn_demo.to_send_queue.put('3'.encode())
+                    arduino_conn_demo.to_send_queue.put(b'3')
 
                     get_sensor_data(arduino_conn_demo)
 
@@ -167,22 +167,22 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 check_left_obs = get_sensor_data(arduino_conn_demo)
 
                 if not check_left_obs:
-                    action_order = ['4', '3', '5', '3', '3', '5', '3', '4']
+                    action_order = [b'4', b'3', b'5', b'3', b'3', b'5', b'3', b'4']
 
                 else:
-                    action_order = ['5', '3', '4', '3', '3', '4', '3', '5']
+                    action_order = [b'5', b'3', b'4', b'3', b'3', b'4', b'3', b'5']
 
                 # Declare variables here again
                 remain_dist = total_dist - obs_dist
                 i = 0
 
                 for num in action_order:
-                    arduino_conn_demo.to_send_queue.put(num.encode())
+                    arduino_conn_demo.to_send_queue.put(num)
 
                     get_sensor_data(arduino_conn_demo)
 
                 while remain_dist > 0:
-                    arduino_conn_demo.to_send_queue.put('3'.encode())
+                    arduino_conn_demo.to_send_queue.put(b'3')
 
                     get_sensor_data(arduino_conn_demo)
 

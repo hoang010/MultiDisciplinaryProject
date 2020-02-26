@@ -86,7 +86,7 @@ class Explore:
         if turn_right_condition is True:
 
             # Turn right (5 is the index to tell Arduino to turn right)
-            movement = '5'
+            movement = b'5'
 
             # Put the command 'right' into queue for main() to read
             self.move_queue.put(movement)
@@ -98,7 +98,7 @@ class Explore:
         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
             # Turn left (4 is the index to tell Arduino to turn left)
-            movement = '4'
+            movement = b'4'
 
             # Since there is an obstacle on the right, get the coordinates
             x_coord, y_coord = self.get_coord('right')
@@ -132,7 +132,7 @@ class Explore:
                     obstacle_coord.append((x_coord, y_coord))
 
             # Move forward (3 is the index to tell Arduino to move forward)
-            movement = '3'
+            movement = b'3'
 
             # Put the command 'advance' into queue for main() to read
             self.move_queue.put(movement)

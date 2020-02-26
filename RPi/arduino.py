@@ -83,11 +83,8 @@ class Arduino:
                   "Checking buffer size"
                   + self.text_color.ENDC)
 
-            # Check buffer if there is any data there
-            buf_size = self.arduino_serial.inWaiting()
-
-            # If there is
-            if buf_size:
+            # If there is data waiting
+            if self.arduino_serial.in_waiting > 0:
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
@@ -95,7 +92,7 @@ class Arduino:
                       + self.text_color.ENDC)
 
                 # Read all data from connected socket
-                data = self.arduino_serial.read(buf_size)
+                data = self.arduino_serial.readline()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
