@@ -103,14 +103,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif choice == 2:
 
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.put(b'2')
 
-                dist = arduino_conn_demo.have_recv_queue.get()
-                dist = json.loads(dist)
-                dist = int(dist["TopMiddle"])/10
-                print(log_string + text_color.OKGREEN + 'Distance to move: {} cm'.format(dist) + text_color.ENDC)
-
-                dist = int(dist)/10
+                dist = int(input('Enter number of grids to move: '))
                 i = 1
 
                 while dist > 0:
