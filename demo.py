@@ -13,6 +13,7 @@ from config.direction import Direction
 import time
 import cv2
 import os
+import json
 
 
 def main(sys_type):
@@ -50,6 +51,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
     # Connect to Arduino
     arduino_conn_demo = Arduino(arduino_name, text_color)
+    arduino_conn_demo.have_recv_queue.get()
 
     # Connect to PC
     server_send_demo = Server('server_send_demo', 'send', rpi_ip, 7777, text_color)
@@ -103,7 +105,9 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
                 arduino_conn_demo.to_send_queue.put(b'2')
 
-                dist = get_sensor_data(arduino_conn_demo)
+                dist = arduino_conn_demo.have_recv_queue.get()
+                dist = json.loads(dist)
+                dist = int(dist["TopMiddle"])/10
                 print(log_string + text_color.OKGREEN + 'Distance to move: {} cm'.format(dist) + text_color.ENDC)
 
                 dist = int(dist)/10
@@ -112,7 +116,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 while dist > 0:
                     arduino_conn_demo.to_send_queue.put(b'3')
 
-                    get_sensor_data(arduino_conn_demo)
+                    arduino_conn_demo.have_recv_queue.get()
 
                     print(log_string + text_color.OKGREEN + 'Moved by {} grid'.format(i) + text_color.ENDC)
 
@@ -126,7 +130,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     print(log_string + text_color.OKGREEN + 'Turning left by 180 degrees' + text_color.ENDC)
                     arduino_conn_demo.to_send_queue.put(b'7')
 
-                    get_sensor_data(arduino_conn_demo)
+                    arduino_conn_demo.have_recv_queue.get()
 
                     print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
@@ -134,7 +138,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     print(log_string + text_color.OKGREEN + 'Turning right by 180 degrees' + text_color.ENDC)
                     arduino_conn_demo.to_send_queue.put(b'8')
 
-                    get_sensor_data(arduino_conn_demo)
+                    arduino_conn_demo.have_recv_queue.get()
 
                     print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
@@ -148,7 +152,11 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 print(log_string + text_color.OKGREEN + 'Obstacle avoidance and position recovery' + text_color.ENDC)
                 arduino_conn_demo.to_send_queue.put(b'2')
 
-                obs_dist = get_sensor_data(arduino_conn_demo)
+                obs_dist = arduino_conn_demo.have_recv_queue.get()
+
+                obs_dist = json.loads(obs_dist)
+
+                obs_dist = int(obs_dist["TopMiddle"]) / 10
 
                 print(log_string + text_color.OKGREEN + 'Obstacle at distance: {}'.format(obs_dist) + text_color.ENDC)
 
@@ -157,14 +165,20 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 while obs_dist > 0:
                     arduino_conn_demo.to_send_queue.put(b'3')
 
-                    get_sensor_data(arduino_conn_demo)
+                    arduino_conn_demo.have_recv_queue.get()
 
                     print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
 
                     i += 1
                     obs_dist -= 1
 
-                check_left_obs = get_sensor_data(arduino_conn_demo)
+                arduino_conn_demo.to_send_queue.put(b'2')
+
+                check_left_obs = arduino_conn_demo.have_recv_queue.get()
+
+                check_left_obs = json.loads(check_left_obs)
+
+                check_left_obs = int(check_left_obs["LeftSide"]) / 10
 
                 if not check_left_obs:
                     action_order = [b'4', b'3', b'5', b'3', b'3', b'5', b'3', b'4']
@@ -179,12 +193,12 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 for num in action_order:
                     arduino_conn_demo.to_send_queue.put(num)
 
-                    get_sensor_data(arduino_conn_demo)
+                    arduino_conn_demo.have_recv_queue.get()
 
                 while remain_dist > 0:
                     arduino_conn_demo.to_send_queue.put(b'3')
 
-                    get_sensor_data(arduino_conn_demo)
+                    arduino_conn_demo.have_recv_queue.get()
 
                     print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
 
@@ -279,25 +293,10 @@ def pc(rpi_ip, log_string):
         os.system('pkill -9 python')
 
 
-def get_sensor_data(arduino_conn_demo):
-    """
-    Function to get sensor data
-    :param arduino_conn_demo: Serial
-            Serial port containing connection to Arduino
-    :return: Array
-            Array containing sensor data
-    """
-    data = arduino_conn_demo.have_recv_queue.get()
-
-    data = data.decode()
-
-    return data
-
-
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        #main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')

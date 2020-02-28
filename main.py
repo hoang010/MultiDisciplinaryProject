@@ -83,7 +83,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             mode = mode.decode()
 
             # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-            if mode in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Disconnect']:
+            if mode in ['beginExplore', 'Image Recognition', 'beginFastest', 'Manual', 'Disconnect']:
 
                 # Send ack to Android device
                 bt_conn.to_send_queue.put(('{} acknowledged'.format(mode)).encode())
@@ -91,13 +91,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 # Display on screen the mode getting executed
                 print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
-                if mode == 'Explore':
+                if mode == 'beginExplore':
                     explorer = explore(log_string, map_size, arduino_conn, bt_conn, server_stream)
 
                 elif mode == 'Image Recognition':
                     print(mode)
 
-                elif mode == 'Shortest Path':
+                elif mode == 'beginFastest':
                     algo = AStar(explorer.real_map, explorer.goal)
                     algo.find_path()
                     path = algo.path

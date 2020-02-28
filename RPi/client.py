@@ -54,7 +54,7 @@ class Client:
                   'Connecting to {}:{}'.format(self.rpi_ip, self.port)
                   + self.text_color.ENDC)
 
-            self.sock.connect(self.rpi_ip)
+            self.sock.connect((self.rpi_ip, self.port))
 
             # Once connected, create a thread for sending data to Raspberry Pi
             self.queue_thread = threading.Thread(target=self.channel, args=(self.sock, self.rpi_ip))

@@ -4,19 +4,16 @@ import queue
 
 
 class Explore:
-    def __init__(self, map_size, direction_class):
+    def __init__(self, direction_class):
         """
         Function to initialise an instance of Explore
-        :param map_size: Array
-                Array containing actual map size
-                Should be either (15, 20) or (20, 15)
         :param direction_class: Class
                 Class containing directions
         """
         self.direction_class = direction_class
         self.direction = self.direction_class.N
         self.move_queue = queue.Queue()
-        self.map_size = map_size
+        self.map_size = (15, 20)
         self.real_map = np.zeros(self.map_size)
         self.explored_map = self.real_map
         self.round = 0
