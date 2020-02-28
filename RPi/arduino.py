@@ -43,7 +43,7 @@ class Arduino:
             self.recv_thread = threading.Thread(target=self.recv_channel)
 
             # Once connected, create a thread for receiving data from Arduino
-            self.send_thread = threading.Thread(target=self.send_channel())
+            self.send_thread = threading.Thread(target=self.send_channel)
 
             # Start the threads
             self.recv_thread.start()
@@ -69,14 +69,17 @@ class Arduino:
               "Thread for {} recv_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
+        i = 0
+
         while True:
 
             time.sleep(1)
 
-            # Print message to show that thread is alive
-            print(self.log_string + self.text_color.OKBLUE +
-                  "Thread for {} recv_channel alive".format(self.arduino_name)
-                  + self.text_color.ENDC)
+            if i % 10 == 0:
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for {} recv_channel alive".format(self.arduino_name)
+                      + self.text_color.ENDC)
 
             # Print message to show that thread is alive
             print(self.log_string + self.text_color.WARNING +
@@ -84,7 +87,7 @@ class Arduino:
                   + self.text_color.ENDC)
 
             # If there is data waiting
-            if self.arduino_serial.in_waiting > 0:
+            if self.arduino_serial.inWaiting() > 0:
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
@@ -107,6 +110,8 @@ class Arduino:
                 # Put into queue
                 self.have_recv_queue.put(data)
 
+            i += 1
+
     def send_channel(self):
         """
         Function to send data to Arduino device
@@ -118,12 +123,14 @@ class Arduino:
               "Thread for {} recv_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
+        i = 0
         while True:
 
-            # Print message to show that thread is alive
-            print(self.log_string + self.text_color.OKBLUE +
-                  "Thread for {} send_channel alive".format(self.arduino_name)
-                  + self.text_color.ENDC)
+            if i % 10 == 1:
+                # Print message to show that thread is alive
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for {} send_channel alive".format(self.arduino_name)
+                      + self.text_color.ENDC)
 
             time.sleep(1)
 
@@ -155,6 +162,8 @@ class Arduino:
                 print(self.log_string + self.text_color.OKBLUE +
                       "Data sent"
                       + self.text_color.ENDC)
+
+            i += 1
 
     def disconnect(self):
         """

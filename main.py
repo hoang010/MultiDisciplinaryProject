@@ -11,7 +11,8 @@ from config.text_color import TextColor as text_color
 from config.direction import Direction
 
 # Import libraries
-import numpy as np
+from ast import literal_eval
+import json
 import time
 import cv2
 import os
@@ -102,7 +103,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     algo.find_path()
                     path = algo.path
                     for node in path:
-                        move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
+                        explorer.move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
 
                 elif mode == 'Manual':
                     print(mode)
@@ -172,6 +173,7 @@ def pc(rpi_ip, log_string):
                 print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
                 if data == 'Explore':
+
                     while True:
 
                         # Receive stream from socket
@@ -237,7 +239,8 @@ def robo_init(arduino_conn, bt_conn):
     # Get feedback from Arduino
     feedback = arduino_conn.have_recv_queue.get()
 
-    feedback = feedback.decode()
+    feedback = literal_eval(feedback.decode())
+    feedback = json.dumps(feedback, indent=4, sort_keys=True)
 
     front_left_obstacle = int(feedback["TopLeft"]) / 10
     front_mid_obstacle = int(feedback["TopMiddle"]) / 10
@@ -267,13 +270,11 @@ def robo_init(arduino_conn, bt_conn):
     return map_size
 
 
-def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
+def explore(log_string, arduino_conn, bt_conn, server_stream):
     """
     Function to run explore algorithm
     :param log_string: String
             Format of log
-    :param map_size: Array
-            Array containing map size to be used for explore algorithm (15, 20) or (20, 15)
     :param arduino_conn: Serial
             Serial class containing connection to Arduino board
     :param bt_conn: Socket
@@ -292,7 +293,7 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
     recorder.start()
 
     # Start an instance of Explore class
-    explorer = Explore(map_size, Direction)
+    explorer = Explore(Direction)
 
     # Start an instance of ImageRecognition class
     img_recognisor = ImageRecognition(text_color)
@@ -303,7 +304,7 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
     while not explorer.is_map_complete():
 
         # While round is not complete
-        while explorer.check_round_complete():
+        while not explorer.check_round_complete():
 
             print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
@@ -313,6 +314,9 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
             send_param = b'2'
             arduino_conn.to_send_queue.put(send_param)
             sensor_data = arduino_conn.have_recv_queue.get()
+
+            sensor_data = literal_eval(sensor_data)
+            sensor_data = json.dumps(sensor_data, indent=4, sort_keys=True)
 
             print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
@@ -345,6 +349,7 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
             # Send hex explored map to tablet
             hex_exp_map = hex_exp_map.encode()
             bt_conn.to_send_queue.put(hex_exp_map)
+            bt_conn.to_send_queue.put(explorer.direction)
             print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
 
             # Get camera input and encode it into hex
@@ -361,16 +366,7 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
         print(log_string + text_color.BOLD + 'Updated start by 3' + text_color.ENDC)
 
         # Actually move to new start position
-        move_to_point(log_string, arduino_conn, explorer, explorer.start)
-
-        # If start has obstacle, shift again
-        while not check_start(explorer, explorer.start):
-            print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
-            explorer.update_start(1, 0)
-            print(log_string + text_color.BOLD + 'Updated start by 1 in x direction' + text_color.ENDC)
-
-        # Move to new start
-        move_to_point(log_string, arduino_conn, explorer, explorer.start)
+        explorer.move_to_point(log_string, text_color, arduino_conn, explorer.start)
 
     # Send empty packet to tell PC that stream has stopped
     server_stream.queue.put('')
@@ -379,134 +375,12 @@ def explore(log_string, map_size, arduino_conn, bt_conn, server_stream):
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
     # Move to initial start
-    move_to_point(log_string, arduino_conn, explorer, explorer.true_start)
+    explorer.move_to_point(log_string, text_color, arduino_conn, explorer.true_start)
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
 
     return explorer
-
-
-def move_to_point(log_string, arduino_conn, explorer, start):
-    """
-    Function to move robot to the specified point
-    :param log_string: String
-            String containing format for log
-    :param arduino_conn: Serial
-            Connection to Arduino via USB
-    :param explorer: Explorer class
-            Data in the explorer instance is required
-    :param start: Array
-            Start point, can be all 9 points of position or just 1 reference start point
-    :return:
-    """
-
-    # Get difference between x and y coordinates of current position
-    # and start position
-    if len(start) > 1:
-        start_ref = start[4]
-    else:
-        start_ref = start
-
-    print(log_string + text_color.WARNING + 'Move to point {}'.format(start_ref) + text_color.ENDC)
-
-    # Execute loop while difference is not zero
-    while not check_start(explorer, start):
-
-        print(log_string + text_color.BOLD + 'Get sensor data' + text_color.ENDC)
-
-        # Get info about surrounding
-        send_param = b'2'
-        arduino_conn.to_send_queue.put(send_param)
-        sensor_data = arduino_conn.have_recv_queue.get()
-
-        print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
-
-        # Get the data
-        front_left_obstacle = int(sensor_data["TopLeft"]) / 10
-        front_mid_obstacle = int(sensor_data["TopMiddle"]) / 10
-        front_right_obstacle = int(sensor_data["TopRight"]) / 10
-        mid_left_obstacle = int(sensor_data["LeftSide"]) / 10
-        mid_right_obstacle = int(sensor_data["RightSide"]) / 10
-
-        # Check if start has obstacle
-        front_coord = explorer.get_coord('front')
-        start_has_obstacle = ((front_coord[0][0] + front_left_obstacle) in start or
-                              (front_coord[1][0] + front_mid_obstacle) in start or
-                              (front_coord[2][0] + front_right_obstacle) in start)
-
-        # If there is, update start by 1 in x direction and skip the loop
-        if start_has_obstacle:
-            print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
-            explorer.update_start(1, 0)
-            print(log_string + text_color.BOLD + 'Updated start by 1 in x direction' + text_color.ENDC)
-            continue
-
-        # Check if front has obstacle
-        front_obstacle = (front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1)
-
-        # If there is an obstacle in front
-        if front_obstacle:
-
-            # If there is no obstacle on the left
-            if not mid_left_obstacle:
-
-                print(log_string + text_color.BOLD + 'Turning left' + text_color.ENDC)
-
-                # Tell Arduino to turn left
-                movement = b'4'
-
-                # Update direction
-                explorer.update_dir(True)
-
-            # If there is obstacle on both left and right
-            elif mid_right_obstacle:
-
-                # This shouldn't happen, but raise error if it does
-                raise Exception('GG: Dead End!')
-
-            # If there is obstacle in front and no obstacle on right
-            else:
-
-                print(log_string + text_color.BOLD + 'Turning right' + text_color.ENDC)
-                # Turn right
-                movement = b'5'
-
-                # Update direction
-                explorer.update_dir(False)
-
-        # If no obstacle in front
-        else:
-
-            # Advance
-            print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
-            movement = b'3'
-
-            explorer.update_pos()
-
-        # Tell arduino desired movement
-        arduino_conn.to_send_queue.put(movement)
-
-        # Get feedback
-        _ = arduino_conn.have_recv_queue.get()
-
-
-def check_start(explorer, start):
-    """
-    Function to check if robot is at shifted start
-    :param explorer: Explorer class
-            Explorer instance as data from it is needed
-    :param start: Array
-            Coordinates of start position
-    :return:
-    """
-    if len(start) > 2:
-        if explorer.current_pos[4] == start[4]:
-            return True
-    else:
-        if explorer.current_pos[4] == start:
-            return True
-    return False
 
 
 if __name__ == "__main__":
