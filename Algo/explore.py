@@ -26,6 +26,7 @@ class Explore:
                            (2, 0), (1, 0), (0, 0)]
 
         self.start = self.true_start
+        self.check_right_empty = 0
 
         # Follows format (y, x)
         # Since map is (15, 20), i.e. 15 rows x 20 columns then lim(y) = 15, lim(x) = 20,
@@ -75,14 +76,16 @@ class Explore:
         # Check if coordinates on right is within map
         if right_x < len(self.explored_map[0]) or right_y < len(self.explored_map):
             if right_x >= 0 and right_y >= 0:
-                turn_right_condition = (mid_right_obstacle > 2 and self.explored_map[right_x][right_y] == 0)
+                turn_right_condition = bool(mid_right_obstacle > 2 and self.explored_map[right_x][right_y] == 0)
+                self.check_right_empty += 1
 
         # If not within map, then just check if robot is near right wall
         else:
-            turn_right_condition = mid_right_obstacle > 2
+            turn_right_condition = bool(mid_right_obstacle > 2)
+            self.check_right_empty += 1
 
         # If there is no obstacle on the right
-        if turn_right_condition is True:
+        if turn_right_condition is True and self.check_right_empty == 2:
 
             # Turn right (5 is the index to tell Arduino to turn right)
             movement = b'5'
@@ -92,6 +95,8 @@ class Explore:
 
             # Update robot direction
             self.update_dir(left_turn=False)
+
+            self.check_right_empty = 0
 
         # If there is an obstacle in front and on the right
         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
@@ -137,7 +142,7 @@ class Explore:
             self.move_queue.put(movement)
 
             # Update position after moving
-            self.update_pos()
+            self.update_pos(True)
 
         # Get left side coordinates
         left_coord = self.get_coord('left')
@@ -156,34 +161,60 @@ class Explore:
         if not self.round and movement == '3':
             self.round = 1
 
-    def update_pos(self):
+    def update_pos(self, forward):
         """
         Function to update current position according to the direction
         :return:
         """
-        # If current direction is North
-        if self.direction == self.direction_class.N:
-            # Return (x, y+1)
-            for i in range(len(self.current_pos)):
-                self.current_pos[i][1] += 1
+        if forward:
+            # If current direction is North
+            if self.direction == self.direction_class.N:
+                # Return (x, y+1)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][1] += 1
 
-        # If current direction is South
-        elif self.direction == self.direction_class.S:
-            # Return (x, y-1)
-            for i in range(len(self.current_pos)):
-                self.current_pos[i][1] -= 1
+            # If current direction is South
+            elif self.direction == self.direction_class.S:
+                # Return (x, y-1)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][1] -= 1
 
-        # If current direction is East
-        elif self.direction == self.direction_class.E:
-            # Return (x-1, y)
-            for i in range(len(self.current_pos)):
-                self.current_pos[i][0] -= 1
+            # If current direction is East
+            elif self.direction == self.direction_class.E:
+                # Return (x-1, y)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][0] -= 1
 
-        # If current direction is West
+            # If current direction is West
+            else:
+                # Return (x+1, y)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][0] += 1
+
         else:
-            # Return (x+1, y)
-            for i in range(len(self.current_pos)):
-                self.current_pos[i][0] += 1
+            # If current direction is North
+            if self.direction == self.direction_class.N:
+                # Return (x, y+1)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][1] -= 1
+
+            # If current direction is South
+            elif self.direction == self.direction_class.S:
+                # Return (x, y-1)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][1] += 1
+
+            # If current direction is East
+            elif self.direction == self.direction_class.E:
+                # Return (x-1, y)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][0] += 1
+
+            # If current direction is West
+            else:
+                # Return (x+1, y)
+                for i in range(len(self.current_pos)):
+                    self.current_pos[i][0] -= 1
 
     def update_map(self, coord_array, obstacle):
         """
@@ -313,44 +344,44 @@ class Explore:
         def left():
             if self.direction == self.direction_class.N:
                 # Return (x+1, y)
-                coord = (self.current_pos[3][0] + 1, self.current_pos[3][1])
+                coord = (self.current_pos[3][0] - 1, self.current_pos[3][1])
 
             # If current direction is South
             elif self.direction == self.direction_class.S:
                 # Return (x-1, y)
-                coord = (self.current_pos[3][0] - 1, self.current_pos[3][1])
+                coord = (self.current_pos[3][0] + 1, self.current_pos[3][1])
 
             # If current direction is East
             elif self.direction == self.direction_class.E:
                 # Return (x, y -1)
-                coord = (self.current_pos[3][0], self.current_pos[3][1] + 1)
+                coord = (self.current_pos[3][0], self.current_pos[3][1] - 1)
 
             # If current direction is West
             else:
                 # Return (x, y + 1)
-                coord = (self.current_pos[3][0], self.current_pos[3][1] - 1)
+                coord = (self.current_pos[3][0], self.current_pos[3][1] + 1)
 
             return coord
 
         def right():
             if self.direction == self.direction_class.N:
                 # Return (x-1, y)
-                coord = (self.current_pos[5][0] - 1, self.current_pos[5][1])
+                coord = (self.current_pos[5][0] + 1, self.current_pos[5][1])
 
             # If current direction is South
             elif self.direction == self.direction_class.S:
                 # Return (x+1, y)
-                coord = (self.current_pos[5][0] + 1, self.current_pos[5][1])
+                coord = (self.current_pos[5][0] - 1, self.current_pos[5][1])
 
             # If current direction is East
             elif self.direction == self.direction_class.E:
                 # Return (x, y+1)
-                coord = (self.current_pos[5][0], self.current_pos[5][1] - 1)
+                coord = (self.current_pos[5][0], self.current_pos[5][1] + 1)
 
             # If current direction is West
             else:
                 # Return (x, y + 1)
-                coord = (self.current_pos[5][0], self.current_pos[5][1] + 1)
+                coord = (self.current_pos[5][0], self.current_pos[5][1] - 1)
 
             return coord
 
@@ -454,7 +485,7 @@ class Explore:
             return True
         return False
 
-    def move_to_point(self, log_string, text_color, arduino_conn, start):
+    def move_to_point(self, log_string, text_color, arduino_conn, point):
         """
         Function to move robot to the specified point
         :param log_string: String
@@ -468,7 +499,7 @@ class Explore:
         :return:
         """
 
-        print(log_string + text_color.WARNING + 'Move to point {}'.format(start[4]) + text_color.ENDC)
+        print(log_string + text_color.WARNING + 'Move to point {}'.format(point[4]) + text_color.ENDC)
 
         # Execute loop while difference is not zero
         while not self.check_start():
@@ -541,7 +572,7 @@ class Explore:
                 print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
                 movement = b'3'
 
-                self.update_pos()
+                self.update_pos(True)
 
             # Tell arduino desired movement
             arduino_conn.to_send_queue.put(movement)

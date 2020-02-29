@@ -99,7 +99,7 @@ class AStar:
 
         for item in coord:
             node_temp = node.search_near(item[0], item[1])
-            if node_temp.point == end_point:
+            if node_temp.point == self.end_point:
                 return 1
             elif self.is_in_close_list(node_temp):
                 pass
@@ -116,43 +116,43 @@ class AStar:
 
         return 0
 
-##build map, it's just a demo. obstacle is put at random
-ss=Map2d(10,20)
-for i in range(10):
-    ss.obstacle(4, i)
-for i in range(19):
-    ss.obstacle(0, i+1)
-for i in range(9):
-    ss.obstacle(i+1, 0)
-for i in range(9):
-    ss.obstacle(i+1, 19)
-for i in range(19):
-    ss.obstacle(9, i)
-ss.obstacle(8, 6)
-ss.obstacle(6, 8)
-ss.obstacle(6, 15)
-ss.obstacle(9, 10)
-start_point = Point(1, 2)
-end_point = Point(9, 19)
-ss.end_draw(end_point)
-ss.end_draw(start_point)
-
-# init A*
-a_star = AStar(start_point, end_point, ss)
-start_node = a_star.Node(start_point, end_point, 0)
-a_star.open_list.append(start_node)
-
-flag = 0  # reach the goal
-m = 0  # steps count
-
-# searching loop
-while flag != 1:
-    a_star.current = a_star.select_current()  # choose one node from open_list
-    flag = a_star.near_explore(a_star.current)  # search nearby node of current node
-    m = m+1
-    print(m)
-
-# draw map
-for node_path in a_star.path:
-    ss.end_draw(node_path.point)
-ss.map_show()
+## build map, it's just a demo. obstacle is put at random
+# ss=Map2d(10,20)
+# for i in range(10):
+#     ss.obstacle(4, i)
+# for i in range(19):
+#     ss.obstacle(0, i+1)
+# for i in range(9):
+#     ss.obstacle(i+1, 0)
+# for i in range(9):
+#     ss.obstacle(i+1, 19)
+# for i in range(19):
+#     ss.obstacle(9, i)
+# ss.obstacle(8, 6)
+# ss.obstacle(6, 8)
+# ss.obstacle(6, 15)
+# ss.obstacle(9, 10)
+# start_point = Point(1, 2)
+# end_point = Point(9, 19)
+# ss.end_draw(end_point)
+# ss.end_draw(start_point)
+#
+# # init A*
+# a_star = AStar(start_point, end_point, ss)
+# start_node = a_star.Node(start_point, end_point, 0)
+# a_star.open_list.append(start_node)
+#
+# flag = 0  # reach the goal
+# m = 0  # steps count
+#
+# # searching loop
+# while flag != 1:
+#     a_star.current = a_star.select_current()  # choose one node from open_list
+#     flag = a_star.near_explore(a_star.current)  # search nearby node of current node
+#     m = m+1
+#     print(m)
+#
+# # draw map
+# for node_path in a_star.path:
+#     ss.end_draw(node_path.point)
+# ss.map_show()

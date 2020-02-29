@@ -5,8 +5,9 @@ from RPi.arduino import Arduino
 from RPi.client import Client
 from Algo.explore import Explore
 from Algo.image_recognition import ImageRecognition
-from Algo.a_star import AStar
+# from Algo.a_star import AStar
 # from Algo.shortest_path import ShortestPath
+from Algo.fastest_path import *
 from config.text_color import TextColor as text_color
 from config.direction import Direction
 
@@ -75,7 +76,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
     bt_conn.listen()
-    map_size = robo_init(arduino_conn, bt_conn)
     try:
         while True:
             # Receive data from tablet
@@ -93,20 +93,93 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
                 if mode == 'beginExplore':
-                    explorer = explore(log_string, map_size, arduino_conn, bt_conn, server_stream)
+                    explorer = explore(log_string, arduino_conn, bt_conn, server_stream)
 
                 elif mode == 'Image Recognition':
                     print(mode)
 
                 elif mode == 'beginFastest':
-                    algo = AStar(explorer.real_map, explorer.goal)
-                    algo.find_path()
-                    path = algo.path
-                    for node in path:
-                        explorer.move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
+                    waypt = bt_conn.have_recv_queue.get()
+                    waypt = waypt.decode()
+
+                    flag = 0
+
+                    for i in range(2):
+                        a_star = AStar(explorer.start, waypt, explorer.real_map)
+                        start_pt = AStar.Node(explorer.start, waypt, 0)
+                        a_star.open_list.append(start_pt)
+
+                        while not flag:
+                            a_star_current = a_star.select_current()
+                            flag = a_star.near_explore(a_star_current)
+
+                        for node_path in a_star.path:
+                            explorer.move_to_point(log_string, text_color, arduino_conn, node_path.point)
+
+                        explorer.start = explorer.current_pos
+                        waypt = explorer.goal
+
+                    # algo = AStar(explorer.real_map, explorer.goal)
+                    # algo.find_path()
+                    # path = algo.path
+                    # for node in path:
+                    #     explorer.move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
 
                 elif mode == 'Manual':
-                    print(mode)
+                    while True:
+                        manual_explorer = Explore(Direction)
+                        movement = bt_conn.have_recv_queue.get()
+
+                        movement = movement.decode()
+
+                        if movement == 'sl':
+                            print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
+                            arduino_conn.to_send_queue.put(b'4')
+                            arduino_conn.have_recv_queue.get()
+                            manual_explorer.update_dir(True)
+
+                        elif movement == 'f':
+                            print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
+                            arduino_conn.to_send_queue.put(b'3')
+                            arduino_conn.have_recv_queue.get()
+                            manual_explorer.update_pos(True)
+
+                        elif movement == 'sr':
+                            print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
+                            arduino_conn.to_send_queue.put(b'5')
+                            arduino_conn.have_recv_queue.get()
+                            manual_explorer.update_dir(False)
+
+                        elif movement == 'tl':
+                            print(log_string + text_color.BOLD + 'Rotate left' + text_color.ENDC)
+                            arduino_conn.to_send_queue.put(b'7')
+                            arduino_conn.have_recv_queue.get()
+                            manual_explorer.update_dir(True)
+                            manual_explorer.update_dir(True)
+
+                        elif movement == 'r':
+                            print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
+                            arduino_conn.to_send_queue.put(b'6')
+                            arduino_conn.have_recv_queue.get()
+                            manual_explorer.update_pos(False)
+
+                        elif movement == 'tr':
+                            print(log_string + text_color.BOLD + 'Rotate right' + text_color.ENDC)
+                            arduino_conn.to_send_queue.put(b'8')
+                            arduino_conn.have_recv_queue.get()
+                            manual_explorer.update_dir(False)
+                            manual_explorer.update_dir(False)
+
+                        elif movement == 'end':
+                            break
+
+                        else:
+                            print(log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
+
+                        bt_conn.to_send_queue.put(manual_explorer.direction.encode())
+                        bt_conn.to_send_queue.put(manual_explorer.current_pos.encode())
+
+                    print(log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
 
                 elif mode == 'Disconnect':
                     # Send message to PC and Arduino to tell them to disconnect
@@ -227,7 +300,7 @@ def pc(rpi_ip, log_string):
 
 
 # This init is done assuming the robot does not start in a "room" in the corner
-def robo_init(arduino_conn, bt_conn):
+def robo_init(arduino_conn):
     """
     Function to init robot
     :param arduino_conn: Serial
@@ -259,15 +332,6 @@ def robo_init(arduino_conn, bt_conn):
     # If robot is facing corner, turn left
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and mid_right_obstacle <= 1:
         arduino_conn.to_send_queue.put(b'4')
-
-    # TODO: Tablet to send array [x, y] of map, i.e. [15, 20] or [20, 15]
-    #       [rows, col]
-    # Get map size from tablet, i.e. (15, 20) or (20, 15)
-    map_size = bt_conn.have_recv_queue.get()
-
-    map_size = map_size.decode()
-
-    return map_size
 
 
 def explore(log_string, arduino_conn, bt_conn, server_stream):
