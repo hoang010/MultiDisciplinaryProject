@@ -81,11 +81,6 @@ class Arduino:
                       "Thread for {} recv_channel alive".format(self.arduino_name)
                       + self.text_color.ENDC)
 
-            # Print message to show that thread is alive
-            print(self.log_string + self.text_color.WARNING +
-                  "Checking buffer size"
-                  + self.text_color.ENDC)
-
             # If there is data waiting
             if self.arduino_serial.inWaiting() > 0:
 
@@ -136,11 +131,6 @@ class Arduino:
 
             # If there is data
             if not self.to_send_queue.empty():
-
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.WARNING +
-                      "Reading data from queue"
-                      + self.text_color.ENDC)
 
                 # Get data from queue
                 data = self.to_send_queue.get()

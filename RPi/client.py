@@ -84,6 +84,8 @@ class Client:
               "Thread for PC {} started".format(self.name.upper())
               + self.text_color.ENDC)
 
+        i = 0
+
         if self.conn_type == 'recv':
 
             while True:
@@ -119,17 +121,12 @@ class Client:
         else:
             while True:
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Thread for PC {} alive".format(self.name.upper())
-                      + self.text_color.ENDC)
-
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.WARNING +
-                      "Waiting for data to send"
-                      + self.text_color.ENDC)
-
-                time.sleep(1)
+                if i % 10 == 0:
+                    # Print message to show that thread is alive
+                    print(self.log_string + self.text_color.OKBLUE +
+                          "Thread for PC {} alive".format(self.name.upper())
+                          + self.text_color.ENDC)
+                    time.sleep(1)
 
                 if not self.queue.empty():
                     data = self.queue.get()
@@ -151,6 +148,8 @@ class Client:
                     print(self.log_string + self.text_color.OKBLUE +
                           "Data sent"
                           + self.text_color.ENDC)
+
+                i += 1
 
     def disconnect(self):
         """
