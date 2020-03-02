@@ -410,10 +410,14 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
             print(log_string + text_color.BOLD + 'Explore hex map: {}'.format(hex_exp_map) + text_color.ENDC)
 
-            # Send hex explored map to tablet
-            hex_exp_map = hex_exp_map.encode()
-            bt_conn.to_send_queue.put(hex_exp_map)
-            bt_conn.to_send_queue.put(explorer.direction)
+            packet = {
+                "explored": hex_exp_map.encode(),
+                "obstacle": explorer.explored_map.encode(),
+                "direction": explorer.direction.encode(),
+                "movement": log_movement[0].encode()
+            }
+
+            bt_conn.to_send_queue.put(packet)
             print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
 
             # Get camera input and encode it into hex

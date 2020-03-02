@@ -644,7 +644,7 @@ class Explore:
         for i in range(len(bin_map)):
             temp = bin_map[i].astype(str).tolist()
             for j in range(len(bin_map[i])):
-                temp = temp[j][-1]
+                temp[j] = temp[j][-1]
             temp = ''.join(temp)
             hex_array.append(temp)
 
@@ -652,9 +652,9 @@ class Explore:
         hex_array = '11' + ''.join(hex_array) + '11'
 
         # Converting the binary string into hex
-        for i in range(0, len(hex_array), 8):
-            j = 1 + 8
-            hex_map += hex(int(hex_array[i:j], 2))[2:].zfill(2)
+        for i in range(0, len(hex_array), 4):
+            j = i + 4
+            hex_map += hex(int(hex_array[i:j], 2))[2:]
 
         # Return the hex coded string
         return hex_map
