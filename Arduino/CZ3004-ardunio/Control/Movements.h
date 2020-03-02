@@ -4,6 +4,7 @@
 #include "MyPID.h"
 #include "DualVNH5019MotorShield.h"
 #include "math.h"
+#include "Sensors.h"
 
 #define Pi 3.1428
 
@@ -62,7 +63,7 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
 /* Calculates time required to move forward or backward by the bot in milliseconds. 
 Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
-  float wheelRadius = 2.95;//2.92
+  float wheelRadius = 2.95;
   float offset = 0;
   
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
@@ -74,9 +75,9 @@ float Motion::runningTime(float distance) {
 /* Calculates time required rotate right or left by the bot in milliseconds. 
 Note: in order to change rotate angle, simply change radius (Bot Radius), wheelRadius and offset */
 float Motion::rotateTime(float angle) {
-  float radius = 8.52;//.52;
-  float wheelRadius = 2.89;
-  float offset = 5;
+  float radius = 8.79;//.52;
+  float wheelRadius = 2.95;
+  float offset = 0;
   
   float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
@@ -99,7 +100,7 @@ void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalT
 
   //    Serial.print("Run Time : ");
   //    Serial.println(totalTime);
-
+  bool obstacle = false;
   long count = 0;
   float setMotorSpeed1 = forwardMotorOne ? setInitialMotorSpeed1 : -setInitialMotorSpeed1;
   float setMotorSpeed2 = forwardMotorTwo ? setInitialMotorSpeed2 : -setInitialMotorSpeed2;
@@ -113,7 +114,7 @@ void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalT
   md.setSpeeds(setMotorSpeed1, setMotorSpeed2);
 
   while (stopTime - startTime < totalTime) {    //Keep track of time elapsed
-
+    
     if (count == 2000) {  // Update set speed every 2000 counts (in order not to over or under sample)
 
       setMotorSpeed1 = motorOne->setWheelSpeed(setMotorSpeed1, pinM1, rpm, forwardMotorOne);  // Find new set speed of motor 1
@@ -122,7 +123,7 @@ void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalT
       md.setM1Speed(setMotorSpeed1);
       md.setM2Speed(setMotorSpeed2);
 
-      count = 0;
+      count == 0;
     }
 
     count++;

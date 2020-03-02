@@ -10,6 +10,7 @@ SharpIR SR2(SharpIR::GP2Y0A21YK0F, A1); //front left
 SharpIR SR3(SharpIR::GP2Y0A21YK0F, A2); //looking right, front
 SharpIR SR4(SharpIR::GP2Y0A21YK0F, A3); //looking right, back
 SharpIR LR5(SharpIR::GP2Y0A02YK0F, A4); //looking right
+SharpIR SR6(SharpIR::GP2Y0A21YK0F, A5); //looking right, back
 
 class Sensor {
   private:
@@ -46,6 +47,23 @@ float returnLrDist (int count, SharpIR sensor, int offset) {
   return final;
 }
 
+bool avoidObstacles(int count){
+    float SR1_distance = returnSrDist(count, SR1, -5);
+    float SR2_distance = returnSrDist(count, SR2, -5);
+    float SR6_distance = returnSrDist(count, SR6, -5);
+    
+    if (SR1_distance <= 25 and SR1_distance >= 15){
+      return true;
+      }
+    if (SR2_distance <= 25 and SR2_distance >= 15){
+      return true;
+      }
+    if (SR6_distance <= 25 and SR6_distance >= 15){
+      return true;
+      }
+    return false;
+  }
+
 String returnSensorData(int count) {
 
   float SR1_distance = returnSrDist(count, SR1, -5);
@@ -53,7 +71,8 @@ String returnSensorData(int count) {
   float SR3_distance = returnSrDist(count, SR3, -3);
   float SR4_distance = returnSrDist(count, SR4, -4);
   float LR5_distance = returnLrDist(count, LR5, -17);
+  float SR6_distance = returnSrDist(count, SR6, -8);
 
-  return "{FrontRight:" + String(SR1_distance) + "; FrontLeft:" + String(SR2_distance) + "; RightFront:" + String(SR3_distance) + "; RightBack:" + String(SR4_distance) + "; LeftSide:" + String(LR5_distance)+'}';
+  return "{FrontRight:" + String(SR1_distance) + "; FrontLeft:" + String(SR2_distance) + "; FrontCenter:" + String(SR6_distance)+ "; RightFront:" + String(SR3_distance) + "; RightBack:" + String(SR4_distance) + "; LeftSide:" + String(LR5_distance)+'}';
 }
 #endif

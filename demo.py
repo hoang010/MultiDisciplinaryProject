@@ -101,7 +101,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif choice == 2:
 
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.put('2'.encode())
+                arduino_conn_demo.to_send_queue.put('3'.encode())
 
                 dist = get_sensor_data(arduino_conn_demo)
                 print(log_string + text_color.OKGREEN + 'Distance to move: {} cm'.format(dist) + text_color.ENDC)

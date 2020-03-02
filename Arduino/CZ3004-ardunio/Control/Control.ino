@@ -44,16 +44,26 @@ void setup() {
 
 
 void loop() {
-  
-  int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-  delay(2000);
-  controlBot(3,120);
+  bool obstacle = false;
+  int secondVal = 150; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
+  int distance = 150;
+  /*
+  while(distance > 0){
+    obstacle = avoidObstacles(12);
+    if(obstacle){
+      break;
+      Serial.println("Stopping!");
+      }
+    controlBot(3, 10);
+    distance = distance - 10;
+    }
+*/
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
-    controlBot(instructions, secondVal);
+    //controlBot(instructions, secondVal);
+    Serial.println(instructions + 1);
   }
-  delay(2000);
 }
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
@@ -75,13 +85,12 @@ In order to see bot functionalities simply use serial monitor to input bot funct
 14. Get ready to receive fastest path string */
 
 void controlBot (int instruction, int secondVal) {  
-
   switch (instruction) {
     case 1:  // Check If arduino is responding 
       Serial.println("X_BOTREADY");
       break;
     case 2:  // Return Sensor data
-      sensorData = returnSensorData(12);
+      sensorData = returnSensorData(8);
       Serial.println("X_SENDDATA: " + sensorData);
       break;
     case 3:  // Move Forward
@@ -89,7 +98,7 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTDONE");
       break;
     case 4:  // Turn Left
-      bot->turnLeft(360);
+      bot->turnLeft(90);
       Serial.println("X_BOTDONE");
       break;
     case 5:  // Turn Right
