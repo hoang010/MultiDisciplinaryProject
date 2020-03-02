@@ -2,7 +2,7 @@
 #include "math.h"
 #include "Sensors.h"
 #include "Movements.h"
-//#include "Calibration.h"
+#include "Calibration.h"
 
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
 DualVNH5019MotorShield md; 
@@ -17,7 +17,7 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 210
+#define initialSetSpeed1 190 // left
 #define initialSetSpeed2 210
 #define calibrationSetSpeed1 315
 #define calibrationSetSpeed2 350
@@ -44,26 +44,60 @@ void setup() {
 
 
 void loop() {
-  bool obstacle = false;
-  int secondVal = 150; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-  int distance = 150;
+  //Serial.println(analogRead(A1));
+  //Serial.println(SR6.getDistance(false));
+  int obstacle = -1;
+  int secondVal = 20; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
+  int static distance = 150;
   /*
+  delay(2000);
   while(distance > 0){
     obstacle = avoidObstacles(12);
-    if(obstacle){
-      break;
+    if(obstacle > 10 && obstacle < 20){
+      //turn left
+      controlBot(10, 10);
+      delay(500);
+      //go straight
+      controlBot(3, 30);
+      delay(500);
+      //turn right
+      controlBot(11, 10);
+      delay(500);
+      //go straight
+      controlBot(3, 20);
+      delay(500);
+      //turn right
+      controlBot(11, 10);
+      delay(500);
+      //go straight
+      controlBot(3, 30);
+      delay(500);
+      //turn left
+      controlBot(10, 20);
+      delay(500);
+      distance = distance - 40;
       Serial.println("Stopping!");
       }
     controlBot(3, 10);
     distance = distance - 10;
+    delay(100);
     }
-*/
+  delay(2000);
+  */
+  
+  
+  delay(2000);
+  controlBot(3, 20);
+  delay(2000);
+  
+  /*
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
-    //controlBot(instructions, secondVal);
-    Serial.println(instructions + 1);
-  }
+    controlBot(instructions, secondVal);
+    //Serial.println(instructions + 1);
+  }*/
+  
 }
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
@@ -102,7 +136,15 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTDONE");
       break;
     case 5:  // Turn Right
-      bot->turnRight(90);
+      bot->turnRight(85);
+      Serial.println("X_BOTDONE");
+      break;
+    case 10:  // Turn Left 45
+      bot->turnLeft(45);
+      Serial.println("X_BOTDONE");
+      break;
+    case 11:  // Turn Right 45
+      bot->turnRight(41);
       Serial.println("X_BOTDONE");
       break;
     case 6:  // Move Backward

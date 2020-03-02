@@ -64,7 +64,7 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
 Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
   float wheelRadius = 2.95;
-  float offset = 0;
+  float offset = 50;
   
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float runTime = distance / Speed;
@@ -77,7 +77,7 @@ Note: in order to change rotate angle, simply change radius (Bot Radius), wheelR
 float Motion::rotateTime(float angle) {
   float radius = 8.79;//.52;
   float wheelRadius = 2.95;
-  float offset = 0;
+  float offset = 20;
   
   float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
@@ -123,7 +123,7 @@ void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalT
       md.setM1Speed(setMotorSpeed1);
       md.setM2Speed(setMotorSpeed2);
 
-      count == 0;
+      count = 0;
     }
 
     count++;
@@ -149,13 +149,13 @@ void Motion::moveBackward(float distance) {
 void Motion::turnLeft(float angle) {
 
   long totalTime = round(rotateTime(angle) * 1000);
-  startMotion(true, false, totalTime );
+  startMotion(false, true, totalTime );
 }
 
 void Motion::turnRight(float angle) {
 
   long totalTime  = round(rotateTime(angle) * 1000);
-  startMotion(false, true, totalTime );
+  startMotion(true, false, totalTime );
 }
 
 #endif
