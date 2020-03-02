@@ -17,11 +17,11 @@
 #define M2td  0.1
 #define errorCtrl  2.0
 
-/* Class to control all motion with respect to bot inclusive of 
-1. Move Forward
-2. Move Backward
-3. Turn Right
-4. Turn Left */
+/* Class to control all motion with respect to bot inclusive of
+  1. Move Forward
+  2. Move Backward
+  3. Turn Right
+  4. Turn Left */
 class Motion {
   private:
     float rpm;
@@ -44,7 +44,7 @@ class Motion {
 };
 
 /* Constructor to itialialise all private variable of object
-motorOne and motorTwo are PID values or rather MyPID object required to update speeds of the motors with respect to current speed*/
+  motorOne and motorTwo are PID values or rather MyPID object required to update speeds of the motors with respect to current speed*/
 Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setInitialMotorSpeed2, int _pinM2, DualVNH5019MotorShield _md) {
 
   motorOne = new MyPID(M1k, M1td, M1ts, errorCtrl);
@@ -60,29 +60,29 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
   setInitialMotorSpeed2 = _setInitialMotorSpeed2;
 }
 
-/* Calculates time required to move forward or backward by the bot in milliseconds. 
-Note: in order to change forward travelling distance, simply change wheelRadius and offset */
+/* Calculates time required to move forward or backward by the bot in milliseconds.
+  Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
   float wheelRadius = 2.95;
   float offset = 50;
-  
+
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float runTime = distance / Speed;
-  
+
   return runTime + offset;
 }
 
-/* Calculates time required rotate right or left by the bot in milliseconds. 
-Note: in order to change rotate angle, simply change radius (Bot Radius), wheelRadius and offset */
+/* Calculates time required rotate right or left by the bot in milliseconds.
+  Note: in order to change rotate angle, simply change radius (Bot Radius), wheelRadius and offset */
 float Motion::rotateTime(float angle) {
   float radius = 8.79;//.52;
   float wheelRadius = 2.95;
   float offset = 20;
-  
+
   float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float rotateTime = distance / Speed;
-  
+
   return rotateTime + offset;
 }
 
@@ -93,9 +93,9 @@ void Motion::stopMotion() {
 }
 
 /* Function to set motor speed based on required direction and run for required time in microseconds (for precision)
-i.e. function to handles all motion of bot eg. move Forward, turn Left, etc.
-forwardMotorOne is set to true implies motorOne will rotate such that bot moves forwards
-whereas if forwardMotorOne is set to false implies motorOne will rotate such that bot moves backward*/
+  i.e. function to handles all motion of bot eg. move Forward, turn Left, etc.
+  forwardMotorOne is set to true implies motorOne will rotate such that bot moves forwards
+  whereas if forwardMotorOne is set to false implies motorOne will rotate such that bot moves backward*/
 void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalTime) {
 
   //    Serial.print("Run Time : ");
@@ -114,7 +114,7 @@ void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalT
   md.setSpeeds(setMotorSpeed1, setMotorSpeed2);
 
   while (stopTime - startTime < totalTime) {    //Keep track of time elapsed
-    
+
     if (count == 2000) {  // Update set speed every 2000 counts (in order not to over or under sample)
 
       setMotorSpeed1 = motorOne->setWheelSpeed(setMotorSpeed1, pinM1, rpm, forwardMotorOne);  // Find new set speed of motor 1

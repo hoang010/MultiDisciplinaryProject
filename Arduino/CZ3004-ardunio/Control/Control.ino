@@ -5,7 +5,7 @@
 #include "Calibration.h"
 
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
-DualVNH5019MotorShield md; 
+DualVNH5019MotorShield md;
 
 /* Definition of A & B lines of Encoder 1 (right) and Encoder 2 (left) */
 #define E2A  11
@@ -25,7 +25,7 @@ DualVNH5019MotorShield md;
 String sensorData;
 
 Motion* bot;  // Motion object to control bot movements such as "Move Forward", "Turn Right", etc.
-//Calibration* calibrateBot; // Calibration object to control calibration techniques such as "Calibrate with Front sensors", "Calibrate with Left sensors", etc.
+Calibration* calibrateBot; // Calibration object to control calibration techniques such as "Calibrate with Front sensors", "Calibrate with Left sensors", etc.
 
 
 void setup() {
@@ -38,89 +38,44 @@ void setup() {
 
   md.init();                                                                            //Initialisation of motor shield
   bot = new Motion(targetRPM, initialSetSpeed1, E1B, initialSetSpeed2, E2A, md);        //Construction of Motion object
-  //calibrateBot = new Calibration(calibrationSetSpeed1, calibrationSetSpeed2, md);       //Construction of Calibration object
+  calibrateBot = new Calibration(calibrationSetSpeed1, calibrationSetSpeed2, md);       //Construction of Calibration object
   //Serial.println("Hi. I am Ardunio!");
 }
 
 
 void loop() {
-  //Serial.println(analogRead(A1));
-  //Serial.println(SR6.getDistance(false));
-  int obstacle = -1;
+
   int secondVal = 20; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-  int static distance = 150;
-  /*
-  delay(2000);
-  while(distance > 0){
-    obstacle = avoidObstacles(12);
-    if(obstacle > 10 && obstacle < 20){
-      //turn left
-      controlBot(10, 10);
-      delay(500);
-      //go straight
-      controlBot(3, 30);
-      delay(500);
-      //turn right
-      controlBot(11, 10);
-      delay(500);
-      //go straight
-      controlBot(3, 20);
-      delay(500);
-      //turn right
-      controlBot(11, 10);
-      delay(500);
-      //go straight
-      controlBot(3, 30);
-      delay(500);
-      //turn left
-      controlBot(10, 20);
-      delay(500);
-      distance = distance - 40;
-      Serial.println("Stopping!");
-      }
-    controlBot(3, 10);
-    distance = distance - 10;
-    delay(100);
-    }
-  delay(2000);
-  */
-  
-  
-  delay(2000);
-  controlBot(3, 20);
-  delay(2000);
-  
-  /*
-  if (Serial.available())
+
+  if (Serial.available() > 0)
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
     controlBot(instructions, secondVal);
-    //Serial.println(instructions + 1);
-  }*/
-  
+  }
 }
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
-The function additionally passes a message back to RPI via serial port when required action is complete
-In order to see bot functionalities simply use serial monitor to input bot functionalities
-1. Check If arduino is responding (redundant)
-2. Return Sensor data
-3. Move Forward
-4. Turn Left
-5. Turn Right
-6. Move Backward
-7. Turn Left 180
-8. Turn Right 180
-9. Stop bot (helps unlock wheels after using break)
-10. Turn left, Calibrate with Front sensors, and turn back to original position (left wall hugging)
-11. Calibrate with Front sensors
-12. Calibrate with Left sensors
-13. Calibrate using front sensors at a staircase
-14. Get ready to receive fastest path string */
+  The function additionally passes a message back to RPI via serial port when required action is complete
+  In order to see bot functionalities simply use serial monitor to input bot functionalities
+  1. Check If arduino is responding (redundant)
+  2. Return Sensor data
+  3. Move Forward
+  4. Turn Left
+  5. Turn Right
+  6. Move Backward
+  7. Turn Left 180
+  8. Turn Right 180
+  9. Stop bot (helps unlock wheels after using break)
+  10. Turn left, Calibrate with Front sensors, and turn back to original position (left wall hugging)
+  11. Calibrate with Front sensors
+  12. Calibrate with Left sensors
+  13. Calibrate using front sensors at a staircase
+  14. Get ready to receive fastest path string */
 
-void controlBot (int instruction, int secondVal) {  
+void controlBot (int instruction, int secondVal) {
+
   switch (instruction) {
-    case 1:  // Check If arduino is responding 
+    case 1:  // Check If arduino is responding
       Serial.println("X_BOTREADY");
       break;
     case 2:  // Return Sensor data
@@ -139,14 +94,6 @@ void controlBot (int instruction, int secondVal) {
       bot->turnRight(85);
       Serial.println("X_BOTDONE");
       break;
-    case 10:  // Turn Left 45
-      bot->turnLeft(45);
-      Serial.println("X_BOTDONE");
-      break;
-    case 11:  // Turn Right 45
-      bot->turnRight(41);
-      Serial.println("X_BOTDONE");
-      break;
     case 6:  // Move Backward
       bot->moveBackward(secondVal);
       Serial.println("X_BOTDONE");
@@ -156,7 +103,7 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTDONE");
       break;
     case 8:  // Turn right 180 degrees
-      bot->turnRight(180);
+      bot->turnRight(175);
       Serial.println("X_BOTDONE");
       break;
     case 9:  // Unbreak wheels

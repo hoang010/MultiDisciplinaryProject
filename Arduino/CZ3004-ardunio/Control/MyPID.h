@@ -19,7 +19,7 @@ class MyPID
 };
 
 /* Constructor to calculate and initialise all variables of class i.e. Kp, Ki and Kd values for PID controller
-errorCtrl defines the margin of error for each motor speed reading from required value*/
+  errorCtrl defines the margin of error for each motor speed reading from required value*/
 MyPID::MyPID(double k, double td, double ts, float _errorCtrl) {
 
   error[0] = 0;

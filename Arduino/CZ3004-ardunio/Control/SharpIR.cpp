@@ -1,47 +1,47 @@
 #include "SharpIR.h"
 
 uint8_t SharpIR::getDistance( bool avoidBurstRead )
+{
+  uint8_t distance ;
+
+  if ( !avoidBurstRead ) while ( millis() <= lastTime + 20 ) {} //wait for sensor's sampling time
+
+  lastTime = millis();
+
+  switch ( sensorType )
   {
-    uint8_t distance ;
+    case GP2Y0A21YK0F_rightHug :
+      distance = 112070 * pow(analogRead(pin), -1.599);
 
-    if( !avoidBurstRead ) while( millis() <= lastTime + 20 ) {} //wait for sensor's sampling time
+      if (distance > 80) return 81;
+      //else if(distance < 10) return 9;
+      else return distance;
 
-    lastTime = millis();
+      break;
 
-    switch( sensorType )
-    {
-      case GP2Y0A21YK0F_rightHug :
-        distance = 112070* pow(analogRead(pin),-1.599);
+    case GP2Y0A21YK0F :
+      distance = 112070 * pow(analogRead(pin), -1.599);
 
-        if(distance > 80) return 81;
-        //else if(distance < 10) return 9;
-        else return distance;
+      if (distance > 80) return 81;
+      else if (distance < 10) return 9;
+      else return distance;
 
-        break;
-      
-      case GP2Y0A21YK0F :
-        distance = 112070* pow(analogRead(pin),-1.599);
+      break;
+    case GP2Y0A21YK0F_rightFront :
+      distance = 680255 * pow(analogRead(pin), -1.903);
 
-        if(distance > 80) return 81;
-        else if(distance < 10) return 9;
-        else return distance;
+      if (distance > 80) return 81;
+      else if (distance < 10) return 9;
+      else return distance;
 
-        break;
-      case GP2Y0A21YK0F_rightFront :
-        distance = 680255 * pow(analogRead(pin),-1.903);
+      break;
 
-        if(distance > 80) return 81;
-        else if(distance < 10) return 9;
-        else return distance;
+    case GP2Y0A02YK0F :
 
-        break;
+      distance = 28875 * pow(analogRead(pin), -1.139);
 
-      case GP2Y0A02YK0F :
-      
-        distance = 28875* pow(analogRead(pin),-1.139);
-
-        if(distance > 150) return 151;
-        else if(distance < 20) return 19;
-        else return distance;
-    }
+      if (distance > 150) return 151;
+      else if (distance < 20) return 19;
+      else return distance;
   }
+}
