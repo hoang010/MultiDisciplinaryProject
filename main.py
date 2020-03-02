@@ -408,11 +408,12 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
 
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+            hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
             print(log_string + text_color.BOLD + 'Explore hex map: {}'.format(hex_exp_map) + text_color.ENDC)
 
             packet = {
                 "explored": hex_exp_map.encode(),
-                "obstacle": explorer.explored_map.encode(),
+                "obstacle": hex_real_map.encode(),
                 "direction": explorer.direction.encode(),
                 "movement": log_movement[0].encode()
             }
