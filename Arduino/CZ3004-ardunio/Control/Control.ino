@@ -17,8 +17,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 190 // left
-#define initialSetSpeed2 210
+#define initialSetSpeed1 210 // left
+#define initialSetSpeed2 220
 #define calibrationSetSpeed1 315
 #define calibrationSetSpeed2 350
 
