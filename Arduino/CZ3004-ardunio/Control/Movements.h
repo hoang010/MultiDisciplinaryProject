@@ -9,7 +9,7 @@
 #define Pi 3.1428
 
 #define M1k  0.34003
-#define M1ts  0.0078
+#define M1ts  0.00465
 #define M1td  0.1
 
 #define M2k  0.33309
