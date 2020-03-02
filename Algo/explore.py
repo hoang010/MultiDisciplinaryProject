@@ -58,11 +58,12 @@ class Explore:
         """
 
         # Get the data
-        front_left_obstacle = int(sensor_data["TopLeft"])/10
-        front_mid_obstacle = int(sensor_data["TopMiddle"])/10
-        front_right_obstacle = int(sensor_data["TopRight"])/10
+        front_left_obstacle = int(sensor_data["FrontLeft"])/10
+        front_mid_obstacle = int(sensor_data["FrontCenter"])/10
+        front_right_obstacle = int(sensor_data["FrontRight"])/10
         mid_left_obstacle = int(sensor_data["LeftSide"])/10
-        mid_right_obstacle = int(sensor_data["RightSide"])/10
+        right_front_obstacle = int(sensor_data["RightFront"])/10
+        right_back_obstacle = int(sensor_data["RightBack"]) / 10
 
         # Initialise variable for obstacle coordinates
         obstacle_coord = None
@@ -71,21 +72,26 @@ class Explore:
         explored_coord = self.current_pos
 
         # Get coordinates on the right
-        right_x, right_y = self.get_coord('right')
+        front, back = self.get_coord('right')
 
         # Check if coordinates on right is within map
-        if right_x < len(self.explored_map[0]) or right_y < len(self.explored_map):
-            if right_x >= 0 and right_y >= 0:
-                turn_right_condition = bool(mid_right_obstacle > 2 and self.explored_map[right_x][right_y] == 0)
-                self.check_right_empty += 1
+        if (front[0] < len(self.explored_map[0]) or front[1] < len(self.explored_map) or
+            back[0] < len(self.explored_map[0]) or back[1] < len(self.explored_map)):
+            if front[0] >= 0 and front[1] >= 0 or back[0] >= 0 and back[1] >= 0:
+                turn_right_condition = bool((right_back_obstacle > 2 or
+                                            right_front_obstacle > 2) and
+                                            (self.explored_map[front[0]][front[1]] == 0 or
+                                             self.explored_map[back[0]][back[1]]))
+
+            else:
+                turn_right_condition = bool(right_back_obstacle > 2 or right_front_obstacle > 2)
 
         # If not within map, then just check if robot is near right wall
         else:
-            turn_right_condition = bool(mid_right_obstacle > 2)
-            self.check_right_empty += 1
+            turn_right_condition = bool(right_back_obstacle > 2 or right_front_obstacle > 2)
 
         # If there is no obstacle on the right
-        if turn_right_condition is True and self.check_right_empty == 2:
+        if turn_right_condition is True:
 
             # Turn right (5 is the index to tell Arduino to turn right)
             movement = b'5'
@@ -96,8 +102,6 @@ class Explore:
             # Update robot direction
             self.update_dir(left_turn=False)
 
-            self.check_right_empty = 0
-
         # If there is an obstacle in front and on the right
         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
@@ -105,18 +109,18 @@ class Explore:
             movement = b'4'
 
             # Since there is an obstacle on the right, get the coordinates
-            x_coord, y_coord = self.get_coord('right')
+            front, back = self.get_coord('right')
 
             # Check if right side coordinates are within boundaries
-            if x_coord >= 0 or y_coord >= 0:
-                if x_coord < len(self.real_map[0]) or y_coord < len(self.real_map):
+            if front[0] >= 0 or front[1] >= 0 or back[0] >= 0 or back[1] >= 0:
+                if front[0] < len(self.real_map[0]) or front[1] < len(self.real_map)\
+                        or back[0] < len(self.real_map[0]) or back[1] < len(self.real_map):
                     # Add into array for obstacle coordinates
-                    obstacle_coord.append((x_coord, y_coord))
+                    obstacle_coord.append(front)
+                    obstacle_coord.append(back)
 
             # Get obstacle coordinates and add into array for obstacle coordinates
-            obstacle_coord.append(self.get_obstacle_coord(front_left_obstacle,
-                                                          front_mid_obstacle,
-                                                          front_right_obstacle))
+            obstacle_coord.append(self.get_coord('front'))
 
             # Put the command 'left' into queue for main() to read
             self.move_queue.put(movement)
@@ -127,13 +131,15 @@ class Explore:
         # If obstacle on right and no obstacle in front
         else:
             # Since there is an obstacle on the right, get the coordinates
-            x_coord, y_coord = self.get_coord('right')
+            front, back = self.get_coord('right')
 
             # Check if right side coordinates are within boundaries
-            if x_coord >= 0 or y_coord >= 0:
-                if x_coord < len(self.real_map[0]) or y_coord < len(self.real_map):
+            if front[0] >= 0 or front[1] >= 0 or back[0] >= 0 or back[1] >= 0:
+                if front[0] < len(self.real_map[0]) or front[1] < len(self.real_map) \
+                        or back[0] < len(self.real_map[0]) or back[1] < len(self.real_map):
                     # Add into array for obstacle coordinates
-                    obstacle_coord.append((x_coord, y_coord))
+                    obstacle_coord.append(front)
+                    obstacle_coord.append(back)
 
             # Move forward (3 is the index to tell Arduino to move forward)
             movement = b'3'
@@ -292,46 +298,6 @@ class Explore:
         else:
             right()
 
-    def get_obstacle_coord(self, front_left, front_mid, front_right):
-        """
-        Function to get obstacle coordinate
-        :param front_left: String
-                number of obstacle is away from sensor
-        :param front_mid: String
-                number of obstacle is away from sensor
-        :param front_right: String
-                number of obstacle is away from sensor
-        :return: obstacle: Array
-                obstacle coordinates
-        """
-
-        obs_bool = [front_left, front_mid, front_right]
-        obstacle = []
-
-        for i in range(2, -1, -1):
-            if obs_bool[i] != 0:
-                # If current direction is North
-                if self.direction == self.direction_class.N:
-                    # Return (x, y+1)
-                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] + int(obs_bool[i])))
-
-                # If current direction is South
-                elif self.direction == self.direction_class.S:
-                    # Return (x, y-1)
-                    obstacle.append((self.current_pos[i][0], self.current_pos[i][1] - int(obs_bool[i])))
-
-                # If current direction is East
-                elif self.direction == self.direction_class.E:
-                    # Return (x-1, y)
-                    obstacle.append((self.current_pos[i][0] - int(obs_bool[i]), self.current_pos[i][1]))
-
-                # If current direction is West
-                else:
-                    # Return (x+1, y)
-                    obstacle.append((self.current_pos[i][0] + int(obs_bool[i]), self.current_pos[i][1]))
-
-        return obstacle
-
     def get_coord(self, direction):
         """
         Function to get coordinates on left/right/front of robot based on direction robot is facing
@@ -366,22 +332,26 @@ class Explore:
         def right():
             if self.direction == self.direction_class.N:
                 # Return (x-1, y)
-                coord = (self.current_pos[5][0] + 1, self.current_pos[5][1])
+                coord = ([self.current_pos[2][0] + 1, self.current_pos[2][1]],
+                         [self.current_pos[8][0] + 1, self.current_pos[8][1]])
 
             # If current direction is South
             elif self.direction == self.direction_class.S:
                 # Return (x+1, y)
-                coord = (self.current_pos[5][0] - 1, self.current_pos[5][1])
+                coord = ([self.current_pos[2][0] - 1, self.current_pos[2][1]],
+                         [self.current_pos[8][0] - 1, self.current_pos[8][1]])
 
             # If current direction is East
             elif self.direction == self.direction_class.E:
                 # Return (x, y+1)
-                coord = (self.current_pos[5][0], self.current_pos[5][1] + 1)
+                coord = ([self.current_pos[2][0], self.current_pos[2][1] + 1],
+                         [self.current_pos[8][0], self.current_pos[8][1] + 1])
 
             # If current direction is West
             else:
                 # Return (x, y + 1)
-                coord = (self.current_pos[5][0], self.current_pos[5][1] - 1)
+                coord = ([self.current_pos[2][0], self.current_pos[2][1] - 1],
+                         [self.current_pos[8][0], self.current_pos[8][1] - 1])
 
             return coord
 
@@ -485,7 +455,7 @@ class Explore:
             return True
         return False
 
-    def move_to_point(self, log_string, text_color, arduino_conn, point):
+    def navigate_to_point(self, log_string, text_color, arduino_conn, point):
         """
         Function to move robot to the specified point
         :param log_string: String
@@ -494,8 +464,8 @@ class Explore:
                 Class containing String color format
         :param arduino_conn: Serial
                 Connection to Arduino via USB
-        :param start: Array
-                Start point, can be all 9 points of position or just 1 reference start point
+        :param point: Array
+                Point to go to, can be all 9 points of position or just 1 reference start point
         :return:
         """
 
@@ -579,6 +549,13 @@ class Explore:
 
             # Get feedback
             _ = arduino_conn.have_recv_queue.get()
+
+    def set_direction(self, direction):
+        if self.direction != direction:
+            # Turn left while direction is wrong
+            self.move_queue.put(b'4')
+            return False
+        return True
 
     def check_obstacle(self, sensor_data):
 

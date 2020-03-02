@@ -104,9 +104,9 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                     flag = 0
 
-                    for i in range(2):
-                        a_star = AStar(explorer.start, waypt, explorer.real_map)
-                        start_pt = AStar.Node(explorer.start, waypt, 0)
+                    for _ in range(2):
+                        a_star = AStar(explorer.start[4], waypt, explorer.real_map)
+                        start_pt = AStar.Node(explorer.start[4], waypt, 0)
                         a_star.open_list.append(start_pt)
 
                         while not flag:
@@ -114,7 +114,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                             flag = a_star.near_explore(a_star_current)
 
                         for node_path in a_star.path:
-                            explorer.move_to_point(log_string, text_color, arduino_conn, node_path.point)
+                            move_to_point(log_string, text_color, explorer, arduino_conn, node_path.point)
 
                         explorer.start = explorer.current_pos
                         waypt = explorer.goal
@@ -313,15 +313,17 @@ def robo_init(arduino_conn):
     feedback = arduino_conn.have_recv_queue.get()
 
     feedback = literal_eval(feedback.decode())
-    feedback = json.dumps(feedback, indent=4, sort_keys=True)
+    sensor_data = json.dumps(feedback, indent=4, sort_keys=True)
 
-    front_left_obstacle = int(feedback["TopLeft"]) / 10
-    front_mid_obstacle = int(feedback["TopMiddle"]) / 10
-    front_right_obstacle = int(feedback["TopRight"]) / 10
-    mid_right_obstacle = int(feedback["RightSide"]) / 10
+    # Get the data
+    front_left_obstacle = int(sensor_data["FrontLeft"]) / 10
+    front_mid_obstacle = int(sensor_data["FrontCenter"]) / 10
+    front_right_obstacle = int(sensor_data["FrontRight"]) / 10
+    right_front_obstacle = int(sensor_data["RightFront"]) / 10
+    right_back_obstacle = int(sensor_data["RightBack"]) / 10
 
     # While there is no obstacle on the right
-    while mid_right_obstacle > 1:
+    while right_front_obstacle > 1 and right_back_obstacle > 1:
 
         # If there is no obstacle on the right, tell Arduino to turn right
         arduino_conn.to_send_queue.put(b'5')
@@ -330,7 +332,8 @@ def robo_init(arduino_conn):
         _ = arduino_conn.have_recv_queue.get()
 
     # If robot is facing corner, turn left
-    if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and mid_right_obstacle <= 1:
+    if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and \
+            right_front_obstacle <= 1 and right_back_obstacle <= 1:
         arduino_conn.to_send_queue.put(b'4')
 
 
@@ -394,6 +397,7 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             if movement == b'5':
                 log_movement = 'right'
             elif movement == b'4':
+                get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
             else:
                 log_movement = 'forward'
@@ -409,7 +413,6 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
             hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-            print(log_string + text_color.BOLD + 'Explore hex map: {}'.format(hex_exp_map) + text_color.ENDC)
 
             packet = {
                 "explored": hex_exp_map.encode(),
@@ -421,13 +424,9 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             bt_conn.to_send_queue.put(packet)
             print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
 
-            # Get camera input and encode it into hex
-            stream = recorder.io.read1(1)
-            stream_byte = stream.encode()
-
-            # Send stream to PC
-            server_stream.queue.put(stream_byte)
-            print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
+            # TODO: Send image to PC
+            # server_stream.queue.put(stream_byte)
+            # print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
 
         # If round is complete, shift starting position
         explorer.update_start(3, 3)
@@ -435,7 +434,9 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
         print(log_string + text_color.BOLD + 'Updated start by 3' + text_color.ENDC)
 
         # Actually move to new start position
-        explorer.move_to_point(log_string, text_color, arduino_conn, explorer.start)
+        explorer.navigate_to_point(log_string, text_color, arduino_conn, explorer.start)
+
+    print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
     # Send empty packet to tell PC that stream has stopped
     server_stream.queue.put('')
@@ -444,12 +445,109 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
     # Move to initial start
-    explorer.move_to_point(log_string, text_color, arduino_conn, explorer.true_start)
+    explorer.navigate_to_point(log_string, text_color, arduino_conn, explorer.true_start)
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
 
     return explorer
+
+
+def get_image(log_string, explorer, arduino_conn):
+    start_pos = explorer.current_pos
+    start_dir = explorer.direction
+
+    while True:
+        send_param = b'2'
+        arduino_conn.to_send_queue.put(send_param)
+        sensor_data = arduino_conn.have_recv_queue.get()
+
+        sensor_data = literal_eval(sensor_data)
+        sensor_data = json.dumps(sensor_data, indent=4, sort_keys=True)
+
+        # Get the data
+        front_left_obstacle = int(sensor_data["FrontLeft"]) / 10
+        front_mid_obstacle = int(sensor_data["FrontCenter"]) / 10
+        front_right_obstacle = int(sensor_data["FrontRight"]) / 10
+        mid_left_obstacle = int(sensor_data["LeftSide"]) / 10
+        right_front_obstacle = int(sensor_data["RightFront"]) / 10
+        right_back_obstacle = int(sensor_data["RightBack"]) / 10
+
+        # Camera facing right
+        # Turn left
+        arduino_conn.to_send_queue.put(b'4')
+        arduino_conn.have_recv_queue.get()
+
+        # Insert image recog code here
+        # TODO: This is a placeholder!
+        captured = ImageRecognition(text_color)
+
+        if captured:
+            explorer.navigate_to_point(log_string, text_color, arduino_conn, start_pos)
+            break
+
+        else:
+            # If no obstacle on right
+            if right_front_obstacle > 2 or right_back_obstacle > 2:
+                arduino_conn.to_send_queue.put(b'5')
+                arduino_conn.have_recv_queue.get()
+
+            # If front has obstacle
+            elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
+                # Turn left
+                arduino_conn.to_send_queue.put(b'4')
+                arduino_conn.have_recv_queue.get()
+
+            else:
+                # Advance
+                arduino_conn.to_send_queue.put(b'3')
+                arduino_conn.have_recv_queue.get()
+
+    while not explorer.set_direction(start_dir):
+        continue
+
+
+def move_to_point(log_string, text_color, explorer, arduino_conn, point):
+
+    # Comparing x axis
+    if explorer.current_pos[4][0] != point[0]:
+        more = explorer.current_pos[4][0] - point[0]
+
+        # Turn left if more
+        if more > 0:
+            print(log_string + text_color.OKBLUE + 'Turning left' + text_color.ENDC)
+            arduino_conn.to_send_queue.put(b'4')
+            arduino_conn.have_recv_queue.get()
+
+            print(log_string + text_color.OKBLUE + 'Moving forward' + text_color.ENDC)
+            arduino_conn.to_send_queue.put(b'3')
+            arduino_conn.have_recv_queue.get()
+
+        # Turn right if less
+        else:
+            print(log_string + text_color.OKBLUE + 'Turning right' + text_color.ENDC)
+            arduino_conn.to_send_queue.put(b'5')
+            arduino_conn.have_recv_queue.get()
+
+            print(log_string + text_color.OKBLUE + 'Moving forward' + text_color.ENDC)
+            arduino_conn.to_send_queue.put(b'3')
+            arduino_conn.have_recv_queue.get()
+
+    # Comparing y axis
+    elif explorer.current_pos[4][1] != point[1]:
+        more = explorer.current_pos[4][1] - point[1]
+
+        # Move forward if more
+        if more > 0:
+            print(log_string + text_color.OKBLUE + 'Moving forward' + text_color.ENDC)
+            arduino_conn.to_send_queue.put(b'3')
+            arduino_conn.have_recv_queue.get()
+
+        # Move backward if less
+        else:
+            print(log_string + text_color.OKBLUE + 'Moving backward' + text_color.ENDC)
+            arduino_conn.to_send_queue.put(b'6')
+            arduino_conn.have_recv_queue.get()
 
 
 if __name__ == "__main__":
