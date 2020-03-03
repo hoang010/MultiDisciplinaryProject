@@ -69,13 +69,11 @@ class Arduino:
               "Thread for {} recv_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
-        i = 0
+        start_time = time.time()
 
         while True:
 
-            time.sleep(1)
-
-            if i % 10 == 0:
+            if (time.time() - start_time) % 10 == 0:
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for {} recv_channel alive".format(self.arduino_name)
@@ -105,8 +103,6 @@ class Arduino:
                 # Put into queue
                 self.have_recv_queue.put(data)
 
-            i += 1
-
     def send_channel(self):
         """
         Function to send data to Arduino device
@@ -118,16 +114,15 @@ class Arduino:
               "Thread for {} recv_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
-        i = 0
+        start_time = time.time()
+
         while True:
 
-            if i % 10 == 1:
+            if (time.time() - start_time) % 10 == 0:
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for {} send_channel alive".format(self.arduino_name)
                       + self.text_color.ENDC)
-
-            time.sleep(1)
 
             # If there is data
             if not self.to_send_queue.empty():
@@ -152,8 +147,6 @@ class Arduino:
                 print(self.log_string + self.text_color.OKBLUE +
                       "Data sent"
                       + self.text_color.ENDC)
-
-            i += 1
 
     def disconnect(self):
         """

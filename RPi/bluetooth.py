@@ -145,17 +145,15 @@ class Bluetooth:
               "Thread for Bluetooth recv_channel started"
               + self.text_color.ENDC)
 
-        i = 0
+        start_time = time.time()
 
         while True:
 
-            if i % 10 == 0:
+            if (time.time() - start_time) % 10 == 0:
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for Bluetooth send_channel alive"
                       + self.text_color.ENDC)
-
-            time.sleep(1)
 
             # Checks if there is anything in the queue
             if not self.to_send_queue.empty():
@@ -173,8 +171,6 @@ class Bluetooth:
 
                 # Finally, send the data to PC
                 client_sock.send(data)
-
-            i += 1
 
     def reconnect(self, client_sock, client_info):
         self.recv_thread.join()
