@@ -125,12 +125,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                         explorer.start = explorer.current_pos
                         waypt_coord = explorer.goal[4]
 
-                    # algo = AStar(explorer.real_map, explorer.goal)
-                    # algo.find_path()
-                    # path = algo.path
-                    # for node in path:
-                    #     explorer.move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
-
                 elif mode == 'manual':
                     while True:
                         movement = bt_conn.have_recv_queue.get()

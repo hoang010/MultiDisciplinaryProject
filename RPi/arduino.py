@@ -73,7 +73,7 @@ class Arduino:
 
         while True:
 
-            if (time.time() - start_time) % 10 == 0:
+            if round(time.time() - start_time) % 10 == 0:
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for {} recv_channel alive".format(self.arduino_name)
@@ -118,7 +118,7 @@ class Arduino:
 
         while True:
 
-            if (time.time() - start_time) % 10 == 0:
+            if round(time.time() - start_time) % 10 == 0:
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for {} send_channel alive".format(self.arduino_name)

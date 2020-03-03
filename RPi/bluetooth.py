@@ -149,7 +149,7 @@ class Bluetooth:
 
         while True:
 
-            if (time.time() - start_time) % 10 == 0:
+            if round(time.time() - start_time) % 10 == 0:
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
                       "Thread for Bluetooth send_channel alive"
