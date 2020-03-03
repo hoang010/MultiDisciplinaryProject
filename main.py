@@ -180,6 +180,11 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 bt_conn.to_send_queue.put('Send valid argument'.encode())
 
     except KeyboardInterrupt:
+        arduino_conn.disconnect()
+        server_stream.disconnect()
+        server_send.disconnect()
+        server_recv.disconnect()
+        bt_conn.disconnect()
         os.system('pkill -9 python')
 
 
@@ -551,7 +556,7 @@ def move_to_point(log_string, text_color, explorer, arduino_conn, point):
 if __name__ == "__main__":
     import platform
     try:
-        # main(platform.system())
-        main('Windows')
+        main(platform.system())
+        # main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
