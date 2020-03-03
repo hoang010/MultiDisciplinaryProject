@@ -69,15 +69,7 @@ class Arduino:
               "Thread for {} recv_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
-        start_time = time.time()
-
         while True:
-
-            if round(time.time() - start_time) % 10 == 0:
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Thread for {} recv_channel alive".format(self.arduino_name)
-                      + self.text_color.ENDC)
 
             # If there is data waiting
             if self.arduino_serial.inWaiting() > 0:
@@ -111,18 +103,13 @@ class Arduino:
 
         # Print message to show that thread is started
         print(self.log_string + self.text_color.OKBLUE +
-              "Thread for {} recv_channel started".format(self.arduino_name)
+              "Thread for {} send_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
-        start_time = time.time()
+        t = threading.Timer(10, self.ping)
+        t.start()
 
         while True:
-
-            if round(time.time() - start_time) % 10 == 0:
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Thread for {} send_channel alive".format(self.arduino_name)
-                      + self.text_color.ENDC)
 
             # If there is data
             if not self.to_send_queue.empty():
@@ -147,6 +134,12 @@ class Arduino:
                 print(self.log_string + self.text_color.OKBLUE +
                       "Data sent"
                       + self.text_color.ENDC)
+
+    def ping(self):
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for {} send_channel alive".format(self.arduino_name)
+              + self.text_color.ENDC)
 
     def disconnect(self):
         """

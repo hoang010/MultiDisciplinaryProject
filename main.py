@@ -12,7 +12,6 @@ from config.text_color import TextColor as text_color
 from config.direction import Direction
 
 # Import libraries
-from ast import literal_eval
 import json
 import time
 import cv2
@@ -103,8 +102,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     waypt = bt_conn.have_recv_queue.get()
                     waypt = waypt.decode()
 
-                    waypt = literal_eval(waypt)
-                    waypt = json.dumps(waypt)
+                    waypt = json.loads(waypt)
 
                     waypt_coord = (waypt['x'], waypt['y'])
 
@@ -290,8 +288,7 @@ def robo_init(arduino_conn):
     # Get feedback from Arduino
     feedback = arduino_conn.have_recv_queue.get()
 
-    feedback = literal_eval(feedback.decode())
-    sensor_data = json.dumps(feedback, indent=4, sort_keys=True)
+    sensor_data = json.loads(feedback.decode().strip())
 
     # Get the data
     front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
@@ -332,10 +329,10 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
     from RPi.recorder import Recorder
 
     # Start an instance of Recorder class
-    recorder = Recorder()
+    # recorder = Recorder()
 
     # Start recording with the Pi camera
-    recorder.start()
+    # recorder.start()
 
     # Start an instance of Explore class
     explorer = Explore(Direction)
@@ -359,8 +356,9 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             arduino_conn.to_send_queue.put(send_param)
             sensor_data = arduino_conn.have_recv_queue.get()
 
-            sensor_data = literal_eval(sensor_data)
-            sensor_data = json.dumps(sensor_data, indent=4, sort_keys=True)
+            sensor_data = sensor_data.decode().strip()
+
+            sensor_data = json.loads(sensor_data)
 
             print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
@@ -374,6 +372,7 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             if movement == b'5':
                 log_movement = 'right'
                 right_counter += 1
+
             elif movement == b'4':
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
@@ -382,8 +381,10 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
                 front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
 
                 if front_left_obstacle < 1 and front_right_obstacle < 1 and front_mid_obstacle < 1:
+                    print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
                     arduino_conn.to_send_queue.put(b'10')
                     arduino_conn.have_recv_queue.get()
+                    print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
             else:
                 log_movement = 'forward'
 
@@ -394,7 +395,6 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
 
             # Get feedback from Arduino
             _ = arduino_conn.have_recv_queue.get()
-            print(log_string + text_color.OKGREEN + 'Arduino ack received' + text_color.ENDC)
 
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
@@ -408,15 +408,18 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             })
 
             bt_conn.to_send_queue.put(packet.encode())
-            print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
+            print(log_string + text_color.OKGREEN + 'Packet sent to tablet' + text_color.ENDC)
 
             # TODO: Send image to PC
             # server_stream.queue.put(stream_byte)
             # print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
 
             if right_counter == 5:
+                print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
                 arduino_conn.to_send_queue.put(b'11')
                 arduino_conn.have_recv_queue.get()
+                right_counter = 0
+                print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
         # If round is complete, shift starting position
         explorer.update_start(3, 3)
@@ -458,8 +461,7 @@ def get_image(log_string, explorer, arduino_conn):
         arduino_conn.to_send_queue.put(send_param)
         sensor_data = arduino_conn.have_recv_queue.get()
 
-        sensor_data = literal_eval(sensor_data)
-        sensor_data = json.dumps(sensor_data, indent=4, sort_keys=True)
+        sensor_data = json.loads(sensor_data.decode().strip())
 
         # Get the data
         front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
@@ -549,7 +551,7 @@ def move_to_point(log_string, text_color, explorer, arduino_conn, point):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
