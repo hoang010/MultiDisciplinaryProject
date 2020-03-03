@@ -5,13 +5,15 @@ import threading
 
 
 class Arduino:
-    def __init__(self, arduino_name, text_color):
+    def __init__(self, arduino_name, text_color, timeout=1):
         """
         Function to create an instance of the connection with Arduino
         :param arduino_name: String
                 String containing port name of Arduino device
         :param text_color: Class
                 Class for colourised print statements
+        :param timeout: int
+                Timeout before connection gets cut by Raspberry Pi
         """
         self.arduino_name = arduino_name
         self.text_color = text_color

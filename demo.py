@@ -103,6 +103,10 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif choice == 2:
 
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
+<<<<<<< HEAD
+=======
+                arduino_conn_demo.to_send_queue.put('3'.encode())
+>>>>>>> Arduino
 
                 dist = int(input('Enter number of grids to move: '))
                 i = 1
