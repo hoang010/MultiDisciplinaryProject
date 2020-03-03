@@ -17,6 +17,7 @@ import json
 import time
 import cv2
 import os
+import math
 
 
 def main(sys_type):
@@ -316,11 +317,11 @@ def robo_init(arduino_conn):
     sensor_data = json.dumps(feedback, indent=4, sort_keys=True)
 
     # Get the data
-    front_left_obstacle = int(sensor_data["FrontLeft"]) / 10
-    front_mid_obstacle = int(sensor_data["FrontCenter"]) / 10
-    front_right_obstacle = int(sensor_data["FrontRight"]) / 10
-    right_front_obstacle = int(sensor_data["RightFront"]) / 10
-    right_back_obstacle = int(sensor_data["RightBack"]) / 10
+    front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
+    front_mid_obstacle = math.floor(sensor_data["FrontCenter"]) / 10
+    front_right_obstacle = math.floor(sensor_data["FrontRight"]) / 10
+    right_front_obstacle = math.floor(sensor_data["RightFront"]) / 10
+    right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
 
     # While there is no obstacle on the right
     while right_front_obstacle > 1 and right_back_obstacle > 1:
@@ -361,9 +362,6 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
 
     # Start an instance of Explore class
     explorer = Explore(Direction)
-
-    # Start an instance of ImageRecognition class
-    img_recognisor = ImageRecognition(text_color)
 
     print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
 
@@ -466,12 +464,12 @@ def get_image(log_string, explorer, arduino_conn):
         sensor_data = json.dumps(sensor_data, indent=4, sort_keys=True)
 
         # Get the data
-        front_left_obstacle = int(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = int(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = int(sensor_data["FrontRight"]) / 10
-        mid_left_obstacle = int(sensor_data["LeftSide"]) / 10
-        right_front_obstacle = int(sensor_data["RightFront"]) / 10
-        right_back_obstacle = int(sensor_data["RightBack"]) / 10
+        front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
+        front_mid_obstacle = math.floor(sensor_data["FrontCenter"]) / 10
+        front_right_obstacle = math.floor(sensor_data["FrontRight"]) / 10
+        mid_left_obstacle = math.floor(sensor_data["LeftSide"]) / 10
+        right_front_obstacle = math.floor(sensor_data["RightFront"]) / 10
+        right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
 
         # Camera facing right
         # Turn left

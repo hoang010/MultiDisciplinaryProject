@@ -3,6 +3,7 @@ import numpy as np
 import os
 import queue
 import json
+import math
 
 
 class Explore:
@@ -58,12 +59,12 @@ class Explore:
         """
 
         # Get the data
-        front_left_obstacle = int(sensor_data["FrontLeft"])/10
-        front_mid_obstacle = int(sensor_data["FrontCenter"])/10
-        front_right_obstacle = int(sensor_data["FrontRight"])/10
-        mid_left_obstacle = int(sensor_data["LeftSide"])/10
-        right_front_obstacle = int(sensor_data["RightFront"])/10
-        right_back_obstacle = int(sensor_data["RightBack"]) / 10
+        front_left_obstacle = math.floor(sensor_data["FrontLeft"])/10
+        front_mid_obstacle = math.floor(sensor_data["FrontCenter"])/10
+        front_right_obstacle = math.floor(sensor_data["FrontRight"])/10
+        mid_left_obstacle = math.floor(sensor_data["LeftSide"])/10
+        right_front_obstacle = math.floor(sensor_data["RightFront"])/10
+        right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
 
         # Initialise variable for obstacle coordinates
         obstacle_coord = None
@@ -487,11 +488,11 @@ class Explore:
             sensor_data = literal_eval(sensor_data.decode())
             sensor_data = json.dumps(sensor_data, indent=4, sort_keys=True)
 
-            front_left_obstacle = int(sensor_data["TopLeft"]) / 10
-            front_mid_obstacle = int(sensor_data["TopMiddle"]) / 10
-            front_right_obstacle = int(sensor_data["TopRight"]) / 10
-            mid_left_obstacle = int(sensor_data["LeftSide"]) / 10
-            mid_right_obstacle = int(sensor_data["RightSide"]) / 10
+            front_left_obstacle = math.floor(sensor_data["TopLeft"]) / 10
+            front_mid_obstacle = math.floor(sensor_data["TopMiddle"]) / 10
+            front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
+            mid_left_obstacle = math.floor(sensor_data["LeftSide"]) / 10
+            mid_right_obstacle = math.floor(sensor_data["RightSide"]) / 10
 
             start_has_obstacle = self.check_obstacle(sensor_data)
 
@@ -559,9 +560,9 @@ class Explore:
 
     def check_obstacle(self, sensor_data):
 
-        front_left_obstacle = int(sensor_data["TopLeft"]) / 10
-        front_mid_obstacle = int(sensor_data["TopMiddle"]) / 10
-        front_right_obstacle = int(sensor_data["TopRight"]) / 10
+        front_left_obstacle = math.floor(sensor_data["TopLeft"]) / 10
+        front_mid_obstacle = math.floor(sensor_data["TopMiddle"]) / 10
+        front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:
