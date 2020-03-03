@@ -395,7 +395,7 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             if movement == b'5':
                 log_movement = 'right'
             elif movement == b'4':
-                get_image(log_string, explorer, arduino_conn)
+                # get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
             else:
                 log_movement = 'forward'
@@ -412,14 +412,14 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
             hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
-            packet = {
-                "explored": hex_exp_map.encode(),
-                "obstacle": hex_real_map.encode(),
-                "direction": explorer.direction.encode(),
-                "movement": log_movement[0].encode()
-            }
+            packet = str({
+                "explored": hex_exp_map,
+                "obstacle": hex_real_map,
+                "direction": explorer.direction,
+                "movement": log_movement[0]
+            })
 
-            bt_conn.to_send_queue.put(packet)
+            bt_conn.to_send_queue.put(packet.encode())
             print(log_string + text_color.OKGREEN + 'Hex map sent to tablet' + text_color.ENDC)
 
             # TODO: Send image to PC
@@ -437,10 +437,16 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
     print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
     # Send empty packet to tell PC that stream has stopped
-    server_stream.queue.put('')
+    # server_stream.queue.put('')
 
     # Convert real map to hex
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+
+    packet = str({
+        "obstacle": hex_real_map
+    })
+
+    bt_conn.to_send_queue.put(packet.encode())
 
     # Move to initial start
     explorer.navigate_to_point(log_string, text_color, arduino_conn, explorer.true_start)
@@ -551,7 +557,7 @@ def move_to_point(log_string, text_color, explorer, arduino_conn, point):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
