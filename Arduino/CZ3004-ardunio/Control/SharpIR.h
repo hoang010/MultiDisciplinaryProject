@@ -15,7 +15,9 @@ class SharpIR
     static sensorCode GP2Y0A21YK0F = 2 ;
     static sensorCode GP2Y0A21YK0F_rightHug = 3;
     static sensorCode GP2Y0A02YK0F = 4;
-
+    static sensorCode GP2Y0A21YK0F_frontRight = 5;
+    static sensorCode GP2Y0A21YK0F_frontLeft = 6;
+    static sensorCode GP2Y0A21YK0F_centerFront = 7;
   protected:
 
     uint8_t sensorType, pin ;

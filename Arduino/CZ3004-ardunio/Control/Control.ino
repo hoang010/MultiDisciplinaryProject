@@ -5,7 +5,7 @@
 #include "Calibration.h"
 
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
-DualVNH5019MotorShield md;
+DualVNH5019MotorShield md; 
 
 /* Definition of A & B lines of Encoder 1 (right) and Encoder 2 (left) */
 #define E2A  11
@@ -17,9 +17,9 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 210 // left
-#define initialSetSpeed2 220
-#define calibrationSetSpeed1 315
+#define initialSetSpeed1 200 // left
+#define initialSetSpeed2 280
+#define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
 String sensorData;
@@ -44,43 +44,53 @@ void setup() {
 
 
 void loop() {
+  long dist = 21950* pow(analogRead(A0),-1.244);
+  /*
+  if (dist >= 37){
+    Serial.println("too far");
+    }
+  else{
+    Serial.println(dist);
+    }*/
+ // Serial.println(returnSrDist(12, SR6,0));
+  int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
 
-  int secondVal = 20; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-
-  if (Serial.available() > 0)
+  
+  if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
     controlBot(instructions, secondVal);
+    //Serial.println(instructions + 1);
   }
+  
 }
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
-  The function additionally passes a message back to RPI via serial port when required action is complete
-  In order to see bot functionalities simply use serial monitor to input bot functionalities
-  1. Check If arduino is responding (redundant)
-  2. Return Sensor data
-  3. Move Forward
-  4. Turn Left
-  5. Turn Right
-  6. Move Backward
-  7. Turn Left 180
-  8. Turn Right 180
-  9. Stop bot (helps unlock wheels after using break)
-  10. Turn left, Calibrate with Front sensors, and turn back to original position (left wall hugging)
-  11. Calibrate with Front sensors
-  12. Calibrate with Left sensors
-  13. Calibrate using front sensors at a staircase
-  14. Get ready to receive fastest path string */
+The function additionally passes a message back to RPI via serial port when required action is complete
+In order to see bot functionalities simply use serial monitor to input bot functionalities
+1. Check If arduino is responding (redundant)
+2. Return Sensor data
+3. Move Forward
+4. Turn Left
+5. Turn Right
+6. Move Backward
+7. Turn Left 180
+8. Turn Right 180
+9. Stop bot (helps unlock wheels after using break)
+10. Turn left, Calibrate with Front sensors, and turn back to original position (left wall hugging)
+11. Calibrate with Front sensors
+12. Calibrate with Left sensors
+13. Calibrate using front sensors at a staircase
+14. Get ready to receive fastest path string */
 
-void controlBot (int instruction, int secondVal) {
-
+void controlBot (int instruction, int secondVal) {  
   switch (instruction) {
-    case 1:  // Check If arduino is responding
+    case 1:  // Check If arduino is responding 
       Serial.println("X_BOTREADY");
       break;
     case 2:  // Return Sensor data
       sensorData = returnSensorData(8);
-      Serial.println("X_SENDDATA: " + sensorData);
+      Serial.println(sensorData);
       break;
     case 3:  // Move Forward
       bot->moveForward(secondVal);
@@ -91,7 +101,7 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTDONE");
       break;
     case 5:  // Turn Right
-      bot->turnRight(85);
+      bot->turnRight(90);
       Serial.println("X_BOTDONE");
       break;
     case 6:  // Move Backward
@@ -103,13 +113,21 @@ void controlBot (int instruction, int secondVal) {
       Serial.println("X_BOTDONE");
       break;
     case 8:  // Turn right 180 degrees
-      bot->turnRight(175);
+      bot->turnRight(180);
       Serial.println("X_BOTDONE");
       break;
     case 9:  // Unbreak wheels
       md.setM1Speed(0);
       md.setM2Speed(0);
       Serial.println("X_BOTDONE");
+      break;
+    case 10 :  // Calibrate with front sensors
+      calibrateBot->CalibrateFront();
+      Serial.println("X_CALIBRATIONDONE");
+      break;
+    case 11 :  // Calibrate with front sensors
+      calibrateBot->CalibrateRight();
+      Serial.println("X_CALIBRATIONDONE");
       break;
   }
 }
