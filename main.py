@@ -103,11 +103,16 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     waypt = bt_conn.have_recv_queue.get()
                     waypt = waypt.decode()
 
+                    waypt = literal_eval(waypt)
+                    waypt = json.dumps(waypt)
+
+                    waypt_coord = (waypt['x'], waypt['y'])
+
                     flag = 0
 
                     for _ in range(2):
-                        a_star = AStar(explorer.start[4], waypt, explorer.real_map)
-                        start_pt = AStar.Node(explorer.start[4], waypt, 0)
+                        a_star = AStar(explorer.start[4], waypt_coord, explorer.real_map)
+                        start_pt = AStar.Node(explorer.start[4], waypt_coord, 0)
                         a_star.open_list.append(start_pt)
 
                         while not flag:
@@ -118,7 +123,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                             move_to_point(log_string, text_color, explorer, arduino_conn, node_path.point)
 
                         explorer.start = explorer.current_pos
-                        waypt = explorer.goal
+                        waypt_coord = explorer.goal[4]
 
                     # algo = AStar(explorer.real_map, explorer.goal)
                     # algo.find_path()
@@ -128,7 +133,6 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 elif mode == 'manual':
                     while True:
-                        manual_explorer = Explore(Direction)
                         movement = bt_conn.have_recv_queue.get()
 
                         movement = movement.decode()
@@ -347,6 +351,8 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
     # While map is not complete
     while not explorer.is_map_complete():
 
+        right_counter = 0
+
         # While round is not complete
         while not explorer.check_round_complete():
 
@@ -373,11 +379,20 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             # Display message
             if movement == b'5':
                 log_movement = 'right'
+                right_counter += 1
             elif movement == b'4':
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
+                front_left_obstacle = math.floor(sensor_data["TopLeft"]) / 10
+                front_mid_obstacle = math.floor(sensor_data["TopMiddle"]) / 10
+                front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
+
+                if front_left_obstacle < 1 and front_right_obstacle < 1 and front_mid_obstacle < 1:
+                    arduino_conn.to_send_queue.put(b'10')
+                    arduino_conn.have_recv_queue.get()
             else:
                 log_movement = 'forward'
+
             print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
             # Send to arduino
@@ -404,6 +419,10 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             # TODO: Send image to PC
             # server_stream.queue.put(stream_byte)
             # print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
+
+            if right_counter == 5:
+                arduino_conn.to_send_queue.put(b'11')
+                arduino_conn.have_recv_queue.get()
 
         # If round is complete, shift starting position
         explorer.update_start(3, 3)
