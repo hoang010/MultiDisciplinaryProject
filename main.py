@@ -217,7 +217,7 @@ def pc(rpi_ip, log_string):
             data = data.decode()
 
             # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-            if data in ['Explore', 'Image Recognition', 'Shortest Path', 'Manual', 'Info Passing', 'Disconnect']:
+            if data in ['beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
 
                 # Send ack to Raspberry Pi
                 # TODO: Rasp Pi array here!
@@ -227,28 +227,16 @@ def pc(rpi_ip, log_string):
                 print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
                 if data == 'Explore':
+                    pass
 
-                    while True:
-
-                        # Receive stream from socket
-                        stream = pc_stream.queue.get()
-
-                        if not stream:
-                            break
-
-                        stream = stream.decode()
-
-                        # Display stream in a window
-                        cv2.imshow('Stream from Pi', stream)
-
-                    # TODO: Rasp Pi array here!
-                    real_map_hex = pc_recv.queue.get()
-
-                    real_map_hex = real_map_hex.decode()
-
-                    print(log_string + text_color.BOLD +
-                          'Real Map Hexadecimal = {}'.format(real_map_hex)
-                          + text_color.ENDC)
+                    # # TODO: Rasp Pi array here!
+                    # real_map_hex = pc_recv.queue.get()
+                    #
+                    # real_map_hex = real_map_hex.decode()
+                    #
+                    # print(log_string + text_color.BOLD +
+                    #       'Real Map Hexadecimal = {}'.format(real_map_hex)
+                    #       + text_color.ENDC)
 
                 elif data == 'Image Recognition':
                     pass
