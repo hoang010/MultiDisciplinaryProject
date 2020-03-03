@@ -557,7 +557,7 @@ def move_to_point(log_string, text_color, explorer, arduino_conn, point):
 if __name__ == "__main__":
     import platform
     try:
-        # main(platform.system())
-        main('Windows')
+        main(platform.system())
+        # main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
