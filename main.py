@@ -4,7 +4,7 @@ from RPi.bluetooth import Bluetooth
 from RPi.arduino import Arduino
 from RPi.client import Client
 from Algo.explore import Explore
-from Algo.image_recognition import ImageRecognition
+# from Algo.image_recognition import ImageRecognition
 # from Algo.a_star import AStar
 # from Algo.shortest_path import ShortestPath
 from Algo.fastest_path import *
@@ -32,7 +32,7 @@ def main(sys_type):
     rpi_ip = '192.168.17.17'
     rpi_mac_addr = 'B8:27:EB:52:AC:83'
     # USB port name!!
-    arduino_name = ''
+    arduino_name = '/dev/ttyACM0'
 
     log_string = text_color.OKBLUE + "{} | Main: ".format(time.asctime()) + text_color.ENDC
 
