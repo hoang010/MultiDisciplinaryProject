@@ -85,7 +85,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             mode = mode.decode()
 
             # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-            if mode in ['beginExplore', 'Image Recognition', 'beginFastest', 'Manual', 'Disconnect']:
+            if mode in ['beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
 
                 # Send ack to Android device
                 bt_conn.to_send_queue.put(('{} acknowledged'.format(mode)).encode())
@@ -126,50 +126,32 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                     # for node in path:
                     #     explorer.move_to_point(log_string, arduino_conn, explorer, node.ref_pt)
 
-                elif mode == 'Manual':
+                elif mode == 'manual':
                     while True:
                         manual_explorer = Explore(Direction)
                         movement = bt_conn.have_recv_queue.get()
 
                         movement = movement.decode()
 
-                        if movement == 'sl':
+                        if movement == 'tl':
                             print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
                             arduino_conn.to_send_queue.put(b'4')
                             arduino_conn.have_recv_queue.get()
-                            manual_explorer.update_dir(True)
 
                         elif movement == 'f':
                             print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
                             arduino_conn.to_send_queue.put(b'3')
                             arduino_conn.have_recv_queue.get()
-                            manual_explorer.update_pos(True)
 
-                        elif movement == 'sr':
+                        elif movement == 'tr':
                             print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
                             arduino_conn.to_send_queue.put(b'5')
                             arduino_conn.have_recv_queue.get()
-                            manual_explorer.update_dir(False)
-
-                        elif movement == 'tl':
-                            print(log_string + text_color.BOLD + 'Rotate left' + text_color.ENDC)
-                            arduino_conn.to_send_queue.put(b'7')
-                            arduino_conn.have_recv_queue.get()
-                            manual_explorer.update_dir(True)
-                            manual_explorer.update_dir(True)
 
                         elif movement == 'r':
                             print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
                             arduino_conn.to_send_queue.put(b'6')
                             arduino_conn.have_recv_queue.get()
-                            manual_explorer.update_pos(False)
-
-                        elif movement == 'tr':
-                            print(log_string + text_color.BOLD + 'Rotate right' + text_color.ENDC)
-                            arduino_conn.to_send_queue.put(b'8')
-                            arduino_conn.have_recv_queue.get()
-                            manual_explorer.update_dir(False)
-                            manual_explorer.update_dir(False)
 
                         elif movement == 'end':
                             break
@@ -177,12 +159,9 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                         else:
                             print(log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
-                        bt_conn.to_send_queue.put(manual_explorer.direction.encode())
-                        bt_conn.to_send_queue.put(manual_explorer.current_pos.encode())
-
                     print(log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
 
-                elif mode == 'Disconnect':
+                elif mode == 'disconnect':
                     # Send message to PC and Arduino to tell them to disconnect
                     server_send.queue.put('Disconnect'.encode())
                     arduino_conn.to_send_queue.put('Disconnect'.encode())

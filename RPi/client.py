@@ -126,7 +126,7 @@ class Client:
                     print(self.log_string + self.text_color.OKBLUE +
                           "Thread for PC {} alive".format(self.name.upper())
                           + self.text_color.ENDC)
-                    time.sleep(1)
+                time.sleep(1)
 
                 if not self.queue.empty():
                     data = self.queue.get()
