@@ -66,12 +66,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     arduino_conn = Arduino(arduino_name, text_color)
 
     # Connect to PC
-    server_send = Server('server_send', 'send', rpi_ip, 7777, text_color)
-    server_recv = Server('server_recv', 'recv', rpi_ip, 8888, text_color)
-    server_stream = Server('server_stream', 'send', rpi_ip, 9999, text_color)
-    server_send.listen()
-    server_recv.listen()
-    server_stream.listen()
+    server_conn = Server(rpi_ip, 7777, text_color)
+    server_conn.listen()
 
     # Connect to Tablet
     bt_conn = Bluetooth(rpi_mac_addr, text_color)
@@ -93,7 +89,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
                 if mode == 'beginExplore':
-                    explorer = explore(log_string, arduino_conn, bt_conn, server_stream)
+                    explorer = explore(log_string, arduino_conn, bt_conn, server_conn)
 
                 elif mode == 'Image Recognition':
                     print(mode)
@@ -159,13 +155,11 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 elif mode == 'disconnect':
                     # Send message to PC and Arduino to tell them to disconnect
-                    server_send.queue.put('Disconnect'.encode())
+                    server_conn.queue.put('Disconnect'.encode())
                     arduino_conn.to_send_queue.put('Disconnect'.encode())
 
                     # Disconnect from wifi and bluetooth connection
-                    server_send.disconnect()
-                    server_recv.disconnect()
-                    server_stream.disconnect()
+                    server_conn.disconnect()
                     arduino_conn.disconnect()
                     bt_conn.disconnect()
                     return
@@ -181,9 +175,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
     except KeyboardInterrupt:
         arduino_conn.disconnect()
-        server_stream.disconnect()
-        server_send.disconnect()
-        server_recv.disconnect()
+        server_conn.disconnect()
         bt_conn.disconnect()
         os.system('pkill -9 python')
 
@@ -198,21 +190,17 @@ def pc(rpi_ip, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_recv = Client('pc_recv', 'recv', rpi_ip, 7777, text_color)
-    pc_send = Client('pc_send', 'send', rpi_ip, 8888, text_color)
-    pc_stream = Client('pc_stream', 'recv', rpi_ip, 9999, text_color)
+    pc_conn = Client(rpi_ip, 7777, text_color)
 
     # Connect to Raspberry Pi
-    pc_recv.connect()
-    pc_send.connect()
-    pc_stream.connect()
+    pc_conn.connect()
 
     try:
         while True:
 
             # Receive data from Raspberry Pi
             # TODO: Rasp Pi array here!
-            data = pc_recv.queue.get()
+            data = pc_conn.queue.get()
 
             data = data.decode()
 
@@ -221,22 +209,13 @@ def pc(rpi_ip, log_string):
 
                 # Send ack to Raspberry Pi
                 # TODO: Rasp Pi array here!
-                pc_send.queue.put(('{} acknowledged'.format(data)).encode())
+                pc_conn.queue.put(('{} acknowledged'.format(data)).encode())
 
                 # Display on screen the mode getting executed
                 print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
                 if data == 'Explore':
                     pass
-
-                    # # TODO: Rasp Pi array here!
-                    # real_map_hex = pc_recv.queue.get()
-                    #
-                    # real_map_hex = real_map_hex.decode()
-                    #
-                    # print(log_string + text_color.BOLD +
-                    #       'Real Map Hexadecimal = {}'.format(real_map_hex)
-                    #       + text_color.ENDC)
 
                 elif data == 'Image Recognition':
                     pass
@@ -249,9 +228,7 @@ def pc(rpi_ip, log_string):
 
                 elif data == 'Disconnect':
                     # Disconnect from Raspberry Pi
-                    pc_send.disconnect()
-                    pc_recv.disconnect()
-                    pc_stream.disconnect()
+                    pc_conn.disconnect()
                     return
 
             else:
@@ -262,7 +239,7 @@ def pc(rpi_ip, log_string):
                 # Add data into queue for sending to Raspberry Pi
                 # Failsafe condition
                 # TODO: Rasp Pi array here!
-                pc_send.queue.put('Send valid argument'.encode())
+                pc_conn.queue.put('Send valid argument'.encode())
 
     except KeyboardInterrupt:
         os.system('pkill -9 python')
@@ -305,7 +282,7 @@ def robo_init(arduino_conn):
         arduino_conn.to_send_queue.put(b'4')
 
 
-def explore(log_string, arduino_conn, bt_conn, server_stream):
+def explore(log_string, arduino_conn, bt_conn, server_conn):
     """
     Function to run explore algorithm
     :param log_string: String
@@ -314,18 +291,8 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             Serial class containing connection to Arduino board
     :param bt_conn: Socket
             Bluetooth Socket containing connection to tablet
-    :param server_stream: Socket
-            Socket containing connection to PC on port 9999
     :return:
     """
-
-    from RPi.recorder import Recorder
-
-    # Start an instance of Recorder class
-    # recorder = Recorder()
-
-    # Start recording with the Pi camera
-    # recorder.start()
 
     # Start an instance of Explore class
     explorer = Explore(Direction)
@@ -372,7 +339,7 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
                 front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-                front_mid_obstacle = round(sensor_data["FrontMiddle"]) / 10
+                front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
                 front_right_obstacle = round(sensor_data["FrontRight"]) / 10
 
                 if front_left_obstacle < 1 and front_right_obstacle < 1 and front_mid_obstacle < 1:
@@ -454,50 +421,50 @@ def get_image(log_string, explorer, arduino_conn):
     start_pos = explorer.current_pos
     start_dir = explorer.direction
 
-    while True:
-        send_param = b'2'
-        arduino_conn.to_send_queue.put(send_param)
-        sensor_data = arduino_conn.have_recv_queue.get()
-
-        sensor_data = json.loads(sensor_data.decode().strip())
-
-        # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-        mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
-        right_front_obstacle = round(sensor_data["RightFront"]) / 10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
-
-        # Camera facing right
-        # Turn left
-        arduino_conn.to_send_queue.put(b'4')
-        arduino_conn.have_recv_queue.get()
-
-        # Insert image recog code here
-        # TODO: This is a placeholder!
-        captured = ImageRecognition(text_color)
-
-        if captured:
-            explorer.navigate_to_point(log_string, text_color, arduino_conn, start_pos)
-            break
-
-        else:
-            # If no obstacle on right
-            if right_front_obstacle > 2 or right_back_obstacle > 2:
-                arduino_conn.to_send_queue.put(b'5')
-                arduino_conn.have_recv_queue.get()
-
-            # If front has obstacle
-            elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
-                # Turn left
-                arduino_conn.to_send_queue.put(b'4')
-                arduino_conn.have_recv_queue.get()
-
-            else:
-                # Advance
-                arduino_conn.to_send_queue.put(b'3')
-                arduino_conn.have_recv_queue.get()
+    # while True:
+    #     send_param = b'2'
+    #     arduino_conn.to_send_queue.put(send_param)
+    #     sensor_data = arduino_conn.have_recv_queue.get()
+    #
+    #     sensor_data = json.loads(sensor_data.decode().strip())
+    #
+    #     # Get the data
+    #     front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+    #     front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
+    #     front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+    #     mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
+    #     right_front_obstacle = round(sensor_data["RightFront"]) / 10
+    #     right_back_obstacle = round(sensor_data["RightBack"]) / 10
+    #
+    #     # Camera facing right
+    #     # Turn left
+    #     arduino_conn.to_send_queue.put(b'4')
+    #     arduino_conn.have_recv_queue.get()
+    #
+    #     # Insert image recog code here
+    #     # TODO: This is a placeholder!
+    #     captured = ImageRecognition(text_color)
+    #
+    #     if captured:
+    #         explorer.navigate_to_point(log_string, text_color, arduino_conn, start_pos)
+    #         break
+    #
+    #     else:
+    #         # If no obstacle on right
+    #         if right_front_obstacle > 2 or right_back_obstacle > 2:
+    #             arduino_conn.to_send_queue.put(b'5')
+    #             arduino_conn.have_recv_queue.get()
+    #
+    #         # If front has obstacle
+    #         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
+    #             # Turn left
+    #             arduino_conn.to_send_queue.put(b'4')
+    #             arduino_conn.have_recv_queue.get()
+    #
+    #         else:
+    #             # Advance
+    #             arduino_conn.to_send_queue.put(b'3')
+    #             arduino_conn.have_recv_queue.get()
 
     while not explorer.set_direction(start_dir):
         continue
@@ -549,7 +516,7 @@ def move_to_point(log_string, text_color, explorer, arduino_conn, point):
 if __name__ == "__main__":
     import platform
     try:
-        # main(platform.system())
-        main('Windows')
+        main(platform.system())
+        # main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
