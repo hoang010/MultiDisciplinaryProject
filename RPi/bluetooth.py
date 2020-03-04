@@ -103,8 +103,6 @@ class Bluetooth:
 
         while True:
 
-            time.sleep(1)
-
             try:
                 # Check if connected
                 client_sock.getpeername()

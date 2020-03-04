@@ -73,23 +73,28 @@ class Explore:
         front, back = self.get_coord('right')
 
         # Check if coordinates on right is within map
-        if (front[0] < len(self.explored_map[0]) or front[1] < len(self.explored_map) or
-            back[0] < len(self.explored_map[0]) or back[1] < len(self.explored_map)):
+        if (front[0] < len(self.explored_map) or front[1] < len(self.explored_map[0]) or
+            back[0] < len(self.explored_map) or back[1] < len(self.explored_map[0])):
             if front[0] >= 0 and front[1] >= 0 and back[0] >= 0 and back[1] >= 0:
                 turn_right_condition = bool((right_back_obstacle > 2 or
                                             right_front_obstacle > 2) and
                                             (self.explored_map[front[0]][front[1]] == 0 or
-                                             self.explored_map[back[0]][back[1]]))
+                                             self.explored_map[back[0]][back[1]] == 0) and
+                                            self.check_right_empty == 3)
 
             else:
-                turn_right_condition = bool(right_back_obstacle > 2 or right_front_obstacle > 2)
+                turn_right_condition = bool((right_back_obstacle > 2 or right_front_obstacle > 2) and
+                                            self.check_right_empty == 3)
 
         # If not within map, then just check if robot is near right wall
         else:
-            turn_right_condition = bool(right_back_obstacle > 2 or right_front_obstacle > 2)
+            turn_right_condition = bool((right_back_obstacle > 2 or right_front_obstacle > 2) and
+                                        self.check_right_empty == 3)
 
         # If there is no obstacle on the right
         if turn_right_condition is True:
+
+            self.check_right_empty = 0
 
             # Turn right (5 is the index to tell Arduino to turn right)
             movement = b'5'
@@ -111,8 +116,8 @@ class Explore:
 
             # Check if right side coordinates are within boundaries
             if front[0] >= 0 or front[1] >= 0 or back[0] >= 0 or back[1] >= 0:
-                if front[0] < len(self.real_map[0]) or front[1] < len(self.real_map)\
-                        or back[0] < len(self.real_map[0]) or back[1] < len(self.real_map):
+                if front[0] < len(self.real_map) or front[1] < len(self.real_map[0])\
+                        or back[0] < len(self.real_map) or back[1] < len(self.real_map[0]):
                     # Add into array for obstacle coordinates
                     obstacle_coord.append(front)
                     obstacle_coord.append(back)
@@ -128,6 +133,8 @@ class Explore:
 
         # If obstacle on right and no obstacle in front
         else:
+
+            self.check_right_empty += 1
             # Since there is an obstacle on the right, get the coordinates
             front, back = self.get_coord('right')
 
@@ -211,8 +218,8 @@ class Explore:
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         if obstacle:
-            for x, y in obstacle:
-                self.real_map[x][y] = 1
+            for coordinates in obstacle:
+                self.real_map[coordinates[1]][coordinates[0]] = 1
 
     def update_dir(self, left_turn):
         """
@@ -455,11 +462,11 @@ class Explore:
             # Get the data
             sensor_data = json.loads(sensor_data.decode().strip())
 
-            front_left_obstacle = math.floor(sensor_data["TopLeft"]) / 10
-            front_mid_obstacle = math.floor(sensor_data["TopMiddle"]) / 10
-            front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
-            mid_left_obstacle = math.floor(sensor_data["LeftSide"]) / 10
-            mid_right_obstacle = math.floor(sensor_data["RightSide"]) / 10
+            front_left_obstacle = round(sensor_data["TopLeft"]) / 10
+            front_mid_obstacle = round(sensor_data["TopMiddle"]) / 10
+            front_right_obstacle = round(sensor_data["TopRight"]) / 10
+            mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
+            mid_right_obstacle = round(sensor_data["RightSide"]) / 10
 
             start_has_obstacle = self.check_obstacle(sensor_data)
 
@@ -527,9 +534,9 @@ class Explore:
 
     def check_obstacle(self, sensor_data):
 
-        front_left_obstacle = math.floor(sensor_data["TopLeft"]) / 10
-        front_mid_obstacle = math.floor(sensor_data["TopMiddle"]) / 10
-        front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
+        front_left_obstacle = round(sensor_data["TopLeft"]) / 10
+        front_mid_obstacle = round(sensor_data["TopMiddle"]) / 10
+        front_right_obstacle = round(sensor_data["TopRight"]) / 10
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:

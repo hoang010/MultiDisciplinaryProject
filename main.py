@@ -431,9 +431,11 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
 
     # Convert real map to hex
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+    hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
 
     packet = str({
-        "obstacle": hex_real_map
+        "obstacle": hex_real_map,
+        "explored": hex_exp_map
     })
 
     bt_conn.to_send_queue.put(packet.encode())
