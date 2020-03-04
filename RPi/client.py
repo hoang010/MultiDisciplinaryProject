@@ -24,7 +24,7 @@ class Client:
         self.sock = socket.socket()
         self.queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + \
-                          "{} | {} socket: ".format(time.asctime(), self.name.upper())\
+                          "{} | Client socket: ".format(time.asctime())\
                           + self.text_color.ENDC
 
         # Set socket blocking to be True
@@ -81,9 +81,6 @@ class Client:
               "Thread for PC recv_channel started"
               + self.text_color.ENDC)
 
-        t = threading.Timer(10, self.ping)
-        t.start()
-
         while True:
 
             # Print message to show that thread is alive
@@ -114,9 +111,6 @@ class Client:
               "Thread for PC send_channel started"
               + self.text_color.ENDC)
 
-        t = threading.Timer(10, self.ping)
-        t.start()
-
         while True:
 
             if not self.queue.empty():
@@ -140,21 +134,21 @@ class Client:
                       "Data sent"
                       + self.text_color.ENDC)
 
-    def ping(self):
-        # Print message to show that thread is alive
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for PC {} alive".format(self.name.upper())
-              + self.text_color.ENDC)
-
     def disconnect(self):
         """
         Function to safely disconnect from Raspberry Pi
         :return:
         """
-        self.queue_thread.join()
+        self.send_thread.join()
         # Print message to show that thread is alive
         print(self.log_string + self.text_color.OKGREEN +
-              'PC {} thread closed successfully'.format(self.name.upper())
+              'PC send_channel thread closed successfully'
+              + self.text_color.ENDC)
+
+        self.recv_thread.join()
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKGREEN +
+              'PC recv_channel thread closed successfully'
               + self.text_color.ENDC)
 
         # Shutdown socket
@@ -165,5 +159,5 @@ class Client:
 
         # Display feedback to let user know that this function is called successfully
         print(self.log_string + self.text_color.OKGREEN +
-              '{} wifi socket closed successfully'.format(self.name)
+              'Wifi socket closed successfully'
               + self.text_color.ENDC)

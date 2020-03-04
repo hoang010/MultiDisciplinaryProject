@@ -27,7 +27,7 @@ class Server:
         self.size = size
         self.sock = socket.socket()
         self.log_string = self.text_color.OKBLUE + \
-                          "{} | {} socket: ".format(time.asctime(), self.name.upper())\
+                          "{} | Server socket: ".format(time.asctime())\
                           + self.text_color.ENDC
 
         # Bind Raspberry Pi's own ip and port to the socket
@@ -98,9 +98,6 @@ class Server:
               "Thread for RPi recv_channel started"
               + self.text_color.ENDC)
 
-        t = threading.Timer(10, self.ping)
-        t.start()
-
         while True:
 
             # Print message to show that thread is alive
@@ -154,21 +151,20 @@ class Server:
                       "Data sent"
                       + self.text_color.ENDC)
 
-    def ping(self):
-        # Print message to show that thread is alive
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for RPi {} alive".format(self.name.upper())
-              + self.text_color.ENDC)
-
     def disconnect(self):
         """
         Function to safely disconnect from connected PC
         :return:
         """
 
-        self.queue_thread.join()
+        self.send_thread.join()
         print(self.log_string + self.text_color.OKGREEN +
-              'RPi {} thread closed successfully'.format(self.name.upper())
+              'RPi send_channel thread closed successfully'
+              + self.text_color.ENDC)
+
+        self.recv_thread.join()
+        print(self.log_string + self.text_color.OKGREEN +
+              'RPi recv_channel thread closed successfully'
               + self.text_color.ENDC)
 
         # Shutdown socket
@@ -179,5 +175,5 @@ class Server:
 
         # Display feedback to let user know that this function is called successfully
         print(self.log_string + self.text_color.OKGREEN +
-              '{} wifi socket closed successfully'.format(self.name.upper())
+              'Wifi socket closed successfully'
               + self.text_color.ENDC)
