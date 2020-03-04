@@ -123,7 +123,10 @@ class Explore:
                     obstacle_coord.append(back)
 
             # Get obstacle coordinates and add into array for obstacle coordinates
-            obstacle_coord.append(self.get_coord('front'))
+            left, mid, right = self.get_coord('front')
+            obstacle_coord.append(left)
+            obstacle_coord.append(mid)
+            obstacle_coord.append(right)
 
             # Put the command 'left' into queue for main() to read
             self.move_queue.put(movement)
@@ -332,7 +335,7 @@ class Explore:
                 coord = [[self.current_pos[2][0], self.current_pos[2][1] - 1],
                          [self.current_pos[8][0], self.current_pos[8][1] - 1]]
 
-            return coord
+            return coord[0], coord[1]
 
         def front():
             if self.direction == self.direction_class.N:
@@ -362,7 +365,7 @@ class Explore:
                          [self.current_pos[1][0] - 1, self.current_pos[1][1]],
                          [self.current_pos[2][0] - 1, self.current_pos[2][1]]]
 
-            return coord
+            return coord[0], coord[1], coord[2]
 
         if direction == 'left':
             return left()
@@ -462,11 +465,13 @@ class Explore:
             # Get the data
             sensor_data = json.loads(sensor_data.decode().strip())
 
-            front_left_obstacle = round(sensor_data["TopLeft"]) / 10
-            front_mid_obstacle = round(sensor_data["TopMiddle"]) / 10
-            front_right_obstacle = round(sensor_data["TopRight"]) / 10
-            mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
-            mid_right_obstacle = round(sensor_data["RightSide"]) / 10
+            # Get the data
+            front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
+            front_mid_obstacle = math.floor(sensor_data["FrontCenter"]) / 10
+            front_right_obstacle = math.floor(sensor_data["FrontRight"]) / 10
+            mid_left_obstacle = math.floor(sensor_data["LeftSide"]) / 10
+            right_front_obstacle = math.floor(sensor_data["RightFront"]) / 10
+            right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
 
             start_has_obstacle = self.check_obstacle(sensor_data)
 
@@ -478,7 +483,7 @@ class Explore:
                 continue
 
             # Check if front has obstacle
-            front_obstacle = (front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1)
+            front_obstacle = (front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2)
 
             # If there is an obstacle in front
             if front_obstacle:
@@ -495,7 +500,7 @@ class Explore:
                     self.update_dir(True)
 
                 # If there is obstacle on both left and right
-                elif mid_right_obstacle:
+                elif right_front_obstacle < 2 or right_back_obstacle < 2:
 
                     # This shouldn't happen, but raise error if it does
                     raise Exception('GG: Dead End!')
