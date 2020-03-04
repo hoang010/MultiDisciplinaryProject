@@ -17,8 +17,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 200 // left
-#define initialSetSpeed2 280
+#define initialSetSpeed1 220 // left
+#define initialSetSpeed2 225
 #define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
@@ -54,6 +54,7 @@ void loop() {
  // Serial.println(returnSrDist(12, SR6,0));
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
 
+  
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
