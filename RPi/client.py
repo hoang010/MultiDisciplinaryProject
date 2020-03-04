@@ -22,7 +22,8 @@ class Client:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
-        self.queue = queue.Queue()
+        self.to_send_queue = queue.Queue()
+        self.have_recv_queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Client socket: ".format(time.asctime())\
                           + self.text_color.ENDC
@@ -102,7 +103,7 @@ class Client:
                   + self.text_color.ENDC)
 
             # Finally, store data into self.have_recv_queue
-            self.queue.put(data)
+            self.have_recv_queue.put(data)
 
     def send_channel(self, conn_socket, addr):
 
@@ -113,8 +114,8 @@ class Client:
 
         while True:
 
-            if not self.queue.empty():
-                data = self.queue.get()
+            if not self.to_send_queue.empty():
+                data = self.to_send_queue.get()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +

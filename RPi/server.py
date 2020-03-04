@@ -34,7 +34,8 @@ class Server:
         self.sock.bind((self.ip_address, self.port))
 
         # Initialise queue to store data for sending to PC
-        self.queue = queue.Queue()
+        self.to_send_queue = queue.Queue()
+        self.have_recv_queue = queue.Queue()
 
         # Set socket to be blocking while listening
         self.sock.setblocking(True)
@@ -119,7 +120,7 @@ class Server:
                   + self.text_color.ENDC)
 
             # Finally, store data into self.have_recv_queue
-            self.queue.put(data)
+            self.have_recv_queue.put(data)
 
     def send_channel(self, conn_socket, addr):
         # Print message to show that thread is started
@@ -129,9 +130,9 @@ class Server:
 
         while True:
 
-            if not self.queue.empty():
+            if not self.to_send_queue.empty():
                 # Get data from socket
-                data = self.queue.get()
+                data = self.to_send_queue.get()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
