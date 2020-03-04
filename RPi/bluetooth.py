@@ -43,6 +43,8 @@ class Bluetooth:
         # Initialise queue to store data received from PC
         self.have_recv_queue = queue.Queue()
 
+        self.server_socket.setblocking(False)
+
         # Intialise variable for threads
         self.send_thread = None
         self.recv_thread = None

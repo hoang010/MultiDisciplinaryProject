@@ -284,11 +284,11 @@ def robo_init(arduino_conn):
     sensor_data = json.loads(feedback.decode().strip())
 
     # Get the data
-    front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
-    front_mid_obstacle = math.floor(sensor_data["FrontCenter"]) / 10
-    front_right_obstacle = math.floor(sensor_data["FrontRight"]) / 10
-    right_front_obstacle = math.floor(sensor_data["RightFront"]) / 10
-    right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
+    front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+    front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
+    front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+    right_front_obstacle = round(sensor_data["RightFront"]) / 10
+    right_back_obstacle = round(sensor_data["RightBack"]) / 10
 
     # While there is no obstacle on the right
     while right_front_obstacle > 1 and right_back_obstacle > 1:
@@ -335,7 +335,7 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
     # While map is not complete
     while not explorer.is_map_complete():
 
-        right_counter = 0
+        right_wall_counter = 0
 
         # While round is not complete
         while not explorer.check_round_complete():
@@ -366,14 +366,14 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             # Display message
             if movement == b'5':
                 log_movement = 'right'
-                right_counter += 1
+                right_wall_counter = 0
 
             elif movement == b'4':
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
-                front_left_obstacle = math.floor(sensor_data["TopLeft"]) / 10
-                front_mid_obstacle = math.floor(sensor_data["TopMiddle"]) / 10
-                front_right_obstacle = math.floor(sensor_data["TopRight"]) / 10
+                front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+                front_mid_obstacle = round(sensor_data["FrontMiddle"]) / 10
+                front_right_obstacle = round(sensor_data["FrontRight"]) / 10
 
                 if front_left_obstacle < 1 and front_right_obstacle < 1 and front_mid_obstacle < 1:
                     print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
@@ -382,6 +382,7 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
                     print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
             else:
                 log_movement = 'forward'
+                right_wall_counter += 1
 
             print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
@@ -398,8 +399,8 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             packet = str({
                 "explored": hex_exp_map,
                 "obstacle": hex_real_map,
-                "direction": explorer.direction,
-                "movement": log_movement[0]
+                "movement": log_movement[0],
+                "direction": explorer.direction
             })
 
             bt_conn.to_send_queue.put(packet.encode())
@@ -409,11 +410,11 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
             # server_stream.queue.put(stream_byte)
             # print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
 
-            if right_counter == 5:
+            if right_wall_counter == 5:
                 print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
                 arduino_conn.to_send_queue.put(b'11')
                 arduino_conn.have_recv_queue.get()
-                right_counter = 0
+                right_wall_counter = 0
                 print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
         # If round is complete, shift starting position
@@ -461,12 +462,12 @@ def get_image(log_string, explorer, arduino_conn):
         sensor_data = json.loads(sensor_data.decode().strip())
 
         # Get the data
-        front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = math.floor(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = math.floor(sensor_data["FrontRight"]) / 10
-        mid_left_obstacle = math.floor(sensor_data["LeftSide"]) / 10
-        right_front_obstacle = math.floor(sensor_data["RightFront"]) / 10
-        right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
+        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+        mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
+        right_front_obstacle = round(sensor_data["RightFront"]) / 10
+        right_back_obstacle = round(sensor_data["RightBack"]) / 10
 
         # Camera facing right
         # Turn left

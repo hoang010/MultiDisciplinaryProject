@@ -39,7 +39,7 @@ class Server:
         self.queue = queue.Queue()
 
         # Set socket to be blocking while listening
-        self.sock.setblocking(True)
+        self.sock.setblocking(False)
 
         # Set socket to keep alive
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)

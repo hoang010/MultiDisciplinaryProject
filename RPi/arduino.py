@@ -71,6 +71,9 @@ class Arduino:
               "Thread for {} recv_channel started".format(self.arduino_name)
               + self.text_color.ENDC)
 
+        t = threading.Timer(10, self.ping)
+        t.start()
+
         while True:
 
             # If there is data waiting

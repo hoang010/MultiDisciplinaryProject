@@ -34,7 +34,7 @@ class Client:
                           + self.text_color.ENDC
 
         # Set socket blocking to be True
-        self.sock.setblocking(True)
+        self.sock.setblocking(False)
 
         # Set socket to keep alive
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
