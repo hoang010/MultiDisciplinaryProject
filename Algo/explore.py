@@ -67,7 +67,7 @@ class Explore:
         obstacle_coord = []
 
         # Initialise variable for explored coordinates
-        explored_coord = self.current_pos
+        explored_coord = self.current_pos.copy()
 
         # Get coordinates on the right
         front, back = self.get_coord('right')

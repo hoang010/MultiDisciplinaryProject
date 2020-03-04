@@ -97,15 +97,12 @@ class Server:
               "Thread for RPi {} started".format(self.name.upper())
               + self.text_color.ENDC)
 
+        t = threading.Timer(10, self.ping)
+        t.start()
+
         if self.conn_type == 'recv':
 
             while True:
-
-                time.sleep(1)
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Thread for RPi {} alive".format(self.name.upper())
-                      + self.text_color.ENDC)
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.WARNING +
@@ -131,18 +128,6 @@ class Server:
         else:
             while True:
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Thread for RPi {} alive".format(self.name.upper())
-                      + self.text_color.ENDC)
-
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.WARNING +
-                      "Waiting for data to send"
-                      + self.text_color.ENDC)
-
-                time.sleep(1)
-
                 if not self.queue.empty():
                     # Get data from socket
                     data = self.queue.get()
@@ -164,6 +149,12 @@ class Server:
                     print(self.log_string + self.text_color.OKBLUE +
                           "Data sent"
                           + self.text_color.ENDC)
+
+    def ping(self):
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for RPi {} alive".format(self.name.upper())
+              + self.text_color.ENDC)
 
     def disconnect(self):
         """
