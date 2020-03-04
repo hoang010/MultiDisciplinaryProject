@@ -2,7 +2,6 @@ import numpy as np
 import os
 import queue
 import json
-import math
 
 
 class Explore:
@@ -56,12 +55,12 @@ class Explore:
         """
 
         # Get the data
-        front_left_obstacle = math.floor(sensor_data["FrontLeft"])/10
-        front_mid_obstacle = math.floor(sensor_data["FrontCenter"])/10
-        front_right_obstacle = math.floor(sensor_data["FrontRight"])/10
-        mid_left_obstacle = math.floor(sensor_data["LeftSide"])/10
-        right_front_obstacle = math.floor(sensor_data["RightFront"])/10
-        right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"])/10
+        front_mid_obstacle = round(sensor_data["FrontCenter"])/10
+        front_right_obstacle = round(sensor_data["FrontRight"])/10
+        mid_left_obstacle = round(sensor_data["LeftSide"])/10
+        right_front_obstacle = round(sensor_data["RightFront"])/10
+        right_back_obstacle = round(sensor_data["RightBack"]) / 10
 
         # Initialise variable for obstacle coordinates
         obstacle_coord = []
@@ -420,9 +419,8 @@ class Explore:
         Function to reset all properties to initial state
         :return:
         """
-        self.real_map = np.zeros(self.map_size)
-        self.explored_map = np.zeros(self.map_size)
-        self.path = (0, 0)
+        self.real_map = np.zeros((15, 20))
+        self.explored_map = np.zeros((15, 20))
         self.start = self.current_pos
 
     def check_start(self):
@@ -466,12 +464,12 @@ class Explore:
             sensor_data = json.loads(sensor_data.decode().strip())
 
             # Get the data
-            front_left_obstacle = math.floor(sensor_data["FrontLeft"]) / 10
-            front_mid_obstacle = math.floor(sensor_data["FrontCenter"]) / 10
-            front_right_obstacle = math.floor(sensor_data["FrontRight"]) / 10
-            mid_left_obstacle = math.floor(sensor_data["LeftSide"]) / 10
-            right_front_obstacle = math.floor(sensor_data["RightFront"]) / 10
-            right_back_obstacle = math.floor(sensor_data["RightBack"]) / 10
+            front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+            front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
+            front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+            mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
+            right_front_obstacle = round(sensor_data["RightFront"]) / 10
+            right_back_obstacle = round(sensor_data["RightBack"]) / 10
 
             start_has_obstacle = self.check_obstacle(sensor_data)
 

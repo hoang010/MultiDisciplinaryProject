@@ -14,9 +14,7 @@ from config.direction import Direction
 # Import libraries
 import json
 import time
-import cv2
 import os
-import math
 
 
 def main(sys_type):
@@ -280,6 +278,10 @@ def robo_init(arduino_conn):
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and \
             right_front_obstacle <= 1 and right_back_obstacle <= 1:
         arduino_conn.to_send_queue.put(b'4')
+        arduino_conn.have_recv_queue.get()
+
+    arduino_conn.to_send_queue.put(b'11')
+    arduino_conn.have_recv_queue.get()
 
 
 def explore(log_string, arduino_conn, bt_conn, server_conn):
@@ -293,6 +295,8 @@ def explore(log_string, arduino_conn, bt_conn, server_conn):
             Bluetooth Socket containing connection to tablet
     :return:
     """
+
+    robo_init(arduino_conn)
 
     # Start an instance of Explore class
     explorer = Explore(Direction)
@@ -338,11 +342,12 @@ def explore(log_string, arduino_conn, bt_conn, server_conn):
             elif movement == b'4':
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = b'left'
+                right_wall_counter = 0
                 front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
                 front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
                 front_right_obstacle = round(sensor_data["FrontRight"]) / 10
 
-                if front_left_obstacle < 1 and front_right_obstacle < 1 and front_mid_obstacle < 1:
+                if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
                     print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
                     arduino_conn.to_send_queue.put(b'10')
                     arduino_conn.have_recv_queue.get()
@@ -516,7 +521,7 @@ def move_to_point(log_string, text_color, explorer, arduino_conn, point):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
