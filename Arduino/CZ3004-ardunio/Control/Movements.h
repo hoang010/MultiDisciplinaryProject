@@ -89,7 +89,7 @@ float Motion::rotateTime(float angle) {
 /* Apply breaks to bot motors */
 void Motion::stopMotion() {
   md.setM1Brake(400);
-  md.setM2Brake(367);
+  md.setM2Brake(400);
 }
 
 /* Function to set motor speed based on required direction and run for required time in microseconds (for precision)

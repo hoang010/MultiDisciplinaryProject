@@ -35,9 +35,10 @@ void Calibration::CalibrateSpin(SharpIR sensor1,int sensorOffset1, SharpIR senso
   float rightDistance = sensor1.getDistance(false) + sensorOffset1;
   float leftDistance = sensor2.getDistance(false) + sensorOffset2;
   while (fabs(rightDistance - leftDistance) != difference) {
+    /*
     Serial.print(rightDistance );
     Serial.print(" | ");
-    Serial.println(leftDistance);
+    Serial.println(leftDistance);*/
     if (rightDistance - leftDistance > difference) {
       md.setSpeeds(-calibrationSetSpeed1, calibrationSetSpeed2);
       delay(10);
@@ -68,9 +69,10 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
   //take only 1 sample to improve timings
   float rightDistance = sensor1.getDistance(false) + sensorOffset1;
   float leftDistance = sensor2.getDistance(false) + sensorOffset2;
+  /*
     Serial.print(rightDistance );
     Serial.print(" | ");
-    Serial.println(leftDistance);
+    Serial.println(leftDistance);*/
   if (fabs(rightDistance - leftDistance) != difference) {
     CalibrateSpin(sensor1, sensorOffset1, sensor2, sensorOffset2, difference);
   }

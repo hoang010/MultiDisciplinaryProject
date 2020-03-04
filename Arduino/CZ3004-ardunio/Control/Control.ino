@@ -44,7 +44,6 @@ void setup() {
 
 
 void loop() {
-  long dist = 21950* pow(analogRead(A0),-1.244);
   /*
   if (dist >= 37){
     Serial.println("too far");
@@ -55,7 +54,6 @@ void loop() {
  // Serial.println(returnSrDist(12, SR6,0));
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
 
-  
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
@@ -121,12 +119,22 @@ void controlBot (int instruction, int secondVal) {
       md.setM2Speed(0);
       Serial.println("X_BOTDONE");
       break;
-    case 10 :  // Calibrate with front sensors
+    case 12 :  // Calibrate with front sensors
       calibrateBot->CalibrateFront();
       Serial.println("X_CALIBRATIONDONE");
       break;
     case 11 :  // Calibrate with front sensors
       calibrateBot->CalibrateRight();
+      Serial.println("X_CALIBRATIONDONE");
+      break;
+    case 10 :  // Calibrate for wall on the right and front
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnRight(90);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnLeft(90);
       Serial.println("X_CALIBRATIONDONE");
       break;
   }
