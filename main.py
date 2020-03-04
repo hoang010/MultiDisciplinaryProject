@@ -253,6 +253,7 @@ def robo_init(arduino_conn):
             Socket containing connection to tablet0
     :return:
     """
+    arduino_conn.to_send_queue.put(b'2')
     # Get feedback from Arduino
     feedback = arduino_conn.have_recv_queue.get()
 
@@ -273,6 +274,18 @@ def robo_init(arduino_conn):
 
         # Refresh variables in freedback
         _ = arduino_conn.have_recv_queue.get()
+
+        arduino_conn.to_send_queue.put(b'2')
+
+        sensor_data = arduino_conn.have_recv_queue.get()
+        sensor_data = json.loads(sensor_data.decode().strip())
+
+        # Get the data
+        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
+        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+        right_front_obstacle = round(sensor_data["RightFront"]) / 10
+        right_back_obstacle = round(sensor_data["RightBack"]) / 10
 
     # If robot is facing corner, turn left
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and \

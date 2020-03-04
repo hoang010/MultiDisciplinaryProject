@@ -75,19 +75,19 @@ class Explore:
         if (front[0] < len(self.explored_map) or front[1] < len(self.explored_map[0]) or
             back[0] < len(self.explored_map) or back[1] < len(self.explored_map[0])):
             if front[0] >= 0 and front[1] >= 0 and back[0] >= 0 and back[1] >= 0:
-                turn_right_condition = bool((right_back_obstacle > 2 or
-                                            right_front_obstacle > 2) and
+                turn_right_condition = bool((right_back_obstacle > 1 or
+                                            right_front_obstacle > 1) and
                                             (self.explored_map[front[0]][front[1]] == 0 or
                                              self.explored_map[back[0]][back[1]] == 0) and
                                             self.check_right_empty == 3)
 
             else:
-                turn_right_condition = bool((right_back_obstacle > 2 or right_front_obstacle > 2) and
+                turn_right_condition = bool((right_back_obstacle > 1 or right_front_obstacle > 1) and
                                             self.check_right_empty == 3)
 
         # If not within map, then just check if robot is near right wall
         else:
-            turn_right_condition = bool((right_back_obstacle > 2 or right_front_obstacle > 2) and
+            turn_right_condition = bool((right_back_obstacle > 1 or right_front_obstacle > 1) and
                                         self.check_right_empty == 3)
 
         # If there is no obstacle on the right
@@ -105,7 +105,7 @@ class Explore:
             self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
-        elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
+        elif front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1:
 
             # Turn left (4 is the index to tell Arduino to turn left)
             movement = b'4'
