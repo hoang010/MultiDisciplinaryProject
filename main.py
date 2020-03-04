@@ -340,6 +340,8 @@ def explore(log_string, arduino_conn, bt_conn, server_stream):
         # While round is not complete
         while not explorer.check_round_complete():
 
+            print('Current position: ', explorer.current_pos)
+
             print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
             print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
