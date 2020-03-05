@@ -1,6 +1,5 @@
 # Import written classes
 from RPi.server import Server
-from RPi.bluetooth import Bluetooth
 from RPi.arduino import Arduino
 from RPi.client import Client
 from Algo.explore import Explore
@@ -57,8 +56,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             String containing format of log to be used
     :return:
     """
-    # Initialise variables here
-    explorer = None
+    from RPi.bluetooth import Bluetooth
     
     # Connect to Arduino
     arduino_conn = Arduino(arduino_name, text_color)
@@ -169,6 +167,8 @@ def pc(rpi_ip, log_string):
 
     # Connect to Raspberry Pi
     pc_conn.connect()
+
+    explorer = None
 
     try:
         while True:
