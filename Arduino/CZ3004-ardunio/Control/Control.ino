@@ -4,6 +4,71 @@
 #include "Movements.h"
 #include "Calibration.h"
 
+
+//Fastest path format ends with }
+//i.e: {3:10, 4:90, 5:90}
+String getFastestPath() {
+  String fastestPath = "";
+  Serial.read();
+  while (fastestPath.equals("")) {
+    fastestPath = Serial.readStringUntil('}');
+  }
+  //ignore the first "{"
+  return fastestPath.substring(1);
+}
+
+
+void fastestPath(String fastest_path_code) {
+  
+  String instructions = "";
+  String instruction = "";
+  bool getInstruction = true;
+  bool getValue = true;
+  int value = 0;
+
+  do {
+    //for each character in the code
+    for (int i = 0; i <= fastest_path_code.length(); i++) {
+      //if the substring for the index is : or if it is the last character
+      if (fastest_path_code.substring(i, i + 1) == "," || fastest_path_code.length() == i) {
+        instructions = fastest_path_code.substring(0, i);
+        for (int j = 0; j <= instructions.length(); j++) {
+          if (instructions.substring(j, j + 1) == ":" || instructions.length() == j) {
+            instruction= instructions.substring(0, j);
+            value = instructions.substring(j+1).toInt();
+            break;
+          }
+        }
+        fastest_path_code =  fastest_path_code.substring(i + 1);
+      }
+    }
+    controlBot(instruction.toInt(), value);
+    delay(100);
+    fastestPathCalibration();
+    delay(100);
+
+  } while (!fastest_path_code.equals(""));
+
+}
+
+void fastestPathCalibration() {
+  float frontRightDistance = SR1.getDistance(false);
+  float frontLeftDistance = SR2.getDistance(false);
+  float rightFrontDistance = SR3.getDistance(false);
+  float rightBackDistance = SR4.getDistance(false);
+  //if only front have object then calibrate front
+  if((frontRightDistance < 15 && frontRightDistance > 5) || (frontLeftDistance < 15 && frontLeftDistance > 5)){
+    bot->CalibrateFront();
+    //if sides also have object then calibrate side as well
+    if((rightFrontDistance < 15 && rightFrontDistance > 5) || (rightBackDistance < 15 && rightBackDistance > 5)){
+      controlBot(4 , 10);
+      bot->CalibrateFront();
+      controlBot(5, 10);
+    }
+    }
+
+}
+
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
 DualVNH5019MotorShield md; 
 
@@ -120,7 +185,7 @@ void controlBot (int instruction, int secondVal) {
       md.setM2Speed(0);
       Serial.println("X_BOTDONE");
       break;
-    case 12 :  // Calibrate with front sensors
+    case 10 :  // Calibrate with front sensors
       calibrateBot->CalibrateFront();
       Serial.println("X_CALIBRATIONDONE");
       break;
@@ -128,7 +193,7 @@ void controlBot (int instruction, int secondVal) {
       calibrateBot->CalibrateRight();
       Serial.println("X_CALIBRATIONDONE");
       break;
-    case 10 :  // Calibrate for wall on the right and front
+    case 12 :  // Calibrate for wall on the right and front
       calibrateBot->CalibrateFront();
       delay(200);
       bot->turnRight(90);
@@ -138,5 +203,14 @@ void controlBot (int instruction, int secondVal) {
       bot->turnLeft(90);
       Serial.println("X_CALIBRATIONDONE");
       break;
+    case 13: //Get fastest path and run
+      Serial.println("X_READYFASTESTPATH");
+      String fastest_path = getFastestPath();
+      fastestPath(fastest_path);
+      Serial.println("X_FASTESTPATHDONE");
+      break;
   }
+
+
+
 }
