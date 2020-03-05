@@ -91,13 +91,17 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                     while True:
                         feedback = server_conn.have_recv_queue.get()
-                        feedback = json.loads(feedback.decode())
+                        msg = feedback.decode()
+                        if msg == 'end':
+                            break
+                        feedback = json.loads(msg)
 
                         if feedback["dest"] == "arduino":
                             param = feedback["param"]
                             arduino_conn.to_send_queue.put(param.encode())
                             msg = arduino_conn.have_recv_queue.get()
-                            server_conn.to_send_queue.put(msg)
+                            if param == "2":
+                                server_conn.to_send_queue.put(msg)
 
                         elif feedback["dest"] == "bt":
                             del feedback["dest"]
@@ -122,6 +126,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                         server_conn.to_send_queue.put(msg)
                         msg = msg.decode()
                         if msg == 'end':
+                            print(log_string + text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
                             break
                         movement = server_conn.have_recv_queue.get()
                         arduino_conn.to_send_queue.put(movement)
@@ -224,10 +229,7 @@ def pc(rpi_ip, log_string):
                         explorer.start = explorer.current_pos
                         waypt_coord = explorer.goal[4]
 
-                    send_param = str({
-                        "dest": "arduino",
-                        "param": path
-                    })
+                    send_param = "{\"dest\": \"arduino\",\"param\": {}}".format(path)
                     pc_conn.to_send_queue.put(send_param.encode())
 
                 elif data == 'manual':
@@ -275,13 +277,14 @@ def pc(rpi_ip, log_string):
                 pc_conn.to_send_queue.put('Send valid argument'.encode())
 
     except KeyboardInterrupt:
+        pc_conn.disconnect()
         os.system('pkill -9 python')
 
 
-# This init is done assuming the robot does not start in a "room" in the corner
 def robo_init(log_string, arduino_conn, bt_conn):
     """
-    Function to init robot
+    Function to init robot, to be called by Raspberry Pi
+
     :param log_string: String
             String containing logs
     :param arduino_conn: Serial
@@ -507,19 +510,17 @@ def explore(log_string, pc_conn):
 
     # Move to initial start
     while not explorer.check_start():
+
         # Get sensor data
         send_param = "{\"dest\": \"arduino\",\"param\": \"2\"}"
 
         pc_conn.to_send_queue.put(send_param.encode())
         sensor_data = pc_conn.have_recv_queue.get()
-
         sensor_data = sensor_data.decode().strip()
-
         sensor_data = json.loads(sensor_data)
 
         # Actually move to new start position
         explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
-
         movement = explorer.move_queue.get()
 
         send_param = "{\"dest\": \"arduino\",\"param\": {}}".format(movement)
@@ -527,6 +528,8 @@ def explore(log_string, pc_conn):
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
+
+    pc_conn.to_send_queue.put('end'.encode())
 
     return explorer
 
