@@ -90,14 +90,14 @@ and returns it to the function calling recv.
 
 For the send function, the msg to be sent is directly written
 to the Serial Connection. As mentioned in the Data Standards table,
- this connection uses String to send/receive data.
+ this connection uses Bytes to send/receive data.
 
 #### Wifi Socket
 The Wifi Socket is used to connect to the PC. It starts a queue 
 and thread for each instantiation of the Server class. This way
 of implementing was done as there were concerns regarding latency.
 As mentioned in the Data Standards table, this connection uses 
-Arrays to send/receive data.
+Bytes to send/receive data.
 
 The Wifi Socket instantiation binds the port 7777 to
 a socket before listening for requests to connect on this port. 
@@ -108,7 +108,38 @@ This connection would then be used for sending data to the PC.
 ### Exploration
 For exploring the given arena, right wall hugging is used.
 
-#### Turning right
+During exploration, the following packet structure is used for information 
+sending between the entities.
+
+##### From PC to Raspberry Pi:
+```
+{
+    "dest": destination entity,
+    "param": For arduino,
+    "explored": For tablet,
+    "obstacle": For tablet,
+    "movement": For tablet,
+    "direction": For tablet,
+}
+```
+
+##### From Raspberry Pi to tablet:
+```
+ {
+    "explored": contains hex of explored map,
+    "obstacle": contains hex of real map,
+    "movement": contains String of movement("l", "r", "f"),
+    "direction": contains direction of robot,
+}
+```
+
+##### From Raspberry Pi to Arduino: 
+* movement in Bytes
+
+The above packet structures are converted into string and then encoded into 
+Bytes before being sent.
+
+#### Conditions to turn right
 One of the following conditions must be fulfilled:
 * Coordinates on right side are within map and unexplored
 * No obstacle on right (The variable check_right_empty is used as there is
