@@ -86,7 +86,7 @@ class Explore:
             self.check_right_empty = 0
 
             # Turn right (5 is the index to tell Arduino to turn right)
-            movement = b'5'
+            movement = '5'
 
             # Put the command 'right' into queue for main() to read
             self.move_queue.put(movement)
@@ -98,7 +98,7 @@ class Explore:
         elif front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1:
 
             # Turn left (4 is the index to tell Arduino to turn left)
-            movement = b'4'
+            movement = '4'
 
             if front_in_map:
                 obstacle_coord.append(coordinates[0])
@@ -136,7 +136,7 @@ class Explore:
                 obstacle_coord.append(coordinates[1])
 
             # Move forward (3 is the index to tell Arduino to move forward)
-            movement = b'3'
+            movement = '3'
 
             # Put the command 'advance' into queue for main() to read
             self.move_queue.put(movement)
@@ -163,7 +163,7 @@ class Explore:
         self.update_map(explored_coord, obstacle_coord)
 
         # if round is started and robot has moved from start position, set round to 1
-        if not self.round and movement == b'3':
+        if not self.round and movement == '3':
             self.round = 1
 
     def update_pos(self):
@@ -482,7 +482,7 @@ class Explore:
                 print(log_string + text_color.BOLD + 'Turning left' + text_color.ENDC)
 
                 # Tell Arduino to turn left
-                movement = b'4'
+                movement = "4"
 
                 # Update direction
                 self.update_dir(True)
@@ -492,7 +492,7 @@ class Explore:
 
                 print(log_string + text_color.BOLD + 'Turning right' + text_color.ENDC)
                 # Turn right
-                movement = b'5'
+                movement = "5"
 
                 # Update direction
                 self.update_dir(False)
@@ -502,7 +502,7 @@ class Explore:
 
             # Advance
             print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
-            movement = b'3'
+            movement = "3"
 
             self.update_pos()
 
@@ -512,7 +512,7 @@ class Explore:
     def set_direction(self, direction):
         if self.direction != direction:
             # Turn left while direction is wrong
-            self.move_queue.put(b'4')
+            self.move_queue.put("4")
             return False
         return True
 
