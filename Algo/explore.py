@@ -108,9 +108,15 @@ class Explore:
 
             # Get obstacle coordinates and add into array for obstacle coordinates
             front_coordinates = self.get_coord('front')
-            obstacle_coord.append(front_coordinates[0])
-            obstacle_coord.append(front_coordinates[1])
-            obstacle_coord.append(front_coordinates[2])
+
+            if front_left_obstacle < 1:
+                obstacle_coord.append(front_coordinates[0])
+
+            if front_mid_obstacle < 1:
+                obstacle_coord.append(front_coordinates[1])
+
+            if front_right_obstacle < 1:
+                obstacle_coord.append(front_coordinates[2])
 
             # Put the command 'left' into queue for main() to read
             self.move_queue.put(movement)
@@ -157,7 +163,7 @@ class Explore:
         self.update_map(explored_coord, obstacle_coord)
 
         # if round is started and robot has moved from start position, set round to 1
-        if not self.round and movement == '3':
+        if not self.round and movement == b'3':
             self.round = 1
 
     def update_pos(self):
