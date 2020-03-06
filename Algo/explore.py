@@ -207,13 +207,13 @@ class Explore:
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
         for coordinates in coord_array:
-            self.explored_map[coordinates[0]][coordinates[1]] = 1
+            self.explored_map[coordinates[1]][coordinates[0]] = 1
 
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         if obstacle:
             for coordinates in obstacle:
-                self.real_map[coordinates[0]][coordinates[1]] = 1
+                self.real_map[coordinates[1]][coordinates[0]] = 1
 
     def update_dir(self, left_turn):
         """
