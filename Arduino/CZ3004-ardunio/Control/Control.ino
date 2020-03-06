@@ -3,72 +3,6 @@
 #include "Sensors.h"
 #include "Movements.h"
 #include "Calibration.h"
-
-
-//Fastest path format ends with }
-//i.e: {3:10, 4:90, 5:90}
-String getFastestPath() {
-  String fastestPath = "";
-  Serial.read();
-  while (fastestPath.equals("")) {
-    fastestPath = Serial.readStringUntil('}');
-  }
-  //ignore the first "{"
-  return fastestPath.substring(1);
-}
-
-
-void fastestPath(String fastest_path_code) {
-  
-  String instructions = "";
-  String instruction = "";
-  bool getInstruction = true;
-  bool getValue = true;
-  int value = 0;
-
-  do {
-    //for each character in the code
-    for (int i = 0; i <= fastest_path_code.length(); i++) {
-      //if the substring for the index is : or if it is the last character
-      if (fastest_path_code.substring(i, i + 1) == "," || fastest_path_code.length() == i) {
-        instructions = fastest_path_code.substring(0, i);
-        for (int j = 0; j <= instructions.length(); j++) {
-          if (instructions.substring(j, j + 1) == ":" || instructions.length() == j) {
-            instruction= instructions.substring(0, j);
-            value = instructions.substring(j+1).toInt();
-            break;
-          }
-        }
-        fastest_path_code =  fastest_path_code.substring(i + 1);
-      }
-    }
-    controlBot(instruction.toInt(), value);
-    delay(100);
-    fastestPathCalibration();
-    delay(100);
-
-  } while (!fastest_path_code.equals(""));
-
-}
-
-void fastestPathCalibration() {
-  float frontRightDistance = SR1.getDistance(false);
-  float frontLeftDistance = SR2.getDistance(false);
-  float rightFrontDistance = SR3.getDistance(false);
-  float rightBackDistance = SR4.getDistance(false);
-  //if only front have object then calibrate front
-  if((frontRightDistance < 15 && frontRightDistance > 5) || (frontLeftDistance < 15 && frontLeftDistance > 5)){
-    bot->CalibrateFront();
-    //if sides also have object then calibrate side as well
-    if((rightFrontDistance < 15 && rightFrontDistance > 5) || (rightBackDistance < 15 && rightBackDistance > 5)){
-      controlBot(4 , 10);
-      bot->CalibrateFront();
-      controlBot(5, 10);
-    }
-    }
-
-}
-
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
 DualVNH5019MotorShield md; 
 
@@ -93,6 +27,7 @@ Motion* bot;  // Motion object to control bot movements such as "Move Forward", 
 Calibration* calibrateBot; // Calibration object to control calibration techniques such as "Calibrate with Front sensors", "Calibrate with Left sensors", etc.
 
 
+
 void setup() {
   Serial.begin(115200);
 
@@ -109,17 +44,12 @@ void setup() {
 
 
 void loop() {
-  /*
-  if (dist >= 37){
-    Serial.println("too far");
-    }
-  else{
-    Serial.println(dist);
-    }*/
  // Serial.println(returnSrDist(12, SR6,0));
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-
-  
+   
+  delay(2000);
+  controlBot(13,10);
+  delay(2000);
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
@@ -128,6 +58,76 @@ void loop() {
   }
   
 }
+
+//Fastest path format ends with }
+//i.e: {3:10, 4:90, 5:90}
+String getFastestPath() {
+  String fastestPath = "";
+  Serial.read();
+  while (fastestPath.equals("")) {
+    fastestPath = Serial.readStringUntil('}');
+  }
+  //ignore the first "{"
+  return fastestPath.substring(1);
+}
+
+
+void fastestPath(String fastest_path_code) {
+  
+  String instructions = "";
+  String instruction = "";
+  bool getInstruction = true;
+  bool getValue = true;
+  int value = 0;
+  Serial.println(fastest_path_code);
+  do {
+    //for each character in the code
+    for (int i = 0; i <= fastest_path_code.length(); i++) {
+      //if the substring for the index is : or if it is the last character
+      if (fastest_path_code.substring(i, i + 1) == "," || fastest_path_code.length() == i) {
+        instructions = fastest_path_code.substring(0, i);
+        Serial.println(instructions);
+        for (int j = 0; j <= instructions.length(); j++) {
+          if (instructions.substring(j, j + 1) == ":" || instructions.length() == j) {
+            instruction= instructions.substring(0, j);
+            value = instructions.substring(j+1).toInt();
+            break;
+          }
+        }
+        fastest_path_code =  fastest_path_code.substring(i + 1);
+        break;
+      }
+    }
+    controlBot(instruction.toInt(), value);
+    delay(100);
+    fastestPathCalibration();
+    delay(100);
+
+  } while (!fastest_path_code.equals(""));
+
+}
+
+void fastestPathCalibration() {
+  float frontRightDistance = SR1.getDistance(false);
+  float frontLeftDistance = SR2.getDistance(false);
+  float rightFrontDistance = SR3.getDistance(false);
+  float rightBackDistance = SR4.getDistance(false);
+  //if only front have object then calibrate front
+  if((frontRightDistance < 15 && frontRightDistance > 5) || (frontLeftDistance < 15 && frontLeftDistance > 5)){
+    calibrateBot->CalibrateFront();
+    //if sides also have object then calibrate side as well
+    if((rightFrontDistance < 10 && rightFrontDistance > 5) || (rightBackDistance < 10 && rightBackDistance > 5)){
+      controlBot(5,10);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      controlBot(4, 10);
+    }
+    }
+
+}
+
+
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
 The function additionally passes a message back to RPI via serial port when required action is complete
@@ -205,7 +205,8 @@ void controlBot (int instruction, int secondVal) {
       break;
     case 13: //Get fastest path and run
       Serial.println("X_READYFASTESTPATH");
-      String fastest_path = getFastestPath();
+      //String fastest_path = getFastestPath();
+      String fastest_path = "3:30,5:11,3:10,5:14,3:30,5:14,3:10,5:14";
       fastestPath(fastest_path);
       Serial.println("X_FASTESTPATHDONE");
       break;
