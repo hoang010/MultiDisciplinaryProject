@@ -95,7 +95,7 @@ class Explore:
             self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
-        elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
+        elif front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1:
 
             # Turn left (4 is the index to tell Arduino to turn left)
             movement = '4'
@@ -109,13 +109,13 @@ class Explore:
             # Get obstacle coordinates and add into array for obstacle coordinates
             front_coordinates = self.get_coord('front')
 
-            if front_left_obstacle < 2:
+            if front_left_obstacle < 1:
                 obstacle_coord.append(front_coordinates[0])
 
-            if front_mid_obstacle < 2:
+            if front_mid_obstacle < 1:
                 obstacle_coord.append(front_coordinates[1])
 
-            if front_right_obstacle < 2:
+            if front_right_obstacle < 1:
                 obstacle_coord.append(front_coordinates[2])
 
             # Put the command 'left' into queue for main() to read
@@ -207,6 +207,7 @@ class Explore:
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
         for coordinates in coord_array:
+            print("entered")
             coordx_in_map = bool(len(self.explored_map) > coordinates[0][0] > -1)
             coordy_in_map = bool(len(self.explored_map[0]) > coordinates[0][1] > -1)
             if coordx_in_map and coordy_in_map:
@@ -217,6 +218,7 @@ class Explore:
         if obstacle:
             for coordinates in obstacle:
                 self.real_map[coordinates[1]][coordinates[0]] = 1
+                print("entered")
 
     def update_dir(self, left_turn):
         """
