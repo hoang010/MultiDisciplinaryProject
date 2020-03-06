@@ -40,12 +40,12 @@ class Explore:
         """
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"])/10
-        front_mid_obstacle = round(sensor_data["FrontCenter"])/10
-        front_right_obstacle = round(sensor_data["FrontRight"])/10
-        mid_left_obstacle = round(sensor_data["LeftSide"])/10
-        right_front_obstacle = round(sensor_data["RightFront"])/10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+        front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+        front_right_obstacle = round(sensor_data["FrontRight"]/10)
+        mid_left_obstacle = round(sensor_data["LeftSide"]/10)
+        right_front_obstacle = round(sensor_data["RightFront"]/10)
+        right_back_obstacle = round(sensor_data["RightBack"]/10)
 
         # Initialise variable for obstacle coordinates
         obstacle_coord = []
@@ -455,12 +455,12 @@ class Explore:
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-        mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
-        right_front_obstacle = round(sensor_data["RightFront"]) / 10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+        front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+        front_right_obstacle = round(sensor_data["FrontRight"]/10)
+        mid_left_obstacle = round(sensor_data["LeftSide"]/10)
+        right_front_obstacle = round(sensor_data["RightFront"]/10)
+        right_back_obstacle = round(sensor_data["RightBack"]/10)
 
         start_has_obstacle = self.check_obstacle(sensor_data)
 
@@ -518,9 +518,9 @@ class Explore:
 
     def check_obstacle(self, sensor_data):
 
-        front_left_obstacle = round(sensor_data["TopLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["TopMiddle"]) / 10
-        front_right_obstacle = round(sensor_data["TopRight"]) / 10
+        front_left_obstacle = round(sensor_data["TopLeft"]/10)
+        front_mid_obstacle = round(sensor_data["TopMiddle"]/10)
+        front_right_obstacle = round(sensor_data["TopRight"]/10)
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:

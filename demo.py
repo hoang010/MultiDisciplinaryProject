@@ -54,12 +54,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     arduino_conn_demo.have_recv_queue.get()
 
     # Connect to PC
-    server_send_demo = Server('server_send_demo', 'send', rpi_ip, 7777, text_color)
-    server_recv_demo = Server('server_recv_demo', 'recv', rpi_ip, 8888, text_color)
-    server_stream_demo = Server('server_stream_demo', 'send', rpi_ip, 9999, text_color)
-    server_send_demo.listen()
-    server_recv_demo.listen()
-    server_stream_demo.listen()
+    server_conn = Server(rpi_ip, 7777, text_color)
+    server_conn.listen()
 
     # Connect to Tablet
     bt_conn_demo = Bluetooth(rpi_mac_addr, text_color)
@@ -97,16 +93,14 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 new_info = arduino_conn_demo.have_recv_queue.get()
 
                 # Send to PC
-                server_send_demo.queue.put(new_info.encode())
+                server_conn.to_send_queue.put(new_info.encode())
 
             # Straight line motion
             elif choice == 2:
 
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
-<<<<<<< HEAD
-=======
+
                 arduino_conn_demo.to_send_queue.put('3'.encode())
->>>>>>> Arduino
 
                 dist = int(input('Enter number of grids to move: '))
                 i = 1
@@ -209,12 +203,8 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 pass
 
             elif choice == 6:
-                server_send_demo.disconnect()
-                print(log_string + text_color.BOLD + 'Server send disconnected' + text_color.ENDC)
-                server_recv_demo.disconnect()
-                print(log_string + text_color.BOLD + 'Server recv disconnected' + text_color.ENDC)
-                server_stream_demo.disconnect()
-                print(log_string + text_color.BOLD + 'Server stream disconnected' + text_color.ENDC)
+                server_conn.disconnect()
+                print(log_string + text_color.BOLD + 'Server disconnected' + text_color.ENDC)
 
                 bt_conn_demo.disconnect()
                 print(log_string + text_color.BOLD + 'Bluetooth disconnected' + text_color.ENDC)
@@ -240,52 +230,27 @@ def pc(rpi_ip, log_string):
     :return:
     """
     # Create an instance of PC
-    pc_recv_test = Client('pc_recv_test', 'recv', rpi_ip, 7777, text_color)
-    pc_send_test = Client('pc_send_test', 'send', rpi_ip, 8888, text_color)
-    pc_stream_test = Client('pc_stream_test', 'recv', rpi_ip, 9999, text_color)
+    pc_conn = Client(rpi_ip, 7777, text_color)
 
     # Connect to Raspberry Pi
-    pc_recv_test.connect()
-    pc_send_test.connect()
-    pc_stream_test.connect()
+    pc_conn.connect()
 
     try:
         while True:
 
             # TODO: Array here!
-            msg = pc_recv_test.queue.get()
+            msg = pc_conn.have_recv_queue.get()
 
             msg = msg.decode()
 
             print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
 
-            if msg == 'stream':
-                while True:
-
-                    # Receive stream from socket
-                    stream = pc_stream_test.queue.get()
-
-                    stream = stream.decode()
-
-                    # Display stream in a window
-                    cv2.imshow('Stream from Pi', stream)
-
-                    # If end of stream (indicated with return value 0), break
-                    if not stream:
-                        break
-
-            elif msg == 'disconnect':
-                pc_send_test.disconnect()
-                print(log_string + text_color.BOLD + 'Client send diconnected' + text_color.ENDC)
-
-                pc_recv_test.disconnect()
-                print(log_string + text_color.BOLD + 'Client recv disconnected' + text_color.ENDC)
-
-                pc_stream_test.disconnect()
-                print(log_string + text_color.BOLD + 'Client stream disconnected' + text_color.ENDC)
+            if msg == 'disconnect':
+                pc_conn.disconnect()
+                print(log_string + text_color.BOLD + 'Client diconnected' + text_color.ENDC)
 
             else:
-                pc_send_test.queue.put(('"{}" returned!'.format(msg)).encode())
+                pc_conn.to_send_queue.put(('"{}" returned!'.format(msg)).encode())
 
     except KeyboardInterrupt:
         os.system('pkill -9 python')

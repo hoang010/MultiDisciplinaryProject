@@ -115,6 +115,7 @@ class Client:
         while True:
 
             if not self.to_send_queue.empty():
+
                 data = self.to_send_queue.get()
 
                 # Print message to show that thread is alive

@@ -304,11 +304,11 @@ def robo_init(log_string, arduino_conn, bt_conn):
     sensor_data = json.loads(feedback.decode().strip())
 
     # Get the data
-    front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-    front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-    front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-    right_front_obstacle = round(sensor_data["RightFront"]) / 10
-    right_back_obstacle = round(sensor_data["RightBack"]) / 10
+    front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+    front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+    front_right_obstacle = round(sensor_data["FrontRight"]/10)
+    right_front_obstacle = round(sensor_data["RightFront"]/10)
+    right_back_obstacle = round(sensor_data["RightBack"]/10)
 
     # While there is no obstacle on the right
     while right_front_obstacle > 1 and right_back_obstacle > 1:
@@ -329,11 +329,11 @@ def robo_init(log_string, arduino_conn, bt_conn):
         sensor_data = json.loads(sensor_data.decode().strip())
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-        right_front_obstacle = round(sensor_data["RightFront"]) / 10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+        front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+        front_right_obstacle = round(sensor_data["FrontRight"]/10)
+        right_front_obstacle = round(sensor_data["RightFront"]/10)
+        right_back_obstacle = round(sensor_data["RightBack"]/10)
 
     # If robot is facing corner, turn left
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and \
@@ -404,9 +404,9 @@ def explore(log_string, pc_conn):
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = 'left'
                 right_wall_counter = 0
-                front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-                front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-                front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+                front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+                front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+                front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
                 if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
                     print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
