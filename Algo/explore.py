@@ -95,7 +95,7 @@ class Explore:
             self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
-        elif front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1:
+        elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
             # Turn left (4 is the index to tell Arduino to turn left)
             movement = '4'
@@ -109,13 +109,13 @@ class Explore:
             # Get obstacle coordinates and add into array for obstacle coordinates
             front_coordinates = self.get_coord('front')
 
-            if front_left_obstacle < 1:
+            if front_left_obstacle < 2:
                 obstacle_coord.append(front_coordinates[0])
 
-            if front_mid_obstacle < 1:
+            if front_mid_obstacle < 2:
                 obstacle_coord.append(front_coordinates[1])
 
-            if front_right_obstacle < 1:
+            if front_right_obstacle < 2:
                 obstacle_coord.append(front_coordinates[2])
 
             # Put the command 'left' into queue for main() to read
@@ -147,17 +147,17 @@ class Explore:
         # Get left side coordinates
         left_coord = self.get_coord('left', mid_left_obstacle)
 
+        # If reading is 151, append up to max range of 9
+        if mid_left_obstacle > 10:
+            for i in range(10):
+                explored_coord.append(left_coord[i])
+
         # If it is an obstacle, append to array for obstacle
-        if mid_left_obstacle < 6:
+        elif 2 < mid_left_obstacle < 9:
             coord = self.get_coord('left', mid_left_obstacle+1)
             obstacle_coord.append(coord[-1])
-
-        if len(left_coord) > 1:
-            # Otherwise append to array for explore map
             for array in left_coord:
                 explored_coord.append(array)
-        else:
-            explored_coord.append(left_coord)
 
         # Update map once done
         self.update_map(explored_coord, obstacle_coord)
@@ -207,7 +207,10 @@ class Explore:
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
         for coordinates in coord_array:
-            self.explored_map[coordinates[1]][coordinates[0]] = 1
+            coordx_in_map = bool(len(self.explored_map) > coordinates[0][0] > -1)
+            coordy_in_map = bool(len(self.explored_map[0]) > coordinates[0][1] > -1)
+            if coordx_in_map and coordy_in_map:
+                self.explored_map[coordinates[1]][coordinates[0]] = 1
 
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1

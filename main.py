@@ -431,11 +431,11 @@ def explore(log_string, pc_conn):
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
             hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
-            packet = "{\"dest\": \"bt\", " \
-                     "\"explored\": {}, " \
-                     "\"obstacle\": {}, " \
-                     "\"movement\": {}, " \
-                     "\"direction\": {}}".format(hex_exp_map, hex_real_map, log_movement[0], explorer.direction)
+            packet = "{\"dest\": \"bt\",  \
+                       \"explored\": {},  \
+                       \"obstacle\": {},  \
+                       \"movement\": {},  \
+                       \"direction\": {}}".format(hex_exp_map, hex_real_map, log_movement[0], explorer.direction)
 
             pc_conn.to_send_queue.put(packet.encode())
             print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
