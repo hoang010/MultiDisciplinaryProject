@@ -136,9 +136,6 @@ class Client:
                       "Data sent"
                       + self.text_color.ENDC)
 
-                # TODO: test fix
-                time.sleep(1)
-
     def disconnect(self):
         """
         Function to safely disconnect from Raspberry Pi
