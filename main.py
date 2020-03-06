@@ -229,7 +229,7 @@ def pc(rpi_ip, log_string):
                         explorer.start = explorer.current_pos
                         waypt_coord = explorer.goal[4]
 
-                    send_param = "{\"dest\": \"arduino\",\"param\": {}}".format(path)
+                    send_param = "{\"dest\": \"arduino\",\"param\": \""+path+"\"}"
                     pc_conn.to_send_queue.put(send_param.encode())
 
                 elif data == 'manual':
@@ -304,11 +304,11 @@ def robo_init(log_string, arduino_conn, bt_conn):
     sensor_data = json.loads(feedback.decode().strip())
 
     # Get the data
-    front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-    front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-    front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-    right_front_obstacle = round(sensor_data["RightFront"]) / 10
-    right_back_obstacle = round(sensor_data["RightBack"]) / 10
+    front_left_obstacle = round(sensor_data["FrontLeft"] / 10)
+    front_mid_obstacle = round(sensor_data["FrontCenter"] / 10)
+    front_right_obstacle = round(sensor_data["FrontRight"] / 10)
+    right_front_obstacle = round(sensor_data["RightFront"] / 10)
+    right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
     # While there is no obstacle on the right
     while right_front_obstacle > 1 and right_back_obstacle > 1:
@@ -316,7 +316,7 @@ def robo_init(log_string, arduino_conn, bt_conn):
         # If there is no obstacle on the right, tell Arduino to turn right
         arduino_conn.to_send_queue.put(b'5')
 
-        packet = "{\"dest\": \"bt\",\"movement\": \"r\",\"direction\": {}}".format(Direction.N)
+        packet = "{\"dest\": \"bt\",\"movement\": \"r\",\"direction\": \""+Direction.N+"\"}"
 
         bt_conn.to_send_queue.put(packet.encode())
 
@@ -329,18 +329,18 @@ def robo_init(log_string, arduino_conn, bt_conn):
         sensor_data = json.loads(sensor_data.decode().strip())
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-        right_front_obstacle = round(sensor_data["RightFront"]) / 10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"] / 10)
+        front_mid_obstacle = round(sensor_data["FrontCenter"] / 10)
+        front_right_obstacle = round(sensor_data["FrontRight"] / 10)
+        right_front_obstacle = round(sensor_data["RightFront"] / 10)
+        right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
     # If robot is facing corner, turn left
     if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and \
             right_front_obstacle <= 1 and right_back_obstacle <= 1:
         arduino_conn.to_send_queue.put(b'4')
         arduino_conn.have_recv_queue.get()
-        packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": {}}".format(Direction.N)
+        packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \""+Direction.N+"\"}"
         bt_conn.to_send_queue.put(packet.encode())
 
     arduino_conn.to_send_queue.put(b'11')
@@ -404,9 +404,9 @@ def explore(log_string, pc_conn):
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = 'left'
                 right_wall_counter = 0
-                front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-                front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-                front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+                front_left_obstacle = round(sensor_data["FrontLeft"] / 10)
+                front_mid_obstacle = round(sensor_data["FrontCenter"] / 10)
+                front_right_obstacle = round(sensor_data["FrontRight"] / 10)
 
                 if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
                     print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
@@ -423,19 +423,19 @@ def explore(log_string, pc_conn):
             print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
             # Get sensor data
-            send_param = "{\"dest\": \"arduino\", \"param\": {}}".format(movement)
+            send_param = "{\"dest\": \"arduino\", \"param\": \""+movement+"\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
-
+            time.sleep(1)
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
             hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
 
             packet = "{\"dest\": \"bt\", " \
-                     "\"explored\": {}, " \
-                     "\"obstacle\": {}, " \
-                     "\"movement\": {}, " \
-                     "\"direction\": {}}".format(hex_exp_map, hex_real_map, log_movement[0], explorer.direction)
+                     "\"explored\": \""+ hex_exp_map +"\", " \
+                     "\"obstacle\": \""+ hex_real_map +"\", " \
+                     "\"movement\": \""+ log_movement[0] +"\", " \
+                     "\"direction\": \""+ explorer.direction +"\"}"
 
             pc_conn.to_send_queue.put(packet.encode())
             print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
@@ -477,7 +477,7 @@ def explore(log_string, pc_conn):
 
             movement = explorer.move_queue.get()
 
-            send_param = "{\"dest\": \"arduino\",\"param\": {}}".format(movement)
+            send_param = "{\"dest\": \"arduino\",\"param\": \""+movement+"\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
 
@@ -490,8 +490,7 @@ def explore(log_string, pc_conn):
             else:
                 log_movement = 'forward'
 
-            send_param = "{\"dest\": \"bt\",\"movement\": {}},\"direction\": {}}"\
-                .format(log_movement[0], explorer.direction)
+            send_param = "{\"dest\": \"bt\",\"movement\": \""+ log_movement[0]+"\"},\"direction\": \""+explorer.direction+"\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
 
@@ -504,7 +503,7 @@ def explore(log_string, pc_conn):
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
     hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
 
-    packet = "{\"dest\": \"bt\", \"obstacle\": {}, \"explored\": {}}".format(hex_real_map, hex_exp_map)
+    packet = "{\"dest\": \"bt\", \"obstacle\": \""+ hex_real_map+"\", \"explored\": \""+ hex_exp_map+"\"}"
 
     pc_conn.to_send_queue.put(packet.encode())
 
@@ -523,7 +522,7 @@ def explore(log_string, pc_conn):
         explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
         movement = explorer.move_queue.get()
 
-        send_param = "{\"dest\": \"arduino\",\"param\": {}}".format(movement)
+        send_param = "{\"dest\": \"arduino\",\"param\": \""+ movement+"\"}"
         pc_conn.to_send_queue.put(send_param.encode())
 
     # Save real map once done exploring

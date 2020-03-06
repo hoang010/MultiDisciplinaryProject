@@ -40,12 +40,12 @@ class Explore:
         """
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"])/10
-        front_mid_obstacle = round(sensor_data["FrontCenter"])/10
-        front_right_obstacle = round(sensor_data["FrontRight"])/10
-        mid_left_obstacle = round(sensor_data["LeftSide"])/10
-        right_front_obstacle = round(sensor_data["RightFront"])/10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+        front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+        front_right_obstacle = round(sensor_data["FrontRight"]/10)
+        mid_left_obstacle = round(sensor_data["LeftSide"]/10)
+        right_front_obstacle = round(sensor_data["RightFront"]/10)
+        right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
         # Initialise variable for obstacle coordinates
         obstacle_coord = []
@@ -95,7 +95,7 @@ class Explore:
             self.update_dir(left_turn=False)
 
         # If there is an obstacle in front and on the right
-        elif front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1:
+        elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
             # Turn left (4 is the index to tell Arduino to turn left)
             movement = '4'
@@ -207,13 +207,15 @@ class Explore:
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
         for coordinates in coord_array:
-            self.explored_map[coordinates[1]][coordinates[0]] = 1
+            #self.explored_map[coordinates[1]-1][coordinates[0]-1] = 1
+            print("entered")
 
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         if obstacle:
             for coordinates in obstacle:
-                self.real_map[coordinates[1]][coordinates[0]] = 1
+                #self.real_map[coordinates[1]][coordinates[0]] = 1
+                print("entered")
 
     def update_dir(self, left_turn):
         """
@@ -455,12 +457,12 @@ class Explore:
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-        front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-        mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
-        right_front_obstacle = round(sensor_data["RightFront"]) / 10
-        right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        front_left_obstacle = round(sensor_data["FrontLeft"] / 10)
+        front_mid_obstacle = round(sensor_data["FrontCenter"] / 10)
+        front_right_obstacle = round(sensor_data["FrontRight"] / 10)
+        mid_left_obstacle = round(sensor_data["LeftSide"] / 10)
+        right_front_obstacle = round(sensor_data["RightFront"] / 10)
+        right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
         start_has_obstacle = self.check_obstacle(sensor_data)
 
@@ -518,9 +520,9 @@ class Explore:
 
     def check_obstacle(self, sensor_data):
 
-        front_left_obstacle = round(sensor_data["TopLeft"]) / 10
-        front_mid_obstacle = round(sensor_data["TopMiddle"]) / 10
-        front_right_obstacle = round(sensor_data["TopRight"]) / 10
+        front_left_obstacle = round(sensor_data["TopLeft"] / 10)
+        front_mid_obstacle = round(sensor_data["TopMiddle"] / 10)
+        front_right_obstacle = round(sensor_data["TopRight"] / 10)
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:
