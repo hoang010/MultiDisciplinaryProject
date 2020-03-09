@@ -364,145 +364,137 @@ def explore(log_string, pc_conn):
     explorer = Explore(Direction)
 
     print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
+    
+    right_wall_counter = 0
 
     # While map is not complete
     while not explorer.is_map_complete():
 
-        right_wall_counter = 0
+        print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-        # While round is not complete
-        while not explorer.check_round_complete():
+        print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
-            print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
+        # Get sensor data
+        send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
 
-            print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
+        pc_conn.to_send_queue.put(send_param.encode())
+        pc_conn.have_recv_queue.get()
 
-            # Get sensor data
-            send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
+        sensor_data = pc_conn.have_recv_queue.get()
 
-            pc_conn.to_send_queue.put(send_param.encode())
-            pc_conn.have_recv_queue.get()
+        sensor_data = sensor_data.decode().strip()
 
-            sensor_data = pc_conn.have_recv_queue.get()
+        sensor_data = json.loads(sensor_data)
 
-            sensor_data = sensor_data.decode().strip()
+        print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
-            sensor_data = json.loads(sensor_data)
+        # Start hugging right wall to explore
+        explorer.right_wall_hugging(sensor_data)
 
-            print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
+        # Get next movement
+        movement = explorer.move_queue.get()
 
-            # Start hugging right wall to explore
-            explorer.right_wall_hugging(sensor_data)
+        # Display message
+        if movement == '5':
+            log_movement = 'right'
+            right_wall_counter = 0
 
-            # Get next movement
-            movement = explorer.move_queue.get()
+        elif movement == '4':
+            # get_image(log_string, explorer, arduino_conn)
+            log_movement = 'left'
+            right_wall_counter = 0
+            front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+            front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+            front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
-            # Display message
-            if movement == '5':
-                log_movement = 'right'
-                right_wall_counter = 0
-
-            elif movement == '4':
-                # get_image(log_string, explorer, arduino_conn)
-                log_movement = 'left'
-                right_wall_counter = 0
-                front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-                front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-                front_right_obstacle = round(sensor_data["FrontRight"]/10)
-
-                if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
-                    print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
-
-                    # Get sensor data
-                    send_param = "{\"dest\": \"arduino\", \"param\": \"10\"}"
-
-                    pc_conn.to_send_queue.put(send_param.encode())
-                    pc_conn.have_recv_queue.get()
-                    print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
-            else:
-                log_movement = 'forward'
-                right_wall_counter += 1
-
-            print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
-
-            # Get sensor data
-            send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
-
-            pc_conn.to_send_queue.put(send_param.encode())
-            pc_conn.have_recv_queue.get()
-
-            # Convert explored map into hex
-            hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
-            hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-
-            packet = "{\"dest\": \"bt\",  \
-                       \"explored\": \"" + hex_exp_map + "\",  \
-                       \"obstacle\": \"" + hex_real_map + "\",  \
-                       \"movement\": \"" + log_movement[0] + "\",  \
-                       \"direction\": \"" + explorer.direction + "\"}"
-
-            pc_conn.to_send_queue.put(packet.encode())
-            pc_conn.have_recv_queue.get()
-            print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
-
-            # TODO: Send image to PC
-            # server_stream.queue.put(stream_byte)
-            # print(log_string + text_color.OKBLUE + 'Stream data sent to PC' + text_color.ENDC)
-
-            if right_wall_counter == 5:
-                print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
+            if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
+                print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
                 # Get sensor data
-                send_param = "{\"dest\": \"arduino\",\"param\": \"2\"}"
+                send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
 
                 pc_conn.to_send_queue.put(send_param.encode())
                 pc_conn.have_recv_queue.get()
-                right_wall_counter = 0
-                print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+                print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
+        else:
+            log_movement = 'forward'
+            right_wall_counter += 1
 
-        # If round is complete, shift starting position
-        explorer.update_start(3, 3)
-        print(log_string + text_color.OKGREEN + 'Round completed' + text_color.ENDC)
-        print(log_string + text_color.BOLD + 'Updated start by 3' + text_color.ENDC)
+        print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
-        while not explorer.check_start():
+        # Get sensor data
+        send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
+
+        pc_conn.to_send_queue.put(send_param.encode())
+        pc_conn.have_recv_queue.get()
+
+        # Convert explored map into hex
+        hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+        hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+
+        packet = "{\"dest\": \"bt\",  \
+                   \"explored\": \"" + hex_exp_map + "\",  \
+                   \"obstacle\": \"" + hex_real_map + "\",  \
+                   \"movement\": \"" + log_movement[0] + "\",  \
+                   \"direction\": \"" + explorer.direction + "\"}"
+
+        pc_conn.to_send_queue.put(packet.encode())
+        pc_conn.have_recv_queue.get()
+        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
+        
+        # Get the data
+        right_front_obstacle = round(sensor_data["RightFront"]/10)
+        right_back_obstacle = round(sensor_data["RightBack"]/10)
+
+        if right_wall_counter >= 3 and (right_front_obstacle < 2 and right_back_obstacle < 2):
+            print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
             # Get sensor data
-            send_param = "{\"dest\": \"arduino\",\"param\":\"2\"}"
+            send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
             pc_conn.have_recv_queue.get()
+            right_wall_counter = 0
+            print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
-            sensor_data = pc_conn.have_recv_queue.get()
+    while not explorer.check_start():
 
-            sensor_data = sensor_data.decode().strip()
+        # Get sensor data
+        send_param = "{\"dest\": \"arduino\",\"param\":\"2\"}"
 
-            sensor_data = json.loads(sensor_data)
+        pc_conn.to_send_queue.put(send_param.encode())
+        pc_conn.have_recv_queue.get()
 
-            # Actually move to new start position
-            explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
+        sensor_data = pc_conn.have_recv_queue.get()
 
-            movement = explorer.move_queue.get()
+        sensor_data = sensor_data.decode().strip()
 
-            send_param = "{\"dest\": \"arduino\",\"param\": \"" + movement + "\" }"
+        sensor_data = json.loads(sensor_data)
 
-            pc_conn.to_send_queue.put(send_param.encode())
+        # Actually move to new start position
+        explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
 
-            if movement == '5':
-                log_movement = 'right'
+        movement = explorer.move_queue.get()
 
-            elif movement == '4':
-                log_movement = 'left'
+        send_param = "{\"dest\": \"arduino\",\"param\": \"" + movement + "\" }"
 
-            else:
-                log_movement = 'forward'
+        pc_conn.to_send_queue.put(send_param.encode())
 
-            send_param = "{\"dest\": \"bt\"," \
-                         "\"movement\": \"" + log_movement[0] + "\", " \
-                         "\"direction\": \"" + explorer.direction + "\"}"
+        if movement == '5':
+            log_movement = 'right'
 
-            pc_conn.to_send_queue.put(send_param.encode())
-            pc_conn.have_recv_queue.get()
+        elif movement == '4':
+            log_movement = 'left'
+
+        else:
+            log_movement = 'forward'
+
+        send_param = "{\"dest\": \"bt\"," \
+                     "\"movement\": \"" + log_movement[0] + "\", " \
+                     "\"direction\": \"" + explorer.direction + "\"}"
+
+        pc_conn.to_send_queue.put(send_param.encode())
+        pc_conn.have_recv_queue.get()
 
     print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 

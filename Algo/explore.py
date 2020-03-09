@@ -18,18 +18,16 @@ class Explore:
         self.explored_map = self.real_map.copy()
         self.round = 0
 
-        self.true_start = [[2, 2], [1, 2], [0, 2],
-                           [2, 1], [1, 1], [0, 1],
-                           [2, 0], [1, 0], [0, 0]]
+        self.true_start = [[2, 2], [2, 1], [2, 0],
+                           [1, 2], [1, 1], [1, 0],
+                           [0, 2], [0, 1], [0, 0]]
 
-        self.start = self.true_start.copy()
-        self.check_right_empty = 0
+        self.check_right_empty = 1
+        self.current_pos = self.true_start.copy()
 
         self.goal = [[19, 14], [19, 13], [19, 12],
                      [18, 14], [18, 13], [18, 12],
                      [17, 14], [17, 13], [17, 14]]
-
-        self.current_pos = self.start.copy()
 
     def right_wall_hugging(self, sensor_data):
         """
@@ -66,18 +64,13 @@ class Explore:
 
         # Check if there is obstacle on right
         obs_on_right = bool(right_back_obstacle < 2 or right_front_obstacle < 2)
-
-        if front_in_map and back_in_map:
-            unexplored_coord = bool(self.explored_map[coordinates[0][0]][coordinates[0][1]] == 0 or
-                                    self.explored_map[coordinates[1][0]][coordinates[1][1]] == 0)
-
-            turn_right = bool(not obs_on_right and
-                              unexplored_coord and
-                              self.check_right_empty > 2)
-
-        # If not within map, then just check if robot is near right wall
-        else:
-            turn_right = bool(not obs_on_right and self.check_right_empty > 2)
+        
+        print("obs on right", obs_on_right)
+        print("Check right empty", self.check_right_empty)
+        print("Coordinates on right: ", coordinates)
+        turn_right = bool(not obs_on_right and self.check_right_empty > 2)
+            
+        print("Turn right", turn_right)
 
         # If there is no obstacle on the right
         if turn_right:
@@ -161,16 +154,36 @@ class Explore:
 
         # Update map once done
         self.update_map(explored_coord, obstacle_coord)
+        
+    def update_map(self, coord_array, obstacle):
+        """
+        Function to update explored map and real map
+        :param coord_array: Array
+                Array containing explored coordinates
+        :param obstacle: Array
+                Array containing obstacle coordinates
+        :return:
+        """
+        # For every (x, y) pair in coord_array, set its location
+        # in explored_map to 1
+        for coordinates in coord_array:
+            coordx_in_map = bool(len(self.explored_map) > coordinates[0] > -1)
+            coordy_in_map = bool(len(self.explored_map[0]) > coordinates[1] > -1)
+            if coordx_in_map and coordy_in_map:
+                self.explored_map[coordinates[0]][coordinates[1]] = 1
 
-        # if round is started and robot has moved from start position, set round to 1
-        if not self.round and movement == '3':
-            self.round = 1
+        # For every (x, y) pair in obstacle, set its location
+        # in real_map to 1
+        if obstacle:
+            for coordinates in obstacle:
+                self.real_map[coordinates[0]][coordinates[1]] = 1
 
     def update_pos(self):
         """
         Function to update current position according to the direction
         :return:
         """
+        print("Before: ", self.current_pos)
         # If current direction is North
         if self.direction == self.direction_class.N:
             # Return (x+1, 1)
@@ -194,32 +207,8 @@ class Explore:
             # Return (x, y+1)
             for i in range(len(self.current_pos)):
                 self.current_pos[i][1] += 1
-
-    def update_map(self, coord_array, obstacle):
-        """
-        Function to update explored map and real map
-        :param coord_array: Array
-                Array containing explored coordinates
-        :param obstacle: Array
-                Array containing obstacle coordinates
-        :return:
-        """
-        # For every (x, y) pair in coord_array, set its location
-        # in explored_map to 1
-        for coordinates in coord_array:
-            coordx_in_map = bool(len(self.explored_map) > coordinates[0] > -1)
-            coordy_in_map = bool(len(self.explored_map[0]) > coordinates[1] > -1)
-            if coordx_in_map and coordy_in_map:
-                self.explored_map[coordinates[1]][coordinates[0]] = 1
-
-        # For every (x, y) pair in obstacle, set its location
-        # in real_map to 1
-        if obstacle:
-            for coordinates in obstacle:
-                self.real_map[coordinates[1]][coordinates[0]] = 1
-
-        print("Explored map:", self.explored_map)
-        print("Real map:", self.real_map)
+                
+        print("After:", self.current_pos)
 
     def update_dir(self, left_turn):
         """
@@ -229,7 +218,7 @@ class Explore:
                 False otherwise
         :return:
         """
-
+        temp = [[], [], [], [], [], [], [], [], []]
         if left_turn:
             # If current direction is North, North turning to left is West
             if self.direction == self.direction_class.N:
@@ -251,6 +240,16 @@ class Explore:
                 # Change current direction to South
                 self.direction = self.direction_class.S
 
+            temp[0] = self.current_pos[6]
+            temp[1] = self.current_pos[3]
+            temp[2] = self.current_pos[0]
+            temp[3] = self.current_pos[7]
+            temp[4] = self.current_pos[4]
+            temp[5] = self.current_pos[1]
+            temp[6] = self.current_pos[8]
+            temp[7] = self.current_pos[5]
+            temp[8] = self.current_pos[2]
+
         else:
             # If current direction is North, North turning to right is East
             if self.direction == self.direction_class.N:
@@ -271,6 +270,18 @@ class Explore:
             else:
                 # Change current direction to South
                 self.direction = self.direction_class.N
+
+            temp[0] = self.current_pos[2]
+            temp[1] = self.current_pos[5]
+            temp[2] = self.current_pos[8]
+            temp[3] = self.current_pos[1]
+            temp[4] = self.current_pos[4]
+            temp[5] = self.current_pos[7]
+            temp[6] = self.current_pos[0]
+            temp[7] = self.current_pos[3]
+            temp[8] = self.current_pos[6]
+
+        self.current_pos = temp.copy()
 
     def get_coord(self, direction, dist=0):
         """
@@ -401,6 +412,8 @@ class Explore:
 
         # If round is complete, reset self.round to 0
         if self.current_pos[4] == self.start[4] and self.round == 1:
+            print("Current position: ", self.current_pos)
+            print("Start: ", self.start)
             self.round = 0
             return True
         return False
