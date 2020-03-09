@@ -230,6 +230,7 @@ def pc(rpi_ip, log_string):
                         explorer.start = explorer.current_pos
                         waypt_coord = explorer.goal[4]
 
+                    # TODO: Standardise data struct of path to send to arduino
                     send_param = "{\"dest\": \"arduino\",\"param\": \"" + path + "\" }"
                     pc_conn.to_send_queue.put(send_param.encode())
 
@@ -294,6 +295,7 @@ def robo_init(log_string, arduino_conn, bt_conn):
             Socket containing connection to tablet0
     :return:
     """
+    # TODO: To standardise packet to send to arduino for calibration
     print(log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
     bt_conn.to_send_queue.put('Initialising'.encode())
 
@@ -346,7 +348,6 @@ def robo_init(log_string, arduino_conn, bt_conn):
 
     arduino_conn.to_send_queue.put(b'11')
     arduino_conn.have_recv_queue.get()
-    bt_conn.to_send_queue.put('Initialising done'.encode())
     print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
 
@@ -381,15 +382,11 @@ def explore(log_string, pc_conn):
         pc_conn.have_recv_queue.get()
 
         sensor_data = pc_conn.have_recv_queue.get()
-
         sensor_data = sensor_data.decode().strip()
-
         sensor_data = json.loads(sensor_data)
 
+        explorer.sensor_data_queue.put(sensor_data)
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
-
-        # Start hugging right wall to explore
-        explorer.right_wall_hugging(sensor_data)
 
         # Get next movement
         movement = explorer.move_queue.get()
@@ -449,52 +446,13 @@ def explore(log_string, pc_conn):
         if right_wall_counter >= 3 and (right_front_obstacle < 2 and right_back_obstacle < 2):
             print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
-            # Get sensor data
+            # Calibrate right
             send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
             pc_conn.have_recv_queue.get()
             right_wall_counter = 0
             print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
-
-    while not explorer.check_start():
-
-        # Get sensor data
-        send_param = "{\"dest\": \"arduino\",\"param\":\"2\"}"
-
-        pc_conn.to_send_queue.put(send_param.encode())
-        pc_conn.have_recv_queue.get()
-
-        sensor_data = pc_conn.have_recv_queue.get()
-
-        sensor_data = sensor_data.decode().strip()
-
-        sensor_data = json.loads(sensor_data)
-
-        # Actually move to new start position
-        explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
-
-        movement = explorer.move_queue.get()
-
-        send_param = "{\"dest\": \"arduino\",\"param\": \"" + movement + "\" }"
-
-        pc_conn.to_send_queue.put(send_param.encode())
-
-        if movement == '5':
-            log_movement = 'right'
-
-        elif movement == '4':
-            log_movement = 'left'
-
-        else:
-            log_movement = 'forward'
-
-        send_param = "{\"dest\": \"bt\"," \
-                     "\"movement\": \"" + log_movement[0] + "\", " \
-                     "\"direction\": \"" + explorer.direction + "\"}"
-
-        pc_conn.to_send_queue.put(send_param.encode())
-        pc_conn.have_recv_queue.get()
 
     print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
@@ -510,26 +468,26 @@ def explore(log_string, pc_conn):
     pc_conn.to_send_queue.put(packet.encode())
     pc_conn.have_recv_queue.get()
 
-    # Move to initial start
-    while not explorer.check_start():
-
-        # Get sensor data
-        send_param = "{\"dest\": \"arduino\",\"param\": \"2\"}"
-
-        pc_conn.to_send_queue.put(send_param.encode())
-        pc_conn.have_recv_queue.get()
-
-        sensor_data = pc_conn.have_recv_queue.get()
-        sensor_data = sensor_data.decode().strip()
-        sensor_data = json.loads(sensor_data)
-
-        # Actually move to new start position
-        explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
-        movement = explorer.move_queue.get()
-
-        send_param = "{\"dest\": \"arduino\",\"param\": \"" + movement + "\" }"
-        pc_conn.to_send_queue.put(send_param.encode())
-        pc_conn.have_recv_queue.get()
+    # # Move to initial start
+    # while not explorer.check_start():
+    #
+    #     # Get sensor data
+    #     send_param = "{\"dest\": \"arduino\",\"param\": \"2\"}"
+    #
+    #     pc_conn.to_send_queue.put(send_param.encode())
+    #     pc_conn.have_recv_queue.get()
+    #
+    #     sensor_data = pc_conn.have_recv_queue.get()
+    #     sensor_data = sensor_data.decode().strip()
+    #     sensor_data = json.loads(sensor_data)
+    #
+    #     # Actually move to new start position
+    #     explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
+    #     movement = explorer.move_queue.get()
+    #
+    #     send_param = "{\"dest\": \"arduino\",\"param\": \"" + movement + "\" }"
+    #     pc_conn.to_send_queue.put(send_param.encode())
+    #     pc_conn.have_recv_queue.get()
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
@@ -629,7 +587,7 @@ def move_to_point(explorer, point):
 if __name__ == "__main__":
     import platform
     try:
-        # main(platform.system())
-        main('Windows')
+        main(platform.system())
+        # main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
