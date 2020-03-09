@@ -381,6 +381,7 @@ def explore(log_string, pc_conn):
             send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
+            pc_conn.have_recv_queue.get()
 
             sensor_data = pc_conn.have_recv_queue.get()
 
@@ -416,6 +417,7 @@ def explore(log_string, pc_conn):
                     send_param = "{\"dest\": \"arduino\", \"param\": \"10\"}"
 
                     pc_conn.to_send_queue.put(send_param.encode())
+                    pc_conn.have_recv_queue.get()
                     print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
             else:
                 log_movement = 'forward'
@@ -427,6 +429,7 @@ def explore(log_string, pc_conn):
             send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
+            pc_conn.have_recv_queue.get()
 
             # Convert explored map into hex
             hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
@@ -468,6 +471,8 @@ def explore(log_string, pc_conn):
             send_param = "{\"dest\": \"arduino\",\"param\":\"2\"}"
 
             pc_conn.to_send_queue.put(send_param.encode())
+            pc_conn.have_recv_queue.get()
+
             sensor_data = pc_conn.have_recv_queue.get()
 
             sensor_data = sensor_data.decode().strip()
@@ -520,6 +525,8 @@ def explore(log_string, pc_conn):
         send_param = "{\"dest\": \"arduino\",\"param\": \"2\"}"
 
         pc_conn.to_send_queue.put(send_param.encode())
+        pc_conn.have_recv_queue.get()
+
         sensor_data = pc_conn.have_recv_queue.get()
         sensor_data = sensor_data.decode().strip()
         sensor_data = json.loads(sensor_data)
@@ -630,7 +637,7 @@ def move_to_point(explorer, point):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')
