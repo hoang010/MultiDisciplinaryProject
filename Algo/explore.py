@@ -74,14 +74,11 @@ class Explore:
             # If there is no obstacle on the right
             if turn_right:
 
+                # Put the command 'right' into queue for main() to read
+                self.move_queue.put('5')
+
                 # Reset counter
                 self.check_right_empty = 0
-
-                # Turn right (5 is the index to tell Arduino to turn right)
-                movement = '5'
-
-                # Put the command 'right' into queue for main() to read
-                self.move_queue.put(movement)
 
                 # Update robot direction
                 self.update_dir(left_turn=False)
@@ -89,8 +86,8 @@ class Explore:
             # If there is an obstacle in front and on the right
             elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
-                # Turn left (4 is the index to tell Arduino to turn left)
-                movement = '4'
+                # Put the command 'left' into queue for main() to read
+                self.move_queue.put('4')
 
                 if front_in_map:
                     self.obstacle_coord_queue.put(coordinates[0])
@@ -110,14 +107,14 @@ class Explore:
                 if front_right_obstacle < 2:
                     self.obstacle_coord_queue.put(front_coordinates[2])
 
-                # Put the command 'left' into queue for main() to read
-                self.move_queue.put(movement)
-
                 # Update robot direction
                 self.update_dir(left_turn=True)
 
             # If obstacle on right and no obstacle in front
             else:
+
+                # Put the command 'advance' into queue for main() to read
+                self.move_queue.put('3')
 
                 self.check_right_empty += 1
 
@@ -126,12 +123,6 @@ class Explore:
 
                 if back_in_map:
                     self.obstacle_coord_queue.put(coordinates[1])
-
-                # Move forward (3 is the index to tell Arduino to move forward)
-                movement = '3'
-
-                # Put the command 'advance' into queue for main() to read
-                self.move_queue.put(movement)
 
                 # Update position after moving
                 self.update_pos()
@@ -174,9 +165,7 @@ class Explore:
             # in explored_map to 1
             if not self.explored_coord_queue.empty():
                 coordinates = self.explored_coord_queue.get()
-                coordx_in_map = bool(len(self.explored_map) > coordinates[0] > -1)
-                coordy_in_map = bool(len(self.explored_map[0]) > coordinates[1] > -1)
-                if coordx_in_map and coordy_in_map:
+                if self.check_in_map(coordinates[0], coordinates[1]):
                     self.explored_map[coordinates[0]][coordinates[1]] = 1
 
     def update_obstacle_map(self):
@@ -185,7 +174,8 @@ class Explore:
         while True:
             if not self.explored_coord_queue.empty():
                 coordinates = self.explored_coord_queue.get()
-                self.real_map[coordinates[0]][coordinates[1]] = 1
+                if self.check_in_map(coordinates[0], coordinates[1]):
+                    self.real_map[coordinates[0]][coordinates[1]] = 1
 
     def update_pos(self):
         """
@@ -420,7 +410,7 @@ class Explore:
         """
         self.real_map = np.zeros((15, 20))
         self.explored_map = np.zeros((15, 20))
-        self.start = self.current_pos.copy()
+        self.true_start = self.current_pos.copy()
 
     # def check_start(self):
     #     """
@@ -523,21 +513,21 @@ class Explore:
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:
-            return bool((front_coord[0][0] + front_left_obstacle) in self.start or
-                        (front_coord[1][0] + front_mid_obstacle) in self.start or
-                        (front_coord[2][0] + front_right_obstacle) in self.start)
+            return bool((front_coord[0][0] + front_left_obstacle) in self.true_start or
+                        (front_coord[1][0] + front_mid_obstacle) in self.true_start or
+                        (front_coord[2][0] + front_right_obstacle) in self.true_start)
         elif self.direction == self.direction.S:
-            return bool((front_coord[0][0] - front_left_obstacle) in self.start or
-                        (front_coord[1][0] - front_mid_obstacle) in self.start or
-                        (front_coord[2][0] - front_right_obstacle) in self.start)
+            return bool((front_coord[0][0] - front_left_obstacle) in self.true_start or
+                        (front_coord[1][0] - front_mid_obstacle) in self.true_start or
+                        (front_coord[2][0] - front_right_obstacle) in self.true_start)
         elif self.direction == self.direction.E:
-            return bool((front_coord[0][1] + front_left_obstacle) in self.start or
-                        (front_coord[1][1] + front_mid_obstacle) in self.start or
-                        (front_coord[2][1] + front_right_obstacle) in self.start)
+            return bool((front_coord[0][1] + front_left_obstacle) in self.true_start or
+                        (front_coord[1][1] + front_mid_obstacle) in self.true_start or
+                        (front_coord[2][1] + front_right_obstacle) in self.true_start)
         else:
-            return bool((front_coord[0][1] - front_left_obstacle) in self.start or
-                        (front_coord[1][1] - front_mid_obstacle) in self.start or
-                        (front_coord[2][1] - front_right_obstacle) in self.start)
+            return bool((front_coord[0][1] - front_left_obstacle) in self.true_start or
+                        (front_coord[1][1] - front_mid_obstacle) in self.true_start or
+                        (front_coord[2][1] - front_right_obstacle) in self.true_start)
 
     @staticmethod
     def save_map(hex_map):
