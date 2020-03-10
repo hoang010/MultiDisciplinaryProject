@@ -1,0 +1,15 @@
+Green Right Arrow
+White Up Arrow
+Yellow Circle
+Yellow Five
+Red A
+Red Down Arrow
+Blue One
+Red Three
+White Four
+Green Two
+White C
+Blue D
+Yellow E
+Blue Left Arrow
+Green B

@@ -20,7 +20,7 @@ class ImageRecognition:
         self.log_string = self.text_color.OKBLUE + \
                           '{} | ImageRecognition Algo: '.format(time.asctime()) \
                           + self.text_color.ENDC
-        directory = './Images'
+        directory = './Signs'
 
         # Save all file names if they are an image (.jpg extension)
         image_folder = [file for file in listdir(directory) if '.png' in file]
