@@ -68,10 +68,10 @@ class Bluetooth:
             # Accept the connection
             client_sock, client_info = self.server_socket.accept()
 
-            # # Display feedback to let user know that a connection has been established
-            # print(self.log_string + self.text_color.OKGREEN +
-            #       'Connected to {}'.format(client_info)
-            #       + self.text_color.ENDC)
+            # Display feedback to let user know that a connection has been established
+            print(self.log_string + self.text_color.OKGREEN +
+                  'Connected to {}'.format(client_info)
+                  + self.text_color.ENDC)
 
             # Once connected, create a thread for sending data to PC
             self.send_thread = threading.Thread(target=self.send_channel, args=(client_sock, client_info))
@@ -99,9 +99,9 @@ class Bluetooth:
         """
 
         # Print message to show that thread is started
-        # print(self.log_string + self.text_color.OKBLUE +
-        #       "Thread for Bluetooth recv_channel started"
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for Bluetooth recv_channel started"
+              + self.text_color.ENDC)
 
         while True:
 
@@ -114,16 +114,16 @@ class Bluetooth:
 
             finally:
                 # Print message to show that thread is alive
-                # print(self.log_string + self.text_color.OKBLUE +
-                #       "Thread for Bluetooth recv_channel alive"
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Thread for Bluetooth recv_channel alive"
+                      + self.text_color.ENDC)
 
                 # Read data from connected socket
                 data = client_sock.recv(self.size)
 
-                # print(self.log_string + self.text_color.BOLD +
-                #       'Received "{}" from {}'.format(data, client_info)
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.BOLD +
+                      'Received "{}" from {}'.format(data, client_info)
+                      + self.text_color.ENDC)
 
                 # Finally, store data into self.have_recv_queue
                 self.have_recv_queue.put(data)
@@ -140,13 +140,13 @@ class Bluetooth:
         :return:
         """
 
-        # # Print message to show that thread is started
-        # print(self.log_string + self.text_color.OKBLUE +
-        #       "Thread for Bluetooth send_channel started"
-        #       + self.text_color.ENDC)
+        # Print message to show that thread is started
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for Bluetooth send_channel started"
+              + self.text_color.ENDC)
 
-        # t = threading.Timer(10, self.ping)
-        # t.start()
+        t = threading.Timer(10, self.ping)
+        t.start()
 
         while True:
 
@@ -160,27 +160,27 @@ class Bluetooth:
                     self.to_disconnect = True
 
                 # Display feedback whenever something is to be sent
-                # print(self.log_string + self.text_color.BOLD +
-                #       'Sending "{}" to {}'.format(data, client_info)
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.BOLD +
+                      'Sending "{}" to {}'.format(data, client_info)
+                      + self.text_color.ENDC)
 
                 # Finally, send the data to PC
                 client_sock.send(data)
 
-    # def ping(self):
-    #     # Print message to show that thread is alive
-    #     print(self.log_string + self.text_color.OKBLUE +
-    #           "Thread for Bluetooth send_channel alive"
-    #           + self.text_color.ENDC)
+    def ping(self):
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for Bluetooth send_channel alive"
+              + self.text_color.ENDC)
 
     def reconnect(self, client_sock, client_info):
         self.recv_thread.join()
         self.send_thread.join()
         self.server_socket.connect(client_info)
         # Display feedback to let user know that a connection has been established
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Re-connected to {}'.format(client_info)
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Re-connected to {}'.format(client_info)
+              + self.text_color.ENDC)
 
         # Once connected, create a thread for sending data to PC
         self.send_thread = threading.Thread(target=self.send_channel, args=(client_sock, client_info))
@@ -200,20 +200,20 @@ class Bluetooth:
 
         # Close thread for recv channel
         self.recv_thread.join()
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Bluetooth recv thread closed successfully'
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Bluetooth recv thread closed successfully'
+              + self.text_color.ENDC)
 
         # Close thread for send channel
         self.send_thread.join()
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Bluetooth send thread closed successfully'
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Bluetooth send thread closed successfully'
+              + self.text_color.ENDC)
 
         # Close the socket
         self.server_socket.close()
 
         # Display feedback to let user know that this function is called successfully
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Bluetooth socket closed successfully'
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Bluetooth socket closed successfully'
+              + self.text_color.ENDC)

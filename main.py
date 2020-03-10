@@ -82,7 +82,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 bt_conn.to_send_queue.put(('{} acknowledged'.format(mode)).encode())
 
                 # Display on screen the mode getting executed
-                # print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
+                print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
                 if mode == 'beginExplore':
                     robo_init(log_string, arduino_conn, bt_conn)
@@ -127,7 +127,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                         server_conn.to_send_queue.put(msg)
                         msg = msg.decode()
                         if msg == 'end':
-                            # print(log_string + text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
+                            print(log_string + text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
                             break
                         movement = server_conn.have_recv_queue.get()
                         arduino_conn.to_send_queue.put(movement)
@@ -194,7 +194,7 @@ def pc(rpi_ip, log_string):
                 pc_conn.to_send_queue.put(('{} acknowledged'.format(data)).encode())
 
                 # Display on screen the mode getting executed
-                # print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
+                print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
                 if data == 'beginExplore':
                     explorer = explore(log_string, pc_conn)
@@ -254,42 +254,42 @@ def pc(rpi_ip, log_string):
                         movement = movement.decode()
 
                         if movement == 'tl':
-                            # print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
+                            print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
                             pc_conn.to_send_queue.put("4")
 
                         elif movement == 'f':
-                            # print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
+                            print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
                             pc_conn.to_send_queue.put("3")
 
                         elif movement == 'tr':
-                            # print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
+                            print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
                             pc_conn.to_send_queue.put("5")
 
                         elif movement == 'r':
-                            # print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
+                            print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
                             pc_conn.to_send_queue.put("6")
 
                         elif movement == 'end':
                             break
 
-                        # else:
-                            # print(log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
+                        else:
+                            print(log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
-                    # print(log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
+                    print(log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
 
                 elif data == 'disconnect':
                     # Disconnect from Raspberry Pi
                     pc_conn.disconnect()
                     return
 
-            # else:
+            else:
 
                 # Display feedback so that user knows this condition is triggered
-                # print(log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
+                print(log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
 
                 # Add data into queue for sending to Raspberry Pi
                 # Failsafe condition
-                # pc_conn.to_send_queue.put('Send valid argument'.encode())
+                pc_conn.to_send_queue.put('Send valid argument'.encode())
 
     except KeyboardInterrupt:
         pc_conn.disconnect()
@@ -332,16 +332,16 @@ def explore(log_string, pc_conn):
     # Start an instance of Explore class
     explorer = Explore(Direction)
 
-    # print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
+    print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
     
     right_wall_counter = 0
 
     # While map is not complete
     while not explorer.is_map_complete():
 
-        # print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
+        print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-        # print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
+        print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
         # Get sensor data
         send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
@@ -354,7 +354,7 @@ def explore(log_string, pc_conn):
         sensor_data = json.loads(sensor_data)
 
         explorer.sensor_data_queue.put(sensor_data)
-        # print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
+        print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
         # Get next movement
         movement = explorer.move_queue.get()
@@ -375,17 +375,17 @@ def explore(log_string, pc_conn):
             right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
             if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
-                # print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
+                print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
                 # Get sensor data
                 send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
 
                 pc_conn.to_send_queue.put(send_param.encode())
                 pc_conn.have_recv_queue.get()
-                # print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
+                print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
             elif (right_front_obstacle < 2 and right_back_obstacle < 2) and (front_left_obstacle < 2 or front_right_obstacle < 2 or front_mid_obstacle < 2):
-                # print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
+                print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
                 # Calibrate right
                 send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
@@ -393,13 +393,12 @@ def explore(log_string, pc_conn):
                 pc_conn.to_send_queue.put(send_param.encode())
                 pc_conn.have_recv_queue.get()
                 right_wall_counter = 0
-                # print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
-
+                print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
         else:
             log_movement = 'forward'
             right_wall_counter += 1
 
-        # print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
+        print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
         # Get sensor data
         send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
@@ -419,14 +418,14 @@ def explore(log_string, pc_conn):
 
         pc_conn.to_send_queue.put(packet.encode())
         pc_conn.have_recv_queue.get()
-        # print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
+        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
         
         # Get the data
         right_front_obstacle = round(sensor_data["RightFront"]/10)
         right_back_obstacle = round(sensor_data["RightBack"]/10)
 
         if right_wall_counter >= 3 and (right_front_obstacle < 2 and right_back_obstacle < 2):
-            # print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
+            print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
             # Calibrate right
             send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
@@ -434,9 +433,9 @@ def explore(log_string, pc_conn):
             pc_conn.to_send_queue.put(send_param.encode())
             pc_conn.have_recv_queue.get()
             right_wall_counter = 0
-            # print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+            print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
-    # print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
+    print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
     # Send empty packet to tell PC that stream has stopped
     # server_stream.queue.put('')

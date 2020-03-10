@@ -26,9 +26,9 @@ class Arduino:
         try:
 
             # Display feedback so that user knows this function is called
-            # print(self.log_string + self.text_color.BOLD +
-            #       'Connecting via {}'.format(self.arduino_name)
-            #       + self.text_color.ENDC)
+            print(self.log_string + self.text_color.BOLD +
+                  'Connecting via {}'.format(self.arduino_name)
+                  + self.text_color.ENDC)
 
             # Try to connect to the Arduino device
             self.arduino_serial = serial.Serial(self.arduino_name, 115200)
@@ -37,9 +37,9 @@ class Arduino:
             self.arduino_serial.flushInput()
 
             # Display feedback
-            # print(self.log_string + self.text_color.BOLD +
-            #       'Connected to {}'.format(self.arduino_name)
-            #       + self.text_color.ENDC)
+            print(self.log_string + self.text_color.BOLD +
+                  'Connected to {}'.format(self.arduino_name)
+                  + self.text_color.ENDC)
 
             # Once connected, create a thread for sending data to Arduino
             self.recv_thread = threading.Thread(target=self.recv_channel)
@@ -67,9 +67,9 @@ class Arduino:
         :return:
         """
         # Print message to show that thread is started
-        # print(self.log_string + self.text_color.OKBLUE +
-        #       "Thread for {} recv_channel started".format(self.arduino_name)
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for {} recv_channel started".format(self.arduino_name)
+              + self.text_color.ENDC)
 
         t = threading.Timer(10, self.ping)
         t.start()
@@ -80,22 +80,22 @@ class Arduino:
             if self.arduino_serial.inWaiting() > 0:
 
                 # Print message to show that thread is alive
-                # print(self.log_string + self.text_color.OKBLUE +
-                #       "Reading data from serial buffer"
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Reading data from serial buffer"
+                      + self.text_color.ENDC)
 
                 # Read all data from connected socket
                 data = self.arduino_serial.readline()
 
                 # Print message to show that thread is alive
-                # print(self.log_string + self.text_color.OKBLUE +
-                #       "Data received from serial buffer"
-                #       + self.text_color.ENDC)
-                #
-                # # Display feedback whenever something is received
-                # print(self.log_string + self.text_color.BOLD +
-                #       'Received "{}"'.format(data)
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data received from serial buffer"
+                      + self.text_color.ENDC)
+
+                # Display feedback whenever something is received
+                print(self.log_string + self.text_color.BOLD +
+                      'Received "{}"'.format(data)
+                      + self.text_color.ENDC)
 
                 # Put into queue
                 self.have_recv_queue.put(data)
@@ -107,12 +107,12 @@ class Arduino:
         """
 
         # Print message to show that thread is started
-        # print(self.log_string + self.text_color.OKBLUE +
-        #       "Thread for {} send_channel started".format(self.arduino_name)
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for {} send_channel started".format(self.arduino_name)
+              + self.text_color.ENDC)
 
-        # t = threading.Timer(10, self.ping)
-        # t.start()
+        t = threading.Timer(10, self.ping)
+        t.start()
 
         while True:
 
@@ -123,28 +123,28 @@ class Arduino:
                 data = self.to_send_queue.get()
 
                 # Print message to show that thread is alive
-                # print(self.log_string + self.text_color.OKBLUE +
-                #       "Data received from queue"
-                #       + self.text_color.ENDC)
-                #
-                # # Display feedback whenever something is to be sent
-                # print(self.log_string + self.text_color.BOLD +
-                #       'Sending "{}"'.format(data)
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data received from queue"
+                      + self.text_color.ENDC)
+
+                # Display feedback whenever something is to be sent
+                print(self.log_string + self.text_color.BOLD +
+                      'Sending "{}"'.format(data)
+                      + self.text_color.ENDC)
 
                 # Send the data to the Arduino device
                 self.arduino_serial.write(data)
 
                 # Print message to show that thread is alive
-                # print(self.log_string + self.text_color.OKBLUE +
-                #       "Data sent"
-                #       + self.text_color.ENDC)
+                print(self.log_string + self.text_color.OKBLUE +
+                      "Data sent"
+                      + self.text_color.ENDC)
 
-    # def ping(self):
+    def ping(self):
         # Print message to show that thread is alive
-        # print(self.log_string + self.text_color.OKBLUE +
-        #       "Thread for {} send_channel alive".format(self.arduino_name)
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKBLUE +
+              "Thread for {} send_channel alive".format(self.arduino_name)
+              + self.text_color.ENDC)
 
     def disconnect(self):
         """
@@ -154,20 +154,20 @@ class Arduino:
 
         # Close thread for recv channel
         self.recv_thread.join()
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Arduino serial recv thread closed successfully'
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Arduino serial recv thread closed successfully'
+              + self.text_color.ENDC)
 
         # Close thread for send channel
         self.send_thread.join()
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Arduino serial send thread closed successfully'
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Arduino serial send thread closed successfully'
+              + self.text_color.ENDC)
 
         # Close the serial
         self.arduino_serial.close()
 
         # Display feedback to let user know that this function is called successfully
-        # print(self.log_string + self.text_color.OKGREEN +
-        #       'Arduino serial closed successfully'
-        #       + self.text_color.ENDC)
+        print(self.log_string + self.text_color.OKGREEN +
+              'Arduino serial closed successfully'
+              + self.text_color.ENDC)
