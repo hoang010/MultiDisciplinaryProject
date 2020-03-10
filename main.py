@@ -308,61 +308,13 @@ def robo_init(log_string, arduino_conn, bt_conn):
             Socket containing connection to tablet0
     :return:
     """
-    # TODO: To standardise packet to send to arduino for calibration
+
     print(log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
-    bt_conn.to_send_queue.put('Initialising'.encode())
 
-    arduino_conn.to_send_queue.put(b'2')
-
-    # Get feedback from Arduino
-    feedback = arduino_conn.have_recv_queue.get()
-
-    sensor_data = json.loads(feedback.decode().strip())
-
-    # Get the data
-    front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-    front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-    front_right_obstacle = round(sensor_data["FrontRight"]/10)
-    right_front_obstacle = round(sensor_data["RightFront"]/10)
-    right_back_obstacle = round(sensor_data["RightBack"]/10)
-
-    # While there is no obstacle on the right
-    while right_front_obstacle > 1 and right_back_obstacle > 1:
-
-        # If there is no obstacle on the right, tell Arduino to turn right
-        arduino_conn.to_send_queue.put(b'5')
-
-        packet = "{\"dest\": \"bt\",\"movement\": \"r\",\"direction\": \"" + Direction.N + "\" }"
-
-        bt_conn.to_send_queue.put(packet.encode())
-
-        # Refresh variables in freedback
-        _ = arduino_conn.have_recv_queue.get()
-
-        arduino_conn.to_send_queue.put(b'2')
-
-        sensor_data = arduino_conn.have_recv_queue.get()
-        sensor_data = json.loads(sensor_data.decode().strip())
-
-        # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-        front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-        front_right_obstacle = round(sensor_data["FrontRight"]/10)
-        right_front_obstacle = round(sensor_data["RightFront"]/10)
-        right_back_obstacle = round(sensor_data["RightBack"]/10)
-
-    # If robot is facing corner, turn left
-    if (front_left_obstacle <= 1 or front_mid_obstacle <= 1 or front_right_obstacle <= 1) and \
-            right_front_obstacle <= 1 and right_back_obstacle <= 1:
-        arduino_conn.to_send_queue.put(b'4')
-        arduino_conn.have_recv_queue.get()
-        packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \"" + Direction.N + "\" }"
-        bt_conn.to_send_queue.put(packet.encode())
+    packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \"" + Direction.N + "\" }"
+    bt_conn.to_send_queue.put(packet.encode())
 
     arduino_conn.to_send_queue.put(b'13')
-    arduino_conn.have_recv_queue.get()
-
-    arduino_conn.to_send_queue.put('{4: 10, 10: 10, 4: 10, 10: 10, 4: 10}'.encode())
     arduino_conn.have_recv_queue.get()
     print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
