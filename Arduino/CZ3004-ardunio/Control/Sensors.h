@@ -69,8 +69,8 @@ String returnSensorData(int count) {
 
   float SR1_distance = returnSrDist(count, SR1, 0);
   float SR2_distance = returnSrDist(count, SR2, 0);
-  float SR3_distance = returnSrDist(count, SR3, 0);
-  float SR4_distance = returnSrDist(count, SR4, 0);
+  float SR3_distance = returnSrDist(count, SR3, 5);
+  float SR4_distance = returnSrDist(count, SR4, 5);
   float LR5_distance = returnLrDist(count, LR5, 0);
   float SR6_distance = returnSrDist(count, SR6, 0);
 

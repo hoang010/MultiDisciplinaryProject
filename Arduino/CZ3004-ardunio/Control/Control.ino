@@ -3,7 +3,6 @@
 #include "Sensors.h"
 #include "Movements.h"
 #include "Calibration.h"
-
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
 DualVNH5019MotorShield md; 
 
@@ -17,8 +16,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 200 // left
-#define initialSetSpeed2 280
+#define initialSetSpeed1 220 // left
+#define initialSetSpeed2 225
 #define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
@@ -26,6 +25,7 @@ String sensorData;
 
 Motion* bot;  // Motion object to control bot movements such as "Move Forward", "Turn Right", etc.
 Calibration* calibrateBot; // Calibration object to control calibration techniques such as "Calibrate with Front sensors", "Calibrate with Left sensors", etc.
+
 
 
 void setup() {
@@ -44,18 +44,9 @@ void setup() {
 
 
 void loop() {
-  long dist = 21950* pow(analogRead(A0),-1.244);
-  /*
-  if (dist >= 37){
-    Serial.println("too far");
-    }
-  else{
-    Serial.println(dist);
-    }*/
  // Serial.println(returnSrDist(12, SR6,0));
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-
-  
+   
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
@@ -64,6 +55,76 @@ void loop() {
   }
   
 }
+
+//Fastest path format ends with }
+//i.e: {3:10, 4:90, 5:90}
+String getFastestPath() {
+  String fastestPath = "";
+  Serial.read();
+  while (fastestPath.equals("")) {
+    fastestPath = Serial.readStringUntil('}');
+  }
+  //ignore the first "{"
+  return fastestPath.substring(1);
+}
+
+
+void fastestPath(String fastest_path_code) {
+  
+  String instructions = "";
+  String instruction = "";
+  bool getInstruction = true;
+  bool getValue = true;
+  int value = 0;
+  Serial.println(fastest_path_code);
+  do {
+    //for each character in the code
+    for (int i = 0; i <= fastest_path_code.length(); i++) {
+      //if the substring for the index is : or if it is the last character
+      if (fastest_path_code.substring(i, i + 1) == "," || fastest_path_code.length() == i) {
+        instructions = fastest_path_code.substring(0, i);
+        Serial.println(instructions);
+        for (int j = 0; j <= instructions.length(); j++) {
+          if (instructions.substring(j, j + 1) == ":" || instructions.length() == j) {
+            instruction= instructions.substring(0, j);
+            value = instructions.substring(j+1).toInt();
+            break;
+          }
+        }
+        fastest_path_code =  fastest_path_code.substring(i + 1);
+        break;
+      }
+    }
+    controlBot(instruction.toInt(), value);
+    delay(100);
+    fastestPathCalibration();
+    delay(100);
+
+  } while (!fastest_path_code.equals(""));
+
+}
+
+void fastestPathCalibration() {
+  float frontRightDistance = SR1.getDistance(false);
+  float frontLeftDistance = SR2.getDistance(false);
+  float rightFrontDistance = SR3.getDistance(false);
+  float rightBackDistance = SR4.getDistance(false);
+  //if only front have object then calibrate front
+  if((frontRightDistance < 15 && frontRightDistance > 5) || (frontLeftDistance < 15 && frontLeftDistance > 5)){
+    calibrateBot->CalibrateFront();
+    //if sides also have object then calibrate side as well
+    if((rightFrontDistance < 10 && rightFrontDistance > 5) || (rightBackDistance < 10 && rightBackDistance > 5)){
+      controlBot(5,10);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      controlBot(4, 10);
+    }
+    }
+
+}
+
+
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
 The function additionally passes a message back to RPI via serial port when required action is complete
@@ -129,5 +190,33 @@ void controlBot (int instruction, int secondVal) {
       calibrateBot->CalibrateRight();
       Serial.println("X_CALIBRATIONDONE");
       break;
+    case 12 :  // Calibrate for wall on the right and front
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnRight(90);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnLeft(90);
+      Serial.println("X_CALIBRATIONDONE");
+      break;
+    case 13 :  // Calibrate for wall on the right and front
+      bot->turnRight(90);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnLeft(90);
+      Serial.println("X_CALIBRATIONDONE");
+      break;
+    case 14: //Get fastest path and run
+      Serial.println("X_READYFASTESTPATH");
+      //String fastest_path = getFastestPath();
+      String fastest_path = "3:30,5:11,3:10,5:14,3:30,5:14,3:10,5:14";
+      fastestPath(fastest_path);
+      Serial.println("X_FASTESTPATHDONE");
+      break;
   }
+
+
+
 }

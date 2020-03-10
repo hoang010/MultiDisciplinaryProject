@@ -64,7 +64,7 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
 Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
   float wheelRadius = 2.95;
-  float offset = 50;
+  float offset = 90;
   
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float runTime = distance / Speed;
@@ -89,7 +89,7 @@ float Motion::rotateTime(float angle) {
 /* Apply breaks to bot motors */
 void Motion::stopMotion() {
   md.setM1Brake(400);
-  md.setM2Brake(367);
+  md.setM2Brake(400);
 }
 
 /* Function to set motor speed based on required direction and run for required time in microseconds (for precision)
