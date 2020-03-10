@@ -53,9 +53,9 @@ class Server:
         :return:
         """
         # Display feedback so that user knows this function is called
-        print(self.log_string + self.text_color.BOLD +
-              'Wifi listening on port {}'.format(self.port)
-              + self.text_color.ENDC)
+        # print(self.log_string + self.text_color.BOLD +
+        #       'Wifi listening on port {}'.format(self.port)
+        #       + self.text_color.ENDC)
 
         # Listen to requests for connecting
         self.sock.listen(1)
@@ -66,9 +66,9 @@ class Server:
             conn_socket, addr = self.sock.accept()
 
             # Display feedback to let user know that a connection has been established
-            print(self.log_string + self.text_color.OKGREEN +
-                  'Connected to {}:{}'.format(addr[0], self.port)
-                  + self.text_color.ENDC)
+            # print(self.log_string + self.text_color.OKGREEN +
+            #       'Connected to {}:{}'.format(addr[0], self.port)
+            #       + self.text_color.ENDC)
 
             # Once connected, create a thread for sending data to PC
             self.send_thread = threading.Thread(target=self.send_channel, args=(conn_socket, addr))
@@ -95,38 +95,38 @@ class Server:
         :return:
         """
         # Print message to show that thread is started
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for RPi recv_channel started"
-              + self.text_color.ENDC)
+        # print(self.log_string + self.text_color.OKBLUE +
+        #       "Thread for RPi recv_channel started"
+        #       + self.text_color.ENDC)
 
         while True:
 
             # Print message to show that thread is alive
-            print(self.log_string + self.text_color.WARNING +
-                  "Waiting for data to receive"
-                  + self.text_color.ENDC)
+            # print(self.log_string + self.text_color.WARNING +
+            #       "Waiting for data to receive"
+            #       + self.text_color.ENDC)
 
             # Read data from connected socket
             data = conn_socket.recv(self.size)
 
             # Print message to show that thread is alive
-            print(self.log_string + self.text_color.OKBLUE +
-                  "Data received from socket"
-                  + self.text_color.ENDC)
+            # print(self.log_string + self.text_color.OKBLUE +
+            #       "Data received from socket"
+            #       + self.text_color.ENDC)
 
             # Display feedback whenever something is to be received
-            print(self.log_string + self.text_color.BOLD +
-                  'Received "{}" from {}'.format(data, addr)
-                  + self.text_color.ENDC)
+            # print(self.log_string + self.text_color.BOLD +
+            #       'Received "{}" from {}'.format(data, addr)
+            #       + self.text_color.ENDC)
 
             # Finally, store data into self.have_recv_queue
             self.have_recv_queue.put(data)
 
     def send_channel(self, conn_socket, addr):
         # Print message to show that thread is started
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for RPi send_channel started"
-              + self.text_color.ENDC)
+        # print(self.log_string + self.text_color.OKBLUE +
+        #       "Thread for RPi send_channel started"
+        #       + self.text_color.ENDC)
 
         while True:
 
@@ -135,22 +135,22 @@ class Server:
                 data = self.to_send_queue.get()
 
                 # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from queue"
-                      + self.text_color.ENDC)
-
-                # Display feedback whenever something is to be received
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}" to {}'.format(data, addr)
-                      + self.text_color.ENDC)
+                # print(self.log_string + self.text_color.OKBLUE +
+                #       "Data received from queue"
+                #       + self.text_color.ENDC)
+                #
+                # # Display feedback whenever something is to be received
+                # print(self.log_string + self.text_color.BOLD +
+                #       'Sending "{}" to {}'.format(data, addr)
+                #       + self.text_color.ENDC)
 
                 # Finally, store data into self.have_recv_queue
                 conn_socket.send(data)
 
                 # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data sent"
-                      + self.text_color.ENDC)
+                # print(self.log_string + self.text_color.OKBLUE +
+                #       "Data sent"
+                #       + self.text_color.ENDC)
 
     def disconnect(self):
         """
@@ -159,14 +159,14 @@ class Server:
         """
 
         self.send_thread.join()
-        print(self.log_string + self.text_color.OKGREEN +
-              'RPi send_channel thread closed successfully'
-              + self.text_color.ENDC)
-
+        # print(self.log_string + self.text_color.OKGREEN +
+        #       'RPi send_channel thread closed successfully'
+        #       + self.text_color.ENDC)
+        #
         self.recv_thread.join()
-        print(self.log_string + self.text_color.OKGREEN +
-              'RPi recv_channel thread closed successfully'
-              + self.text_color.ENDC)
+        # print(self.log_string + self.text_color.OKGREEN +
+        #       'RPi recv_channel thread closed successfully'
+        #       + self.text_color.ENDC)
 
         # Shutdown socket
         self.sock.shutdown(socket.SHUT_RDWR)
@@ -175,6 +175,6 @@ class Server:
         self.sock.close()
 
         # Display feedback to let user know that this function is called successfully
-        print(self.log_string + self.text_color.OKGREEN +
-              'Wifi socket closed successfully'
-              + self.text_color.ENDC)
+        # print(self.log_string + self.text_color.OKGREEN +
+        #       'Wifi socket closed successfully'
+        #       + self.text_color.ENDC)
