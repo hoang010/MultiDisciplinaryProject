@@ -15,7 +15,6 @@ class Calibration {
     Calibration(float _calibrateSetSpeed1, float _calibrationSetSpeed2, DualVNH5019MotorShield _md);
     void CalibrateFront();
     void CalibrateRight();
-    void CalibrateStep();
 };
 
 /* Constructor for initialising class variables include motor control*/
@@ -35,9 +34,7 @@ void Calibration::CalibrateSpin(SharpIR sensor1,int sensorOffset1, SharpIR senso
   float rightDistance = sensor1.getDistance(false) + sensorOffset1;
   float leftDistance = sensor2.getDistance(false) + sensorOffset2;
   while (fabs(rightDistance - leftDistance) != difference) {
-    Serial.print(rightDistance );
-    Serial.print(" | ");
-    Serial.println(leftDistance);
+    
     if (rightDistance - leftDistance > difference) {
       md.setSpeeds(-calibrationSetSpeed1, calibrationSetSpeed2);
       delay(10);
@@ -68,9 +65,10 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
   //take only 1 sample to improve timings
   float rightDistance = sensor1.getDistance(false) + sensorOffset1;
   float leftDistance = sensor2.getDistance(false) + sensorOffset2;
+  /*
     Serial.print(rightDistance );
     Serial.print(" | ");
-    Serial.println(leftDistance);
+    Serial.println(leftDistance);*/
   if (fabs(rightDistance - leftDistance) != difference) {
     CalibrateSpin(sensor1, sensorOffset1, sensor2, sensorOffset2, difference);
   }
@@ -83,19 +81,18 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
 
   do {
 
-    if (leftDistance < dist2)
+    if ((leftDistance < dist2) && (rightDistance < dist1)) {
       setM2 = -calibrationSetSpeed2;
-    else if (leftDistance > dist2)
-      setM2 = calibrationSetSpeed2;
-    else
+      setM1 = -calibrationSetSpeed1; 
+      }
+    else if ((leftDistance > dist2) && (rightDistance > dist1)){
+      setM2 = calibrationSetSpeed2;  
+      setM1 = calibrationSetSpeed1;   
+      }
+    else{
       setM2 = 0;
-
-    if (rightDistance < dist1)
-      setM1 = -calibrationSetSpeed1;
-    else if (rightDistance > dist1)
-      setM1 = calibrationSetSpeed1;
-    else
-      setM1 = 0;
+      setM1 = 0;      
+      }
 
     md.setSpeeds(setM1, setM2);
     delay(10);
@@ -106,13 +103,17 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
     rightDistance = sensor1.getDistance(false) + sensorOffset1;
     leftDistance = sensor2.getDistance(false) + sensorOffset2;
 
-  }  while (!(rightDistance == dist1 && leftDistance == dist2));
+
+  }  while (!(rightDistance == dist1 || leftDistance == dist2));
+  if (fabs(rightDistance - leftDistance) != difference) {
+    CalibrateSpin(sensor1, sensorOffset1, sensor2, sensorOffset2, difference);
+  }
 }
 
 /* Calibrate using front-right and front-left sensors to a distance of 12 from boundry 
 and difference of 0 between both sensors */
 void Calibration::CalibrateFront() {
-  CalibrateDistance(SR1, 0, 14, SR2, 0, 14, 0);
+  CalibrateDistance(SR1, 0, 10, SR2, 0, 10, 0);
   //SR1 is right
   //SR2 is left
 }
