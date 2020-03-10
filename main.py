@@ -230,8 +230,21 @@ def pc(rpi_ip, log_string):
                         explorer.start = explorer.current_pos
                         waypt_coord = explorer.goal[4]
 
-                    # TODO: Standardise data struct of path to send to arduino
-                    send_param = "{\"dest\": \"arduino\",\"param\": \"" + path + "\" }"
+                    path_string = '{'
+                    for i in range(len(path)):
+                        if path[i] == 3:
+                            count = 1
+                            while path[i] == 3:
+                                count += 1
+                                i += 1
+                            path_string += '{}: {}'.format('3', str(count*10))
+                            i -= 1
+                        else:
+                            path_string += '{}: {}'.format(path[i], '90')
+                    path_string = path_string[:-1]
+                    path_string += '}'
+
+                    send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
                     pc_conn.to_send_queue.put(send_param.encode())
 
                 elif data == 'manual':
@@ -346,7 +359,10 @@ def robo_init(log_string, arduino_conn, bt_conn):
         packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \"" + Direction.N + "\" }"
         bt_conn.to_send_queue.put(packet.encode())
 
-    arduino_conn.to_send_queue.put(b'11')
+    arduino_conn.to_send_queue.put(b'13')
+    arduino_conn.have_recv_queue.get()
+
+    arduino_conn.to_send_queue.put('{4: 10, 10: 10, 4: 10, 10: 10, 4: 10}'.encode())
     arduino_conn.have_recv_queue.get()
     print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
