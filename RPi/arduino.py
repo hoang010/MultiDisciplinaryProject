@@ -1,7 +1,7 @@
 import serial
 import time
-import queue
 import threading
+from collections import deque
 
 
 class Arduino:
@@ -17,8 +17,8 @@ class Arduino:
         """
         self.arduino_name = arduino_name
         self.text_color = text_color
-        self.have_recv_queue = queue.Queue()
-        self.to_send_queue = queue.Queue()
+        self.have_recv_queue = deque()
+        self.to_send_queue = deque()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Arduino Socket: ".format(time.asctime())\
                           + self.text_color.ENDC
@@ -98,7 +98,7 @@ class Arduino:
                       + self.text_color.ENDC)
 
                 # Put into queue
-                self.have_recv_queue.put(data)
+                self.have_recv_queue.append(data)
 
     def send_channel(self):
         """
@@ -117,10 +117,10 @@ class Arduino:
         while True:
 
             # If there is data
-            if not self.to_send_queue.empty():
+            if len(self.to_send_queue) > 0:
 
                 # Get data from queue
-                data = self.to_send_queue.get()
+                data = self.to_send_queue.popleft()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +

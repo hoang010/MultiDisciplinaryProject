@@ -1,7 +1,7 @@
 import numpy as np
 import os
-import queue
 import threading
+from collections import deque
 
 
 class Explore:
@@ -13,7 +13,7 @@ class Explore:
         """
         self.direction_class = direction_class
         self.direction = self.direction_class.N
-        self.move_queue = queue.Queue()
+        self.move_queue = deque()
         self.real_map = np.zeros((15, 20))
         self.explored_map = self.real_map.copy()
         self.round = 0
@@ -29,9 +29,9 @@ class Explore:
                      [18, 14], [18, 13], [18, 12],
                      [17, 14], [17, 13], [17, 14]]
 
-        self.sensor_data_queue = queue.Queue()
-        self.explored_coord_queue = queue.Queue()
-        self.obstacle_coord_queue = queue.Queue()
+        self.sensor_data_queue = deque()
+        self.obstacle_coord_queue = deque()
+        self.explored_coord_queue = deque()
 
         self.explore_thread = threading.Thread(target=self.right_wall_hugging)
         self.update_explored_map_thread = threading.Thread(target=self.update_explored_map)
@@ -47,7 +47,7 @@ class Explore:
         :return:
         """
         while not self.is_map_complete():
-            sensor_data = self.sensor_data_queue.get()
+            sensor_data = self.sensor_data_queue.popleft()
 
             # Get the data
             front_left_obstacle = round(sensor_data["FrontLeft"]/10)
@@ -75,7 +75,7 @@ class Explore:
             if turn_right:
 
                 # Put the command 'right' into queue for main() to read
-                self.move_queue.put('5')
+                self.move_queue.append('5')
 
                 # Reset counter
                 self.check_right_empty = 0
@@ -87,25 +87,25 @@ class Explore:
             elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
                 # Put the command 'left' into queue for main() to read
-                self.move_queue.put('4')
+                self.move_queue.append('4')
 
                 if front_in_map:
-                    self.obstacle_coord_queue.put(coordinates[0])
+                    self.obstacle_coord_queue.append(coordinates[0])
 
                 if back_in_map:
-                    self.obstacle_coord_queue.put(coordinates[1])
+                    self.obstacle_coord_queue.append(coordinates[1])
 
                 # Get obstacle coordinates and add into array for obstacle coordinates
                 front_coordinates = self.get_coord('front')
 
                 if front_left_obstacle < 2:
-                    self.obstacle_coord_queue.put(front_coordinates[0])
+                    self.obstacle_coord_queue.append(front_coordinates[0])
 
                 if front_mid_obstacle < 2:
-                    self.obstacle_coord_queue.put(front_coordinates[1])
+                    self.obstacle_coord_queue.append(front_coordinates[1])
 
                 if front_right_obstacle < 2:
-                    self.obstacle_coord_queue.put(front_coordinates[2])
+                    self.obstacle_coord_queue.append(front_coordinates[2])
 
                 # Update robot direction
                 self.update_dir(left_turn=True)
@@ -114,15 +114,15 @@ class Explore:
             else:
 
                 # Put the command 'advance' into queue for main() to read
-                self.move_queue.put('3')
+                self.move_queue.append('3')
 
                 self.check_right_empty += 1
 
                 if front_in_map:
-                    self.obstacle_coord_queue.put(coordinates[0])
+                    self.obstacle_coord_queue.append(coordinates[0])
 
                 if back_in_map:
-                    self.obstacle_coord_queue.put(coordinates[1])
+                    self.obstacle_coord_queue.append(coordinates[1])
 
                 # Update position after moving
                 self.update_pos()
@@ -133,19 +133,19 @@ class Explore:
             # If reading is 151, append up to max range of 9
             if mid_left_obstacle > 10:
                 for i in range(10):
-                    self.explored_coord_queue.put(left_coord[i])
+                    self.explored_coord_queue.append(left_coord[i])
 
             elif mid_left_obstacle == 9:
                 for i in range(len(left_coord)):
-                    self.explored_coord_queue.put(left_coord[i])
+                    self.explored_coord_queue.append(left_coord[i])
 
             # If it is an obstacle, append to array for obstacle
             elif 2 < mid_left_obstacle < 9:
                 coord = self.get_coord('left', mid_left_obstacle+1)
-                self.obstacle_coord_queue.put(coord[-1])
+                self.obstacle_coord_queue.append(coord[-1])
                 obstacle_coord.append(coord[-1])
                 for array in left_coord:
-                    self.explored_coord_queue.put(array)
+                    self.explored_coord_queue.append(array)
 
     def check_in_map(self, x, y):
         return (bool(len(self.explored_map) > x > -1) and
@@ -158,13 +158,13 @@ class Explore:
         """
         # Initialise variable for explored coordinates
         for array in self.current_pos:
-            self.explored_coord_queue.put(array)
+            self.explored_coord_queue.append(array)
 
         while True:
             # For every (x, y) pair in coord_array, set its location
             # in explored_map to 1
-            if not self.explored_coord_queue.empty():
-                coordinates = self.explored_coord_queue.get()
+            if len(self.explored_coord_queue) > 0:
+                coordinates = self.explored_coord_queue.popleft()
                 if self.check_in_map(coordinates[0], coordinates[1]):
                     self.explored_map[coordinates[0]][coordinates[1]] = 1
 
@@ -172,8 +172,8 @@ class Explore:
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         while True:
-            if not self.explored_coord_queue.empty():
-                coordinates = self.explored_coord_queue.get()
+            if len(self.explored_coord_queue) > 0:
+                coordinates = self.explored_coord_queue.popleft()
                 if self.check_in_map(coordinates[0], coordinates[1]):
                     self.real_map[coordinates[0]][coordinates[1]] = 1
 
@@ -496,12 +496,12 @@ class Explore:
     #         self.update_pos()
     #
     #     # Tell arduino desired movement
-    #     self.move_queue.put(movement)
+    #     self.move_queue.append(movement)
 
     def set_direction(self, direction):
         if self.direction != direction:
             # Turn left while direction is wrong
-            self.move_queue.put("4")
+            self.move_queue.append("4")
             return False
         return True
 

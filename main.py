@@ -71,7 +71,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     try:
         while True:
             # Receive data from tablet
-            mode = bt_conn.have_recv_queue.get()
+            mode = bt_conn.have_recv_queue.popleft()
 
             mode = mode.decode()
 
@@ -83,12 +83,12 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 if mode == 'beginExplore':
                     robo_init(log_string, arduino_conn, bt_conn)
-                    server_conn.to_send_queue.put(mode.encode())
-                    server_conn.have_recv_queue.get()
+                    server_conn.to_send_queue.append(mode.encode())
+                    server_conn.have_recv_queue.popleft()
 
                     while True:
-                        feedback = server_conn.have_recv_queue.get()
-                        server_conn.to_send_queue.put('ack'.encode())
+                        feedback = server_conn.have_recv_queue.popleft()
+                        server_conn.to_send_queue.append('ack'.encode())
                         feedback = feedback.decode()
                         if feedback == 'end':
                             break
@@ -96,43 +96,43 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                         if feedback["dest"] == "arduino":
                             param = feedback["param"]
-                            arduino_conn.to_send_queue.put(param.encode())
-                            msg = arduino_conn.have_recv_queue.get()
-                            server_conn.to_send_queue.put(msg)
+                            arduino_conn.to_send_queue.append(param.encode())
+                            msg = arduino_conn.have_recv_queue.popleft()
+                            server_conn.to_send_queue.append(msg)
 
                         elif feedback["dest"] == "bt":
                             del feedback["dest"]
                             feedback = str(feedback)
-                            bt_conn.to_send_queue.put(feedback.encode())
+                            bt_conn.to_send_queue.append(feedback.encode())
 
                 elif mode == 'Image Recognition':
                     print(mode)
 
                 elif mode == 'beginFastest':
-                    waypt = bt_conn.have_recv_queue.get()
-                    server_conn.to_send_queue.put(waypt)
-                    path = server_conn.have_recv_queue.get()
+                    waypt = bt_conn.have_recv_queue.popleft()
+                    server_conn.to_send_queue.append(waypt)
+                    path = server_conn.have_recv_queue.popleft()
                     path = json.loads(path.decode())
                     for ele in path:
-                        arduino_conn.to_send_queue.put(ele)
+                        arduino_conn.to_send_queue.append(ele)
 
                 elif mode == 'manual':
-                    server_conn.to_send_queue.put('manual'.encode())
+                    server_conn.to_send_queue.append('manual'.encode())
                     while True:
-                        msg = bt_conn.have_recv_queue.get()
-                        server_conn.to_send_queue.put(msg)
+                        msg = bt_conn.have_recv_queue.popleft()
+                        server_conn.to_send_queue.append(msg)
                         msg = msg.decode()
                         if msg == 'end':
                             print(log_string + text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
                             break
-                        movement = server_conn.have_recv_queue.get()
-                        arduino_conn.to_send_queue.put(movement)
-                        arduino_conn.have_recv_queue.get()
+                        movement = server_conn.have_recv_queue.popleft()
+                        arduino_conn.to_send_queue.append(movement)
+                        arduino_conn.have_recv_queue.popleft()
 
                 elif mode == 'disconnect':
                     # Send message to PC and Arduino to tell them to disconnect
-                    server_conn.to_send_queue.put('Disconnect'.encode())
-                    arduino_conn.to_send_queue.put('Disconnect'.encode())
+                    server_conn.to_send_queue.append('Disconnect'.encode())
+                    arduino_conn.to_send_queue.append('Disconnect'.encode())
 
                     # Disconnect from wifi and bluetooth connection
                     server_conn.disconnect()
@@ -147,7 +147,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                       + text_color.ENDC)
 
                 # Add data into queue for sending to tablet
-                bt_conn.to_send_queue.put('Send valid argument'.encode())
+                bt_conn.to_send_queue.append('Send valid argument'.encode())
 
     except KeyboardInterrupt:
         arduino_conn.disconnect()
@@ -178,7 +178,7 @@ def pc(rpi_ip, log_string):
 
             # Receive data from Raspberry Pi
             # TODO: Rasp Pi array here!
-            data = pc_conn.have_recv_queue.get()
+            data = pc_conn.have_recv_queue.popleft()
 
             data = data.decode()
 
@@ -187,7 +187,7 @@ def pc(rpi_ip, log_string):
 
                 # Send ack to Raspberry Pi
                 # TODO: Rasp Pi array here!
-                pc_conn.to_send_queue.put(('{} acknowledged'.format(data)).encode())
+                pc_conn.to_send_queue.append(('{} acknowledged'.format(data)).encode())
 
                 # Display on screen the mode getting executed
                 print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -199,7 +199,7 @@ def pc(rpi_ip, log_string):
                     pass
 
                 elif data == 'beginFastest':
-                    waypt = pc_conn.have_recv_queue.get()
+                    waypt = pc_conn.have_recv_queue.popleft()
                     waypt = waypt.decode()
 
                     waypt = json.loads(waypt)
@@ -241,29 +241,29 @@ def pc(rpi_ip, log_string):
                     path_string += '}'
 
                     send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
-                    pc_conn.to_send_queue.put(send_param.encode())
+                    pc_conn.to_send_queue.append(send_param.encode())
 
                 elif data == 'manual':
                     while True:
-                        movement = pc_conn.have_recv_queue.get()
+                        movement = pc_conn.have_recv_queue.popleft()
 
                         movement = movement.decode()
 
                         if movement == 'tl':
                             print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
-                            pc_conn.to_send_queue.put("4")
+                            pc_conn.to_send_queue.append("4")
 
                         elif movement == 'f':
                             print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
-                            pc_conn.to_send_queue.put("3")
+                            pc_conn.to_send_queue.append("3")
 
                         elif movement == 'tr':
                             print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
-                            pc_conn.to_send_queue.put("5")
+                            pc_conn.to_send_queue.append("5")
 
                         elif movement == 'r':
                             print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
-                            pc_conn.to_send_queue.put("6")
+                            pc_conn.to_send_queue.append("6")
 
                         elif movement == 'end':
                             break
@@ -285,7 +285,7 @@ def pc(rpi_ip, log_string):
 
                 # Add data into queue for sending to Raspberry Pi
                 # Failsafe condition
-                pc_conn.to_send_queue.put('Send valid argument'.encode())
+                pc_conn.to_send_queue.append('Send valid argument'.encode())
 
     except KeyboardInterrupt:
         pc_conn.disconnect()
@@ -308,10 +308,10 @@ def robo_init(log_string, arduino_conn, bt_conn):
     print(log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
 
     packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \"" + Direction.N + "\" }"
-    bt_conn.to_send_queue.put(packet.encode())
+    bt_conn.to_send_queue.append(packet.encode())
 
-    arduino_conn.to_send_queue.put(b'13')
-    arduino_conn.have_recv_queue.get()
+    arduino_conn.to_send_queue.append(b'13')
+    arduino_conn.have_recv_queue.popleft()
     print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
 
@@ -336,23 +336,23 @@ def explore(log_string, pc_conn):
 
     # Get sensor data
     send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
-    pc_conn.to_send_queue.put(send_param.encode())
-    pc_conn.have_recv_queue.get()
+    pc_conn.to_send_queue.append(send_param.encode())
+    pc_conn.have_recv_queue.popleft()
 
     # While map is not complete
     while not explorer.is_map_complete():
 
         print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-        sensor_data = pc_conn.have_recv_queue.get()
+        sensor_data = pc_conn.have_recv_queue.popleft()
         sensor_data = sensor_data.decode().strip()
         sensor_data = json.loads(sensor_data)
 
-        explorer.sensor_data_queue.put(sensor_data)
+        explorer.sensor_data_queue.append(sensor_data)
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
         # Get next movement
-        movement = explorer.move_queue.get()
+        movement = explorer.move_queue.popleft()
 
         right_front_obstacle = round(sensor_data["RightFront"] / 10)
         right_back_obstacle = round(sensor_data["RightBack"] / 10)
@@ -376,8 +376,8 @@ def explore(log_string, pc_conn):
                 # Get sensor data
                 send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
 
-                pc_conn.to_send_queue.put(send_param.encode())
-                pc_conn.have_recv_queue.get()
+                pc_conn.to_send_queue.append(send_param.encode())
+                pc_conn.have_recv_queue.popleft()
                 print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
             elif (right_front_obstacle < 2 and right_back_obstacle < 2) and \
@@ -387,8 +387,8 @@ def explore(log_string, pc_conn):
                 # Calibrate right
                 send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
-                pc_conn.to_send_queue.put(send_param.encode())
-                pc_conn.have_recv_queue.get()
+                pc_conn.to_send_queue.append(send_param.encode())
+                pc_conn.have_recv_queue.popleft()
                 right_wall_counter = 0
                 print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
         else:
@@ -407,8 +407,8 @@ def explore(log_string, pc_conn):
                    \"movement\": \"" + log_movement[0] + "\",  \
                    \"direction\": \"" + explorer.direction + "\"}"
 
-        pc_conn.to_send_queue.put(packet.encode())
-        pc_conn.have_recv_queue.get()
+        pc_conn.to_send_queue.append(packet.encode())
+        pc_conn.have_recv_queue.popleft()
         print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
 
         if right_wall_counter >= 3 and (right_front_obstacle < 2 and right_back_obstacle < 2):
@@ -417,21 +417,21 @@ def explore(log_string, pc_conn):
             # Calibrate right
             send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
-            pc_conn.to_send_queue.put(send_param.encode())
-            pc_conn.have_recv_queue.get()
+            pc_conn.to_send_queue.append(send_param.encode())
+            pc_conn.have_recv_queue.popleft()
             right_wall_counter = 0
             print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
         # Get sensor data
         send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
 
-        pc_conn.to_send_queue.put(send_param.encode())
-        pc_conn.have_recv_queue.get()
+        pc_conn.to_send_queue.append(send_param.encode())
+        pc_conn.have_recv_queue.popleft()
 
     print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
     # Send empty packet to tell PC that stream has stopped
-    # server_stream.queue.put('')
+    # server_stream.queue.append('')
 
     # Convert real map to hex
     hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
@@ -439,8 +439,8 @@ def explore(log_string, pc_conn):
 
     packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
 
-    pc_conn.to_send_queue.put(packet.encode())
-    pc_conn.have_recv_queue.get()
+    pc_conn.to_send_queue.append(packet.encode())
+    pc_conn.have_recv_queue.popleft()
 
     # # Move to initial start
     # while not explorer.check_start():
@@ -448,26 +448,26 @@ def explore(log_string, pc_conn):
     #     # Get sensor data
     #     send_param = "{\"dest\": \"arduino\",\"param\": \"2\"}"
     #
-    #     pc_conn.to_send_queue.put(send_param.encode())
-    #     pc_conn.have_recv_queue.get()
+    #     pc_conn.to_send_queue.append(send_param.encode())
+    #     pc_conn.have_recv_queue.popleft()
     #
-    #     sensor_data = pc_conn.have_recv_queue.get()
+    #     sensor_data = pc_conn.have_recv_queue.popleft()
     #     sensor_data = sensor_data.decode().strip()
     #     sensor_data = json.loads(sensor_data)
     #
     #     # Actually move to new start position
     #     explorer.navigate_to_point(log_string, text_color, sensor_data, explorer.start)
-    #     movement = explorer.move_queue.get()
+    #     movement = explorer.move_queue.popleft()
     #
     #     send_param = "{\"dest\": \"arduino\",\"param\": \"" + movement + "\" }"
-    #     pc_conn.to_send_queue.put(send_param.encode())
-    #     pc_conn.have_recv_queue.get()
+    #     pc_conn.to_send_queue.append(send_param.encode())
+    #     pc_conn.have_recv_queue.popleft()
 
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
 
-    pc_conn.to_send_queue.put('end'.encode())
-    pc_conn.have_recv_queue.get()
+    pc_conn.to_send_queue.append('end'.encode())
+    pc_conn.have_recv_queue.popleft()
 
     return explorer
 
@@ -478,8 +478,8 @@ def get_image(log_string, explorer, arduino_conn):
 
     # while True:
     #     send_param = b'2'
-    #     arduino_conn.to_send_queue.put(send_param)
-    #     sensor_data = arduino_conn.have_recv_queue.get()
+    #     arduino_conn.to_send_queue.append(send_param)
+    #     sensor_data = arduino_conn.have_recv_queue.popleft()
     #
     #     sensor_data = json.loads(sensor_data.decode().strip())
     #
@@ -493,8 +493,8 @@ def get_image(log_string, explorer, arduino_conn):
     #
     #     # Camera facing right
     #     # Turn left
-    #     arduino_conn.to_send_queue.put(b'4')
-    #     arduino_conn.have_recv_queue.get()
+    #     arduino_conn.to_send_queue.append(b'4')
+    #     arduino_conn.have_recv_queue.popleft()
     #
     #     # Insert image recog code here
     #     # TODO: This is a placeholder!
@@ -507,19 +507,19 @@ def get_image(log_string, explorer, arduino_conn):
     #     else:
     #         # If no obstacle on right
     #         if right_front_obstacle > 2 or right_back_obstacle > 2:
-    #             arduino_conn.to_send_queue.put(b'5')
-    #             arduino_conn.have_recv_queue.get()
+    #             arduino_conn.to_send_queue.append(b'5')
+    #             arduino_conn.have_recv_queue.popleft()
     #
     #         # If front has obstacle
     #         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
     #             # Turn left
-    #             arduino_conn.to_send_queue.put(b'4')
-    #             arduino_conn.have_recv_queue.get()
+    #             arduino_conn.to_send_queue.append(b'4')
+    #             arduino_conn.have_recv_queue.popleft()
     #
     #         else:
     #             # Advance
-    #             arduino_conn.to_send_queue.put(b'3')
-    #             arduino_conn.have_recv_queue.get()
+    #             arduino_conn.to_send_queue.append(b'3')
+    #             arduino_conn.have_recv_queue.popleft()
 
     while not explorer.set_direction(start_dir):
         continue

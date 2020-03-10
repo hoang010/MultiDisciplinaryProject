@@ -1,7 +1,7 @@
 import bluetooth
-import queue
 import threading
 import time
+from collections import deque
 
 
 class Bluetooth:
@@ -38,10 +38,10 @@ class Bluetooth:
         self.server_socket.bind((self.rpi_mac_addr, self.port))
 
         # Initialise queue to store data for sending to PC
-        self.to_send_queue = queue.Queue()
+        self.to_send_queue = deque()
 
         # Initialise queue to store data received from PC
-        self.have_recv_queue = queue.Queue()
+        self.have_recv_queue = deque()
 
         self.server_socket.setblocking(True)
 
@@ -126,7 +126,7 @@ class Bluetooth:
                       + self.text_color.ENDC)
 
                 # Finally, store data into self.have_recv_queue
-                self.have_recv_queue.put(data)
+                self.have_recv_queue.append(data)
 
     def send_channel(self, client_sock, client_info):
         """
@@ -151,10 +151,10 @@ class Bluetooth:
         while True:
 
             # Checks if there is anything in the queue
-            if not self.to_send_queue.empty():
+            if len(self.to_send_queue) > 0:
 
                 # De-queue the first item
-                data = self.to_send_queue.get()
+                data = self.to_send_queue.popleft()
 
                 if data == 'Disconnect'.encode():
                     self.to_disconnect = True

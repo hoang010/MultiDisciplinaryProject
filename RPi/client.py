@@ -1,7 +1,7 @@
 import socket
-import queue
 import threading
 import time
+from collections import deque
 
 
 class Client:
@@ -22,8 +22,8 @@ class Client:
         self.text_color = text_color
         self.size = size
         self.sock = socket.socket()
-        self.to_send_queue = queue.Queue()
-        self.have_recv_queue = queue.Queue()
+        self.to_send_queue = deque()
+        self.have_recv_queue = deque()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Client socket: ".format(time.asctime())\
                           + self.text_color.ENDC
@@ -103,7 +103,7 @@ class Client:
                   + self.text_color.ENDC)
 
             # Finally, store data into self.have_recv_queue
-            self.have_recv_queue.put(data)
+            self.have_recv_queue.append(data)
 
     def send_channel(self, conn_socket, addr):
 
@@ -114,9 +114,9 @@ class Client:
 
         while True:
 
-            if not self.to_send_queue.empty():
+            if len(self.to_send_queue) > 0:
 
-                data = self.to_send_queue.get()
+                data = self.to_send_queue.popleft()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +

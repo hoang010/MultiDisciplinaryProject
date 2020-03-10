@@ -1,7 +1,7 @@
 import socket
 import threading
-import queue
 import time
+from collections import deque
 
 
 class Server:
@@ -34,8 +34,8 @@ class Server:
         self.sock.bind((self.ip_address, self.port))
 
         # Initialise queue to store data for sending to PC
-        self.to_send_queue = queue.Queue()
-        self.have_recv_queue = queue.Queue()
+        self.to_send_queue = deque()
+        self.have_recv_queue = deque()
 
         # Set socket to be blocking while listening
         self.sock.setblocking(True)
@@ -120,7 +120,7 @@ class Server:
                   + self.text_color.ENDC)
 
             # Finally, store data into self.have_recv_queue
-            self.have_recv_queue.put(data)
+            self.have_recv_queue.append(data)
 
     def send_channel(self, conn_socket, addr):
         # Print message to show that thread is started
@@ -130,9 +130,9 @@ class Server:
 
         while True:
 
-            if not self.to_send_queue.empty():
+            if len(self.to_send_queue) > 0:
                 # Get data from socket
-                data = self.to_send_queue.get()
+                data = self.to_send_queue.popleft()
 
                 # Print message to show that thread is alive
                 print(self.log_string + self.text_color.OKBLUE +
