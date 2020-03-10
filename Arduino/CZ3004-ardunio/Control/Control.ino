@@ -47,9 +47,6 @@ void loop() {
  // Serial.println(returnSrDist(12, SR6,0));
   int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
    
-  delay(2000);
-  controlBot(13,10);
-  delay(2000);
   if (Serial.available())
   {
     int instructions = Serial.parseInt();       //Integer parsing is more efficient and has a faster response time than string reading i.e Serial.read(), Serial.readStringUntil(), etc.
@@ -203,7 +200,15 @@ void controlBot (int instruction, int secondVal) {
       bot->turnLeft(90);
       Serial.println("X_CALIBRATIONDONE");
       break;
-    case 13: //Get fastest path and run
+    case 13 :  // Calibrate for wall on the right and front
+      bot->turnRight(90);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnLeft(90);
+      Serial.println("X_CALIBRATIONDONE");
+      break;
+    case 14: //Get fastest path and run
       Serial.println("X_READYFASTESTPATH");
       //String fastest_path = getFastestPath();
       String fastest_path = "3:30,5:11,3:10,5:14,3:30,5:14,3:10,5:14";

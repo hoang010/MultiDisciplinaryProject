@@ -15,7 +15,6 @@ class Calibration {
     Calibration(float _calibrateSetSpeed1, float _calibrationSetSpeed2, DualVNH5019MotorShield _md);
     void CalibrateFront();
     void CalibrateRight();
-    void CalibrateStep();
 };
 
 /* Constructor for initialising class variables include motor control*/
@@ -103,9 +102,7 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
 
     rightDistance = sensor1.getDistance(false) + sensorOffset1;
     leftDistance = sensor2.getDistance(false) + sensorOffset2;
-    Serial.print(rightDistance );
-    Serial.print(" | ");
-    Serial.println(leftDistance);
+
 
   }  while (!(rightDistance == dist1 || leftDistance == dist2));
   if (fabs(rightDistance - leftDistance) != difference) {
