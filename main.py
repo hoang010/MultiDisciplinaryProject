@@ -97,7 +97,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                         if feedback["dest"] == "arduino":
                             param = feedback["param"]
                             arduino_conn.send_channel(param.encode())
-                            if not (10 < param < 13):
+                            if not (10 < int(param) < 13):
                                 msg = arduino_conn.recv_channel()
                                 server_conn.send_channel(msg)
                             else:
