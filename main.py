@@ -379,8 +379,8 @@ def explore(log_string, pc_conn):
                 # Get sensor data
                 send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
 
-                pc_conn.to_send_queue.put(send_param.encode())
-                pc_conn.have_recv_queue.get()
+                pc_conn.send_channel(send_param.encode())
+                pc_conn.recv_channel()
                 print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
             elif (right_front_obstacle < 2 and right_back_obstacle < 2) and \
@@ -390,8 +390,8 @@ def explore(log_string, pc_conn):
                 # Calibrate right
                 send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
-                pc_conn.to_send_queue.put(send_param.encode())
-                pc_conn.have_recv_queue.get()
+                pc_conn.send_channel(send_param.encode())
+                pc_conn.recv_channel()
                 right_wall_counter = 0
                 print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
         else:
