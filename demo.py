@@ -11,6 +11,7 @@ from config.direction import Direction
 
 # Import libraries
 import time
+import cv2
 import os
 import json
 
@@ -50,7 +51,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
     # Connect to Arduino
     arduino_conn_demo = Arduino(arduino_name, text_color)
-    arduino_conn_demo.have_recv_queue.popleft()
+    arduino_conn_demo.recv_channel()
 
     # Connect to PC
     server_conn = Server(rpi_ip, 7777, text_color)
@@ -77,37 +78,37 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 print(log_string + text_color.OKGREEN + 'Info passing' + text_color.ENDC)
 
-                bt_conn_demo.to_send_queue.append('Get info'.encode())
+                bt_conn_demo.send_channel('Get info'.encode())
 
                 # Receive info from tablet
-                info = bt_conn_demo.have_recv_queue.popleft()
+                info = bt_conn_demo.recv_channel()
 
                 # Send info to Arduino
-                arduino_conn_demo.to_send_queue.append(info.encode())
+                arduino_conn_demo.send_channel(info.encode())
 
                 # Sleep for 5s while Arduino increments data and sends it back
                 time.sleep(5)
 
                 # Receive updated info from Arduino
-                new_info = arduino_conn_demo.have_recv_queue.popleft()
+                new_info = arduino_conn_demo.recv_channel()
 
                 # Send to PC
-                server_conn.to_send_queue.append(new_info.encode())
+                server_conn.send_channel(new_info.encode())
 
             # Straight line motion
             elif choice == 2:
 
                 print(log_string + text_color.OKGREEN + 'Straight line motion' + text_color.ENDC)
 
-                arduino_conn_demo.to_send_queue.append('3'.encode())
+                arduino_conn_demo.send_channel('3'.encode())
 
                 dist = int(input('Enter number of grids to move: '))
                 i = 1
 
                 while dist > 0:
-                    arduino_conn_demo.to_send_queue.append(b'3')
+                    arduino_conn_demo.send_channel(b'3')
 
-                    arduino_conn_demo.have_recv_queue.popleft()
+                    arduino_conn_demo.send_channel()
 
                     print(log_string + text_color.OKGREEN + 'Moved by {} grid'.format(i) + text_color.ENDC)
 
@@ -119,17 +120,17 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 for i in range(2):
                     print(log_string + text_color.OKGREEN + 'Turning left by 180 degrees' + text_color.ENDC)
-                    arduino_conn_demo.to_send_queue.append(b'7')
+                    arduino_conn_demo.send_channel(b'7')
 
-                    arduino_conn_demo.have_recv_queue.popleft()
+                    arduino_conn_demo.recv_channel()
 
                     print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
                 for i in range(2):
                     print(log_string + text_color.OKGREEN + 'Turning right by 180 degrees' + text_color.ENDC)
-                    arduino_conn_demo.to_send_queue.append(b'8')
+                    arduino_conn_demo.to_send_queue.put(b'8')
 
-                    arduino_conn_demo.have_recv_queue.popleft()
+                    arduino_conn_demo.send_channel()
 
                     print(log_string + text_color.OKGREEN + 'Done!' + text_color.ENDC)
 
@@ -141,9 +142,9 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 i = 1
 
                 print(log_string + text_color.OKGREEN + 'Obstacle avoidance and position recovery' + text_color.ENDC)
-                arduino_conn_demo.to_send_queue.append(b'2')
+                arduino_conn_demo.send_channel(b'2')
 
-                obs_dist = arduino_conn_demo.have_recv_queue.popleft()
+                obs_dist = arduino_conn_demo.recv_channel()
 
                 obs_dist = json.loads(obs_dist)
 
@@ -154,18 +155,18 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 obs_dist = (int(obs_dist) / 10) - 1
 
                 while obs_dist > 0:
-                    arduino_conn_demo.to_send_queue.append(b'3')
+                    arduino_conn_demo.send_channel(b'3')
 
-                    arduino_conn_demo.have_recv_queue.popleft()
+                    arduino_conn_demo.recv_channel()
 
                     print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
 
                     i += 1
                     obs_dist -= 1
 
-                arduino_conn_demo.to_send_queue.append(b'2')
+                arduino_conn_demo.send_channel(b'2')
 
-                check_left_obs = arduino_conn_demo.have_recv_queue.popleft()
+                check_left_obs = arduino_conn_demo.recv_channel()
 
                 check_left_obs = json.loads(check_left_obs)
 
@@ -182,14 +183,14 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 i = 0
 
                 for num in action_order:
-                    arduino_conn_demo.to_send_queue.append(num)
+                    arduino_conn_demo.send_channel(num)
 
-                    arduino_conn_demo.have_recv_queue.popleft()
+                    arduino_conn_demo.recv_channel()
 
                 while remain_dist > 0:
-                    arduino_conn_demo.to_send_queue.append(b'3')
+                    arduino_conn_demo.send_channel(b'3')
 
-                    arduino_conn_demo.have_recv_queue.popleft()
+                    arduino_conn_demo.recv_channel()
 
                     print(log_string + text_color.OKGREEN + 'Moved by {}'.format(i) + text_color.ENDC)
 
@@ -238,7 +239,7 @@ def pc(rpi_ip, log_string):
         while True:
 
             # TODO: Array here!
-            msg = pc_conn.have_recv_queue.popleft()
+            msg = pc_conn.recv_channel()
 
             msg = msg.decode()
 
@@ -249,7 +250,7 @@ def pc(rpi_ip, log_string):
                 print(log_string + text_color.BOLD + 'Client diconnected' + text_color.ENDC)
 
             else:
-                pc_conn.to_send_queue.append(('"{}" returned!'.format(msg)).encode())
+                pc_conn.send_channel(('"{}" returned!'.format(msg)).encode())
 
     except KeyboardInterrupt:
         os.system('pkill -9 python')

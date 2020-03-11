@@ -1,7 +1,7 @@
 import socket
 import threading
+import queue
 import time
-from collections import deque
 
 
 class Server:
@@ -34,8 +34,8 @@ class Server:
         self.sock.bind((self.ip_address, self.port))
 
         # Initialise queue to store data for sending to PC
-        self.to_send_queue = deque()
-        self.have_recv_queue = deque()
+        self.to_send_queue = queue.Queue()
+        self.have_recv_queue = queue.Queue()
 
         # Set socket to be blocking while listening
         self.sock.setblocking(True)
@@ -46,6 +46,7 @@ class Server:
         # Initialise variable for threads
         self.send_thread = None
         self.recv_thread = None
+        self.conn_socket = None
 
     def listen(self):
         """
@@ -63,25 +64,17 @@ class Server:
         try:
 
             # Accept the request for connection
-            conn_socket, addr = self.sock.accept()
+            self.conn_socket, addr = self.sock.accept()
 
             # Display feedback to let user know that a connection has been established
             print(self.log_string + self.text_color.OKGREEN +
                   'Connected to {}:{}'.format(addr[0], self.port)
                   + self.text_color.ENDC)
 
-            # Once connected, create a thread for sending data to PC
-            self.send_thread = threading.Thread(target=self.send_channel, args=(conn_socket, addr))
-            self.recv_thread = threading.Thread(target=self.recv_channel, args=(conn_socket, addr))
-
-            # Start the thread
-            self.send_thread.start()
-            self.recv_thread.start()
-
         except:
             raise Exception('Connection to {} failed/terminated'.format(addr))
 
-    def recv_channel(self, conn_socket, addr):
+    def recv_channel(self):
         """
         Function to receive data from PC on the channel
 
@@ -94,63 +87,42 @@ class Server:
                 Contains name of type of connection
         :return:
         """
-        # Print message to show that thread is started
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for RPi recv_channel started"
+
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.WARNING +
+              "Waiting for data to receive"
               + self.text_color.ENDC)
 
-        while True:
+        # Read data from connected socket
+        data = self.conn_socket.recv(self.size)
 
-            # Print message to show that thread is alive
-            print(self.log_string + self.text_color.WARNING +
-                  "Waiting for data to receive"
-                  + self.text_color.ENDC)
-
-            # Read data from connected socket
-            data = conn_socket.recv(self.size)
-
-            # Print message to show that thread is alive
-            print(self.log_string + self.text_color.OKBLUE +
-                  "Data received from socket"
-                  + self.text_color.ENDC)
-
-            # Display feedback whenever something is to be received
-            print(self.log_string + self.text_color.BOLD +
-                  'Received "{}" from {}'.format(data, addr)
-                  + self.text_color.ENDC)
-
-            # Finally, store data into self.have_recv_queue
-            self.have_recv_queue.append(data)
-
-    def send_channel(self, conn_socket, addr):
-        # Print message to show that thread is started
+        # Print message to show that thread is alive
         print(self.log_string + self.text_color.OKBLUE +
-              "Thread for RPi send_channel started"
+              "Data received from socket"
               + self.text_color.ENDC)
 
-        while True:
+        # Display feedback whenever something is to be received
+        print(self.log_string + self.text_color.BOLD +
+              'Received "{}" '.format(data)
+              + self.text_color.ENDC)
 
-            if len(self.to_send_queue) > 0:
-                # Get data from socket
-                data = self.to_send_queue.popleft()
+        # Finally, store data into self.have_recv_queue
+        return data
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from queue"
-                      + self.text_color.ENDC)
+    def send_channel(self, data):
 
-                # Display feedback whenever something is to be received
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}" to {}'.format(data, addr)
-                      + self.text_color.ENDC)
+        # Display feedback whenever something is to be received
+        print(self.log_string + self.text_color.BOLD +
+              'Sending "{}"'.format(data)
+              + self.text_color.ENDC)
 
-                # Finally, store data into self.have_recv_queue
-                conn_socket.send(data)
+        # Finally, store data into self.have_recv_queue
+        self.conn_socket.send(data)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data sent"
-                      + self.text_color.ENDC)
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKBLUE +
+              "Data sent"
+              + self.text_color.ENDC)
 
     def disconnect(self):
         """

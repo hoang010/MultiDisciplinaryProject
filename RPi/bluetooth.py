@@ -1,7 +1,7 @@
 import bluetooth
+import queue
 import threading
 import time
-from collections import deque
 
 
 class Bluetooth:
@@ -38,16 +38,18 @@ class Bluetooth:
         self.server_socket.bind((self.rpi_mac_addr, self.port))
 
         # Initialise queue to store data for sending to PC
-        self.to_send_queue = deque()
+        self.to_send_queue = queue.Queue()
 
         # Initialise queue to store data received from PC
-        self.have_recv_queue = deque()
+        self.have_recv_queue = queue.Queue()
 
         self.server_socket.setblocking(True)
 
         # Intialise variable for threads
         self.send_thread = None
         self.recv_thread = None
+
+        self.client_sock = None
 
     def listen(self):
         """
@@ -66,27 +68,17 @@ class Bluetooth:
         try:
 
             # Accept the connection
-            client_sock, client_info = self.server_socket.accept()
+            self.client_sock, client_info = self.server_socket.accept()
 
             # Display feedback to let user know that a connection has been established
             print(self.log_string + self.text_color.OKGREEN +
                   'Connected to {}'.format(client_info)
                   + self.text_color.ENDC)
 
-            # Once connected, create a thread for sending data to PC
-            self.send_thread = threading.Thread(target=self.send_channel, args=(client_sock, client_info))
-
-            # Once connected, create a thread for receiving data from PC
-            self.recv_thread = threading.Thread(target=self.recv_channel, args=(client_sock, client_info))
-
-            # Start the threads
-            self.send_thread.start()
-            self.recv_thread.start()
-
         except:
             raise Exception(self.log_string + 'An error occurred while establishing connection')
 
-    def recv_channel(self, client_sock, client_info):
+    def recv_channel(self):
         """
         Function to receive data from tablet from the channel
 
@@ -98,37 +90,16 @@ class Bluetooth:
         :return:
         """
 
-        # Print message to show that thread is started
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for Bluetooth recv_channel started"
+        # Read data from connected socket
+        data = self.client_sock.recv(self.size)
+
+        print(self.log_string + self.text_color.BOLD +
+              'Received "{}"'.format(data)
               + self.text_color.ENDC)
 
-        while True:
+        return data
 
-            try:
-                # Check if connected
-                client_sock.getpeername()
-
-            except:
-                self.reconnect(client_sock, client_info)
-
-            finally:
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Thread for Bluetooth recv_channel alive"
-                      + self.text_color.ENDC)
-
-                # Read data from connected socket
-                data = client_sock.recv(self.size)
-
-                print(self.log_string + self.text_color.BOLD +
-                      'Received "{}" from {}'.format(data, client_info)
-                      + self.text_color.ENDC)
-
-                # Finally, store data into self.have_recv_queue
-                self.have_recv_queue.append(data)
-
-    def send_channel(self, client_sock, client_info):
+    def send_channel(self, data):
         """
         Function to send data to tablet from the channel
 
@@ -140,57 +111,13 @@ class Bluetooth:
         :return:
         """
 
-        # Print message to show that thread is started
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for Bluetooth send_channel started"
+        # Display feedback whenever something is to be sent
+        print(self.log_string + self.text_color.BOLD +
+              'Sending "{}"'.format(data)
               + self.text_color.ENDC)
 
-        t = threading.Timer(10, self.ping)
-        t.start()
-
-        while True:
-
-            # Checks if there is anything in the queue
-            if len(self.to_send_queue) > 0:
-
-                # De-queue the first item
-                data = self.to_send_queue.popleft()
-
-                if data == 'Disconnect'.encode():
-                    self.to_disconnect = True
-
-                # Display feedback whenever something is to be sent
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}" to {}'.format(data, client_info)
-                      + self.text_color.ENDC)
-
-                # Finally, send the data to PC
-                client_sock.send(data)
-
-    def ping(self):
-        # Print message to show that thread is alive
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for Bluetooth send_channel alive"
-              + self.text_color.ENDC)
-
-    def reconnect(self, client_sock, client_info):
-        self.recv_thread.join()
-        self.send_thread.join()
-        self.server_socket.connect(client_info)
-        # Display feedback to let user know that a connection has been established
-        print(self.log_string + self.text_color.OKGREEN +
-              'Re-connected to {}'.format(client_info)
-              + self.text_color.ENDC)
-
-        # Once connected, create a thread for sending data to PC
-        self.send_thread = threading.Thread(target=self.send_channel, args=(client_sock, client_info))
-
-        # Once connected, create a thread for receiving data from PC
-        self.recv_thread = threading.Thread(target=self.recv_channel, args=(client_sock, client_info))
-
-        # Start the threads
-        self.send_thread.start()
-        self.recv_thread.start()
+        # Finally, send the data to PC
+        self.client_sock.send(data)
 
     def disconnect(self):
         """

@@ -7,6 +7,7 @@ from config.text_color import TextColor as text_color
 
 # Import libraries
 import time
+import cv2
 import os
 
 
@@ -52,10 +53,10 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             print('4. Test Arduino')
             print('5. Test Bluetooth message')
             print('6. Test PC message')
-            print('8. Disconnect Arduino')
-            print('9. Disconnect Bluetooth')
-            print('10. Disconnect PC')
-            print('11. Disconnect all')
+            print('7. Disconnect Arduino')
+            print('8. Disconnect Bluetooth')
+            print('9. Disconnect PC')
+            print('10. Disconnect all')
 
             # Prompt for input
             choice = int(input('Choose an option: '))
@@ -85,13 +86,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif choice == 4:
 
                 # Send message to Arduino after encoding it in bytes
-                arduino_conn_test.to_send_queue.append(message.encode())
+                arduino_conn_test.send_channel(message.encode())
 
                 # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
                 # Wait for received message
-                recv_string = arduino_conn_test.have_recv_queue.popleft()
+                recv_string = arduino_conn_test.recv_channel()
 
                 # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
@@ -101,13 +102,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             elif choice == 5:
                 # Send message to Tablet after encoding it in bytes
-                bt_conn_test.to_send_queue.append(message.encode())
+                bt_conn_test.send_channel(message.encode())
 
                 # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
                 # Wait for received message
-                recv_string = bt_conn_test.have_recv_queue.popleft()
+                recv_string = bt_conn_test.recv_channel()
 
                 # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
@@ -117,13 +118,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             elif choice == 6:
                 # Send message to PC after encoding it in bytes
-                server_test.to_send_queue.append(message.encode())
+                server_test.send_channel(message.encode())
 
                 # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
                 # Wait for received message
-                recv_string = server_test.have_recv_queue.popleft()
+                recv_string = server_test.recv_channel()
 
                 # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
@@ -131,22 +132,22 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                 # Display received message
                 print(log_string + text_color.BOLD + '"{}" received'.format(recv_string) + text_color.ENDC)
 
-            elif choice == 8:
+            elif choice == 7:
                 # Disconnect from Arduino only
                 arduino_conn_test.disconnect()
                 print(log_string + text_color.BOLD + 'Arduino disconnected' + text_color.ENDC)
 
-            elif choice == 9:
+            elif choice == 8:
                 # Disconnect from Tablet only
                 bt_conn_test.disconnect()
                 print(log_string + text_color.BOLD + 'Bluetooth disconnected' + text_color.ENDC)
 
-            elif choice == 10:
+            elif choice == 9:
                 # Disconnect from PC only
                 server_test.disconnect()
                 print(log_string + text_color.BOLD + 'Server send disconnected' + text_color.ENDC)
 
-            elif choice == 11:
+            elif choice == 10:
                 # Disconnect from all
                 server_test.disconnect()
                 print(log_string + text_color.BOLD + 'Server send disconnected' + text_color.ENDC)
@@ -184,7 +185,7 @@ def pc(rpi_ip, log_string):
         while True:
 
             # Receive data from RPi
-            msg = pc_test.have_recv_queue.popleft()
+            msg = pc_test.recv_channel()
 
             # Decode data (that is in bytes)
             msg = msg.decode()
@@ -197,7 +198,7 @@ def pc(rpi_ip, log_string):
                 print(log_string + text_color.BOLD + 'Client recv diconnected' + text_color.ENDC)
 
             else:
-                pc_test.to_send_queue.append(('"{}" returned!'.format(msg)).encode())
+                pc_test.send_channel(('"{}" returned!'.format(msg)).encode())
 
     except KeyboardInterrupt:
         os.system('pkill -9 python')

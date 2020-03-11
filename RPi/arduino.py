@@ -1,7 +1,7 @@
 import serial
 import time
+import queue
 import threading
-from collections import deque
 
 
 class Arduino:
@@ -17,8 +17,8 @@ class Arduino:
         """
         self.arduino_name = arduino_name
         self.text_color = text_color
-        self.have_recv_queue = deque()
-        self.to_send_queue = deque()
+        self.have_recv_queue = queue.Queue()
+        self.to_send_queue = queue.Queue()
         self.log_string = self.text_color.OKBLUE + \
                           "{} | Arduino Socket: ".format(time.asctime())\
                           + self.text_color.ENDC
@@ -41,16 +41,6 @@ class Arduino:
                   'Connected to {}'.format(self.arduino_name)
                   + self.text_color.ENDC)
 
-            # Once connected, create a thread for sending data to Arduino
-            self.recv_thread = threading.Thread(target=self.recv_channel)
-
-            # Once connected, create a thread for receiving data from Arduino
-            self.send_thread = threading.Thread(target=self.send_channel)
-
-            # Start the threads
-            self.recv_thread.start()
-            self.send_thread.start()
-
         except serial.SerialException:
             print(self.log_string + self.text_color.FAIL +
                   'Connection failed, check connection with Arduino!'
@@ -66,84 +56,44 @@ class Arduino:
         Function to receive data from Arduino device
         :return:
         """
-        # Print message to show that thread is started
+
+        # Print message to show that thread is alive
         print(self.log_string + self.text_color.OKBLUE +
-              "Thread for {} recv_channel started".format(self.arduino_name)
+              "Reading data from serial buffer"
               + self.text_color.ENDC)
 
-        t = threading.Timer(10, self.ping)
-        t.start()
+        # Read all data from connected socket
+        data = self.arduino_serial.readline()
 
-        while True:
+        # Print message to show that thread is alive
+        print(self.log_string + self.text_color.OKBLUE +
+              "Data received from serial buffer"
+              + self.text_color.ENDC)
 
-            # If there is data waiting
-            if self.arduino_serial.inWaiting() > 0:
+        # Display feedback whenever something is received
+        print(self.log_string + self.text_color.BOLD +
+              'Received "{}"'.format(data)
+              + self.text_color.ENDC)
 
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Reading data from serial buffer"
-                      + self.text_color.ENDC)
+        return data
 
-                # Read all data from connected socket
-                data = self.arduino_serial.readline()
-
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from serial buffer"
-                      + self.text_color.ENDC)
-
-                # Display feedback whenever something is received
-                print(self.log_string + self.text_color.BOLD +
-                      'Received "{}"'.format(data)
-                      + self.text_color.ENDC)
-
-                # Put into queue
-                self.have_recv_queue.append(data)
-
-    def send_channel(self):
+    def send_channel(self, data):
         """
         Function to send data to Arduino device
         :return:
         """
 
-        # Print message to show that thread is started
-        print(self.log_string + self.text_color.OKBLUE +
-              "Thread for {} send_channel started".format(self.arduino_name)
+        # Display feedback whenever something is to be sent
+        print(self.log_string + self.text_color.BOLD +
+              'Sending "{}"'.format(data)
               + self.text_color.ENDC)
 
-        t = threading.Timer(10, self.ping)
-        t.start()
+        # Send the data to the Arduino device
+        self.arduino_serial.write(data)
 
-        while True:
-
-            # If there is data
-            if len(self.to_send_queue) > 0:
-
-                # Get data from queue
-                data = self.to_send_queue.popleft()
-
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data received from queue"
-                      + self.text_color.ENDC)
-
-                # Display feedback whenever something is to be sent
-                print(self.log_string + self.text_color.BOLD +
-                      'Sending "{}"'.format(data)
-                      + self.text_color.ENDC)
-
-                # Send the data to the Arduino device
-                self.arduino_serial.write(data)
-
-                # Print message to show that thread is alive
-                print(self.log_string + self.text_color.OKBLUE +
-                      "Data sent"
-                      + self.text_color.ENDC)
-
-    def ping(self):
         # Print message to show that thread is alive
         print(self.log_string + self.text_color.OKBLUE +
-              "Thread for {} send_channel alive".format(self.arduino_name)
+              "Data sent"
               + self.text_color.ENDC)
 
     def disconnect(self):
