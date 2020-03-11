@@ -131,21 +131,17 @@ class Explore:
             left_coord = self.get_coord('left', mid_left_obstacle)
 
             # If reading is 151, append up to max range of 9
-            if mid_left_obstacle > 10:
-                for i in range(10):
-                    self.explored_coord_queue.put(left_coord[i])
-
-            elif mid_left_obstacle == 9:
-                for i in range(len(left_coord)):
+            if mid_left_obstacle > 7:
+                for i in range(7):
                     self.explored_coord_queue.put(left_coord[i])
 
             # If it is an obstacle, append to array for obstacle
-            elif 2 < mid_left_obstacle < 9:
+            elif 2 < mid_left_obstacle < 8:
                 coord = self.get_coord('left', mid_left_obstacle+1)
                 self.obstacle_coord_queue.put(coord[-1])
                 obstacle_coord.append(coord[-1])
-                for array in left_coord:
-                    self.explored_coord_queue.put(array)
+                for i in range(len(left_coord)-1):
+                    self.explored_coord_queue.put(left_coord[i])
 
     def check_in_map(self, x, y):
         return (bool(len(self.explored_map) > x > -1) and
