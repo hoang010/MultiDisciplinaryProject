@@ -155,27 +155,33 @@ void controlBot (int instruction, int secondVal) {
       break;
     case 3:  // Move Forward
       bot->moveForward(secondVal);
-      Serial.println("X_BOTDONE");
+      sensorData = returnSensorData(8);
+      Serial.println(sensorData);
       break;
     case 4:  // Turn Left
       bot->turnLeft(90);
-      Serial.println("X_BOTDONE");
+      sensorData = returnSensorData(8);
+      Serial.println(sensorData);
       break;
     case 5:  // Turn Right
       bot->turnRight(90);
-      Serial.println("X_BOTDONE");
+      sensorData = returnSensorData(8);
+      Serial.println(sensorData);
       break;
     case 6:  // Move Backward
       bot->moveBackward(secondVal);
-      Serial.println("X_BOTDONE");
+      sensorData = returnSensorData(8);
+      Serial.println(sensorData);
       break;
     case 7:  // Turn left 180 degrees
       bot->turnLeft(180);
-      Serial.println("X_BOTDONE");
+     sensorData = returnSensorData(8);
+      Serial.println(sensorData);
       break;
     case 8:  // Turn right 180 degrees
       bot->turnRight(180);
-      Serial.println("X_BOTDONE");
+      sensorData = returnSensorData(8);
+      Serial.println(sensorData);
       break;
     case 9:  // Unbreak wheels
       md.setM1Speed(0);
@@ -184,11 +190,9 @@ void controlBot (int instruction, int secondVal) {
       break;
     case 10 :  // Calibrate with front sensors
       calibrateBot->CalibrateFront();
-      Serial.println("X_CALIBRATIONDONE");
       break;
     case 11 :  // Calibrate with front sensors
       calibrateBot->CalibrateRight();
-      Serial.println("X_CALIBRATIONDONE");
       break;
     case 12 :  // Calibrate for wall on the right and front
       calibrateBot->CalibrateFront();
@@ -206,7 +210,6 @@ void controlBot (int instruction, int secondVal) {
       calibrateBot->CalibrateFront();
       delay(200);
       bot->turnLeft(90);
-      Serial.println("X_CALIBRATIONDONE");
       break;
     case 14: //Get fastest path and run
       Serial.println("X_READYFASTESTPATH");
