@@ -86,13 +86,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             elif choice == 4:
 
                 # Send message to Arduino after encoding it in bytes
-                arduino_conn_test.send_channel(message.encode())
+                arduino_conn_test.send(message.encode())
 
                 # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
                 # Wait for received message
-                recv_string = arduino_conn_test.recv_channel()
+                recv_string = arduino_conn_test.recv()
 
                 # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
@@ -102,13 +102,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             elif choice == 5:
                 # Send message to Tablet after encoding it in bytes
-                bt_conn_test.send_channel(message.encode())
+                bt_conn_test.send(message.encode())
 
                 # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
                 # Wait for received message
-                recv_string = bt_conn_test.recv_channel()
+                recv_string = bt_conn_test.recv()
 
                 # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
@@ -118,13 +118,13 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
             elif choice == 6:
                 # Send message to PC after encoding it in bytes
-                server_test.send_channel(message.encode())
+                server_test.send(message.encode())
 
                 # Display sent message
                 print(log_string + text_color.BOLD + '"{}" sent'.format(message) + text_color.ENDC)
 
                 # Wait for received message
-                recv_string = server_test.recv_channel()
+                recv_string = server_test.recv()
 
                 # Decode received message (that is in bytes)
                 recv_string = recv_string.decode()
@@ -185,7 +185,7 @@ def pc(rpi_ip, log_string):
         while True:
 
             # Receive data from RPi
-            msg = pc_test.recv_channel()
+            msg = pc_test.recv()
 
             # Decode data (that is in bytes)
             msg = msg.decode()
@@ -198,7 +198,7 @@ def pc(rpi_ip, log_string):
                 print(log_string + text_color.BOLD + 'Client recv diconnected' + text_color.ENDC)
 
             else:
-                pc_test.send_channel(('"{}" returned!'.format(msg)).encode())
+                pc_test.send(('"{}" returned!'.format(msg)).encode())
 
     except KeyboardInterrupt:
         os.system('pkill -9 python')

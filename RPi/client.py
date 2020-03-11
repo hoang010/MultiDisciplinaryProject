@@ -59,7 +59,7 @@ class Client:
         except:
             raise Exception(self.log_string + "Connection to {}:{} failed".format(self.rpi_ip, self.port))
 
-    def recv_channel(self):
+    def recv(self):
         """
         Function to receive data from PC on the channel
         :param conn_socket: Socket
@@ -89,7 +89,7 @@ class Client:
 
         return data
 
-    def send_channel(self, data):
+    def send(self, data):
 
         # Display feedback whenever something is to be sent
         print(self.log_string + self.text_color.BOLD +

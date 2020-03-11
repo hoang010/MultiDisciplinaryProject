@@ -2,14 +2,14 @@ import cv2 as cv
 import numpy as np
 import glob
 
-class ImageRecognition:
 
+class ImageRecognition:
 	def __init__(self):
 
-		config  = "../tinyv3.config"
-		weights = "../tinyv3.weights"
+		config = "model/tinyv3.config"
+		weights = "model/tinyv3.weights"
 
-		self.net = cv.dnn.readNet(weights , config)
+		self.net = cv.dnn.readNet(weights, config)
 		self.classes = None
 		self.colors = None
 		self.count = 1
@@ -18,36 +18,37 @@ class ImageRecognition:
 
 	def load_classes(self):
 
-		file = "../img_classes.txt"
+		file = "model/img_classes.txt"
 
 		with open(file , 'r') as f:
 			self.classes = [line.strip() for line in f.readlines()]
 
 		self.colors = np.random.uniform(0, 255, size=(len(self.classes), 3))
 
-	def load_images(self):
+	@staticmethod
+	def load_images():
 
 		return np.asarray([cv.imread(file) for file in glob.glob("images/*.jpg")])
 
 	def get_output_layers(self):
-    
-	    layer_names = self.net.getLayerNames()
-	    
-	    output_layers = [layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 
-	    return output_layers
+		layer_names = self.net.getLayerNames()
 
-	def draw_bounding_box(self , image , class_id , confidence , x , y , x_plus_w , y_plus_h):
+		output_layers = [layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
+
+		return output_layers
+
+	def draw_bounding_box(self, image, class_id, confidence, x, y, x_plus_w, y_plus_h):
 
 		label = str(self.classes[class_id])
 
 		color = self.colors[class_id]
 
-		cv.rectangle(image, (x,y), (x_plus_w,y_plus_h), color, 2)
+		cv.rectangle(image, (x, y), (x_plus_w, y_plus_h), color, 2)
 
 		cv.putText(image, label, (x_plus_w, y_plus_h), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-	def predict(self , image):
+	def predict(self, image):
 
 		class_ids = []
 		confidences = []
@@ -60,7 +61,7 @@ class ImageRecognition:
 		scale = 0.00392
 
 		# TODO: implement blobFromImages()
-		blob = cv.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
+		blob = cv.dnn.blobFromImage(image, scale, (416, 416), (0, 0, 0), True, crop=False)
 
 		self.net.setInput(blob)
 
@@ -107,12 +108,10 @@ class ImageRecognition:
 		cv.imwrite("predicted_images/object-detection-{}.jpg".format(str(self.count)), image)
 		self.count = self.count + 1
 
-def main():
 
+if __name__ in "__main__":
 	img = ImageRecognition()
 	images = img.load_images()
 
 	for image in images:
 		img.predict(image)
-
-main()

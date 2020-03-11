@@ -74,7 +74,7 @@ class Server:
         except:
             raise Exception('Connection to {} failed/terminated'.format(addr))
 
-    def recv_channel(self):
+    def recv(self):
         """
         Function to receive data from PC on the channel
 
@@ -109,7 +109,7 @@ class Server:
         # Finally, store data into self.have_recv_queue
         return data
 
-    def send_channel(self, data):
+    def send(self, data):
 
         # Display feedback whenever something is to be received
         print(self.log_string + self.text_color.BOLD +

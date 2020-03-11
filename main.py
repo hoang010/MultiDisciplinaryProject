@@ -71,7 +71,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
     try:
         while True:
             # Receive data from tablet
-            mode = bt_conn.recv_channel()
+            mode = bt_conn.recv()
 
             mode = mode.decode()
 
@@ -83,12 +83,12 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                 if mode == 'beginExplore':
                     robo_init(log_string, arduino_conn, bt_conn)
-                    server_conn.send_channel(mode.encode())
-                    server_conn.recv_channel()
+                    server_conn.send(mode.encode())
+                    server_conn.recv()
 
                     while True:
-                        feedback = server_conn.recv_channel()
-                        server_conn.send_channel('ack'.encode())
+                        feedback = server_conn.recv()
+                        server_conn.send('ack'.encode())
                         feedback = feedback.decode()
                         if feedback == 'end':
                             break
@@ -96,46 +96,46 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
 
                         if feedback["dest"] == "arduino":
                             param = feedback["param"]
-                            arduino_conn.send_channel(param.encode())
+                            arduino_conn.send(param.encode())
                             if not (10 < int(param) < 13):
-                                msg = arduino_conn.recv_channel()
-                                server_conn.send_channel(msg)
+                                msg = arduino_conn.recv()
+                                server_conn.send(msg)
                             else:
                                 time.sleep(1)
 
                         elif feedback["dest"] == "bt":
                             del feedback["dest"]
                             feedback = str(feedback)
-                            bt_conn.send_channel(feedback.encode())
+                            bt_conn.send(feedback.encode())
 
                 elif mode == 'Image Recognition':
                     print(mode)
 
                 elif mode == 'beginFastest':
-                    waypt = bt_conn.recv_channel()
-                    server_conn.send_channel(waypt)
-                    path = server_conn.recv_channel()
+                    waypt = bt_conn.recv()
+                    server_conn.send(waypt)
+                    path = server_conn.recv()
                     path = json.loads(path.decode())
                     for ele in path:
-                        arduino_conn.send_channel(ele)
+                        arduino_conn.send(ele)
 
                 elif mode == 'manual':
                     server_conn.to_send_queue.put('manual'.encode())
                     while True:
-                        msg = bt_conn.recv_channel()
-                        server_conn.send_channel(msg)
+                        msg = bt_conn.recv()
+                        server_conn.send(msg)
                         msg = msg.decode()
                         if msg == 'end':
                             print(log_string + text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
                             break
-                        movement = server_conn.recv_channel()
-                        arduino_conn.send_channel(movement)
-                        arduino_conn.recv_channel()
+                        movement = server_conn.recv()
+                        arduino_conn.send(movement)
+                        arduino_conn.recv()
 
                 elif mode == 'disconnect':
                     # Send message to PC and Arduino to tell them to disconnect
-                    server_conn.send_channel('Disconnect'.encode())
-                    arduino_conn.send_channel('Disconnect'.encode())
+                    server_conn.send('Disconnect'.encode())
+                    arduino_conn.send('Disconnect'.encode())
 
                     # Disconnect from wifi and bluetooth connection
                     server_conn.disconnect()
@@ -150,7 +150,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                       + text_color.ENDC)
 
                 # Add data into queue for sending to tablet
-                bt_conn.send_channel('Send valid argument'.encode())
+                bt_conn.send('Send valid argument'.encode())
 
     except KeyboardInterrupt:
         arduino_conn.disconnect()
@@ -181,7 +181,7 @@ def pc(rpi_ip, log_string):
 
             # Receive data from Raspberry Pi
             # TODO: Rasp Pi array here!
-            data = pc_conn.recv_channel()
+            data = pc_conn.recv()
 
             data = data.decode()
 
@@ -190,7 +190,7 @@ def pc(rpi_ip, log_string):
 
                 # Send ack to Raspberry Pi
                 # TODO: Rasp Pi array here!
-                pc_conn.send_channel(('{} acknowledged'.format(data)).encode())
+                pc_conn.send(('{} acknowledged'.format(data)).encode())
 
                 # Display on screen the mode getting executed
                 print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -202,7 +202,7 @@ def pc(rpi_ip, log_string):
                     pass
 
                 elif data == 'beginFastest':
-                    waypt = pc_conn.recv_channel()
+                    waypt = pc_conn.recv()
                     waypt = waypt.decode()
 
                     waypt = json.loads(waypt)
@@ -244,29 +244,29 @@ def pc(rpi_ip, log_string):
                     path_string += '}'
 
                     send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
-                    pc_conn.send_channel(send_param.encode())
+                    pc_conn.send(send_param.encode())
 
                 elif data == 'manual':
                     while True:
-                        movement = pc_conn.recv_channel()
+                        movement = pc_conn.recv()
 
                         movement = movement.decode()
 
                         if movement == 'tl':
                             print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
-                            pc_conn.send_channel("4")
+                            pc_conn.send("4")
 
                         elif movement == 'f':
                             print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
-                            pc_conn.send_channel("3")
+                            pc_conn.send("3")
 
                         elif movement == 'tr':
                             print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
-                            pc_conn.send_channel("5")
+                            pc_conn.send("5")
 
                         elif movement == 'r':
                             print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
-                            pc_conn.send_channel("6")
+                            pc_conn.send("6")
 
                         elif movement == 'end':
                             break
@@ -288,7 +288,7 @@ def pc(rpi_ip, log_string):
 
                 # Add data into queue for sending to Raspberry Pi
                 # Failsafe condition
-                pc_conn.send_channel('Send valid argument'.encode())
+                pc_conn.send('Send valid argument'.encode())
 
     except KeyboardInterrupt:
         pc_conn.disconnect()
@@ -313,8 +313,8 @@ def robo_init(log_string, arduino_conn, bt_conn):
     packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \"" + Direction.N + "\" }"
     bt_conn.to_send_queue.put(packet.encode())
 
-    arduino_conn.send_channel(b'13')
-    arduino_conn.recv_channel()
+    arduino_conn.send(b'13')
+    arduino_conn.recv()
     print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
 
@@ -339,15 +339,15 @@ def explore(log_string, pc_conn):
 
     # Get sensor data
     send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
-    pc_conn.send_channel(send_param.encode())
-    pc_conn.recv_channel()
+    pc_conn.send(send_param.encode())
+    pc_conn.recv()
 
     # While map is not complete
     while not explorer.is_map_complete():
 
         print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-        sensor_data = pc_conn.recv_channel()
+        sensor_data = pc_conn.recv()
         sensor_data = sensor_data.decode().strip()
         sensor_data = json.loads(sensor_data)
 
@@ -379,8 +379,8 @@ def explore(log_string, pc_conn):
                 # Get sensor data
                 send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
 
-                pc_conn.send_channel(send_param.encode())
-                pc_conn.recv_channel()
+                pc_conn.send(send_param.encode())
+                pc_conn.recv()
                 print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
             elif (right_front_obstacle < 2 and right_back_obstacle < 2) and \
@@ -390,8 +390,8 @@ def explore(log_string, pc_conn):
                 # Calibrate right
                 send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
-                pc_conn.send_channel(send_param.encode())
-                pc_conn.recv_channel()
+                pc_conn.send(send_param.encode())
+                pc_conn.recv()
                 right_wall_counter = 0
                 print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
         else:
@@ -410,8 +410,8 @@ def explore(log_string, pc_conn):
                    \"movement\": \"" + log_movement[0] + "\",  \
                    \"direction\": \"" + explorer.direction + "\"}"
 
-        pc_conn.send_channel(packet.encode())
-        pc_conn.recv_channel()
+        pc_conn.send(packet.encode())
+        pc_conn.recv()
         print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
 
         if right_wall_counter >= 3 and (right_front_obstacle < 2 and right_back_obstacle < 2):
@@ -420,16 +420,16 @@ def explore(log_string, pc_conn):
             # Calibrate right
             send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
-            pc_conn.send_channel(send_param.encode())
-            pc_conn.recv_channel()
+            pc_conn.send(send_param.encode())
+            pc_conn.recv()
             right_wall_counter = 0
             print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
         # Get sensor data
         send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
 
-        pc_conn.send_channel(send_param.encode())
-        pc_conn.recv_channel()
+        pc_conn.send(send_param.encode())
+        pc_conn.recv()
 
     print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
@@ -442,8 +442,8 @@ def explore(log_string, pc_conn):
 
     packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
 
-    pc_conn.send_channel(packet.encode())
-    pc_conn.recv_channel()
+    pc_conn.send(packet.encode())
+    pc_conn.recv()
 
     # # Move to initial start
     # while not explorer.check_start():
@@ -469,8 +469,8 @@ def explore(log_string, pc_conn):
     # Save real map once done exploring
     explorer.save_map(hex_real_map)
 
-    pc_conn.send_channel('end'.encode())
-    pc_conn.recv_channel()
+    pc_conn.send('end'.encode())
+    pc_conn.recv()
 
     return explorer
 
