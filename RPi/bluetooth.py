@@ -49,6 +49,8 @@ class Bluetooth:
         self.send_thread = None
         self.recv_thread = None
 
+        self.client_sock = None
+
     def listen(self):
         """
         Function to listen for requests for bluetooth connection
@@ -66,7 +68,7 @@ class Bluetooth:
         try:
 
             # Accept the connection
-            client_sock, client_info = self.server_socket.accept()
+            self.client_sock, client_info = self.server_socket.accept()
 
             # Display feedback to let user know that a connection has been established
             print(self.log_string + self.text_color.OKGREEN +
@@ -76,7 +78,7 @@ class Bluetooth:
         except:
             raise Exception(self.log_string + 'An error occurred while establishing connection')
 
-    def recv_channel(self, client_sock, client_info):
+    def recv_channel(self):
         """
         Function to receive data from tablet from the channel
 
@@ -88,25 +90,16 @@ class Bluetooth:
         :return:
         """
 
-        try:
-            # Check if connected
-            client_sock.getpeername()
+        # Read data from connected socket
+        data = self.client_sock.recv(self.size)
 
-        except:
-            self.reconnect(client_sock, client_info)
+        print(self.log_string + self.text_color.BOLD +
+              'Received "{}"'.format(data)
+              + self.text_color.ENDC)
 
-        finally:
+        return data
 
-            # Read data from connected socket
-            data = client_sock.recv(self.size)
-
-            print(self.log_string + self.text_color.BOLD +
-                  'Received "{}" from {}'.format(data, client_info)
-                  + self.text_color.ENDC)
-
-            return data
-
-    def send_channel(self, client_sock, client_info, data):
+    def send_channel(self, data):
         """
         Function to send data to tablet from the channel
 
@@ -120,20 +113,11 @@ class Bluetooth:
 
         # Display feedback whenever something is to be sent
         print(self.log_string + self.text_color.BOLD +
-              'Sending "{}" to {}'.format(data, client_info)
+              'Sending "{}"'.format(data)
               + self.text_color.ENDC)
 
         # Finally, send the data to PC
-        client_sock.send(data)
-
-    def reconnect(self, client_sock, client_info):
-        self.recv_thread.join()
-        self.send_thread.join()
-        self.server_socket.connect(client_info)
-        # Display feedback to let user know that a connection has been established
-        print(self.log_string + self.text_color.OKGREEN +
-              'Re-connected to {}'.format(client_info)
-              + self.text_color.ENDC)
+        self.client_sock.send(data)
 
     def disconnect(self):
         """
