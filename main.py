@@ -76,13 +76,15 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
             mode = mode.decode()
 
             # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-            if mode in ['beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
+            if mode in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
 
                 # Display on screen the mode getting executed
                 print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
 
-                if mode == 'beginExplore':
+                if mode == 'init':
                     robo_init(log_string, arduino_conn, bt_conn)
+
+                elif mode == 'beginExplore':
                     server_conn.send(mode.encode())
                     server_conn.recv()
 
@@ -101,6 +103,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                                 msg = arduino_conn.recv()
                                 server_conn.send(msg)
                             else:
+                                print("Param: ", param)
                                 time.sleep(1)
 
                         elif feedback["dest"] == "bt":
@@ -310,8 +313,8 @@ def robo_init(log_string, arduino_conn, bt_conn):
 
     print(log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
 
-    packet = "{\"dest\": \"bt\",\"movement\": \"l\",\"direction\": \"" + Direction.N + "\" }"
-    bt_conn.to_send_queue.put(packet.encode())
+    packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
+    bt_conn.send(packet.encode())
 
     arduino_conn.send(b'13')
     arduino_conn.recv()
@@ -344,6 +347,8 @@ def explore(log_string, pc_conn):
 
     # While map is not complete
     while not explorer.is_map_complete():
+        print("Explored map:\n", explorer.explored_map)
+        print("Obstacle map:\n", explorer.real_map)
 
         print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
@@ -368,7 +373,6 @@ def explore(log_string, pc_conn):
         elif movement == '4':
             # get_image(log_string, explorer, arduino_conn)
             log_movement = 'left'
-            right_wall_counter = 0
             front_left_obstacle = round(sensor_data["FrontLeft"]/10)
             front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
             front_right_obstacle = round(sensor_data["FrontRight"]/10)
@@ -383,7 +387,7 @@ def explore(log_string, pc_conn):
                 pc_conn.recv()
                 print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
-            elif (right_front_obstacle < 2 and right_back_obstacle < 2) and \
+            elif (right_wall_counter >= 3) and (right_front_obstacle < 2 and right_back_obstacle < 2) and \
                     (front_left_obstacle < 2 or front_right_obstacle < 2 or front_mid_obstacle < 2):
                 print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
@@ -392,8 +396,10 @@ def explore(log_string, pc_conn):
 
                 pc_conn.send(send_param.encode())
                 pc_conn.recv()
-                right_wall_counter = 0
                 print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+
+            right_wall_counter = 0
+
         else:
             log_movement = 'forward'
             right_wall_counter += 1
@@ -412,18 +418,7 @@ def explore(log_string, pc_conn):
 
         pc_conn.send(packet.encode())
         pc_conn.recv()
-        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
-
-        if right_wall_counter >= 3 and (right_front_obstacle < 2 and right_back_obstacle < 2):
-            print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
-
-            # Calibrate right
-            send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
-
-            pc_conn.send(send_param.encode())
-            pc_conn.recv()
-            right_wall_counter = 0
-            print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)x
 
         # Get sensor data
         send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
@@ -564,7 +559,7 @@ def move_to_point(explorer, point):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')

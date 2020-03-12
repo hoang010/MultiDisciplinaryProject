@@ -243,6 +243,8 @@ def pc(rpi_ip, log_string):
 
             msg = msg.decode()
 
+            msg = str(chr(int(msg)))
+
             print(log_string + text_color.BOLD + '{} received'.format(msg) + text_color.ENDC)
 
             if msg == 'disconnect':
@@ -259,7 +261,7 @@ def pc(rpi_ip, log_string):
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
-        # main('Windows')
+        # main(platform.system())
+        main('Windows')
     except KeyboardInterrupt:
         os.system('pkill -9 python')

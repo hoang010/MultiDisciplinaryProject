@@ -47,6 +47,7 @@ class Explore:
         :return:
         """
         while not self.is_map_complete():
+
             sensor_data = self.sensor_data_queue.get()
 
             # Get the data
@@ -67,6 +68,22 @@ class Explore:
             obs_on_right = bool(right_back_obstacle < 2 or right_front_obstacle < 2)
             turn_right = bool(not obs_on_right and self.check_right_empty > 1)
 
+            # Get left side coordinates
+            left_coord = self.get_coord('left', mid_left_obstacle)
+
+            # If reading is 151, append up to max range of 9
+            if mid_left_obstacle >= 7:
+                for i in range(7):
+                    self.explored_coord_queue.put(left_coord[i])
+
+            # If it is an obstacle, append to array for obstacle
+            elif 2 <= mid_left_obstacle < 7:
+                coord = self.get_coord('left', mid_left_obstacle + 1)
+                self.obstacle_coord_queue.put(coord[-1])
+                obstacle_coord.append(coord[-1])
+                for i in range(len(left_coord) - 1):
+                    self.explored_coord_queue.put(left_coord[i])
+
             # If there is no obstacle on the right
             if turn_right:
 
@@ -85,8 +102,11 @@ class Explore:
                 # Put the command 'left' into queue for main() to read
                 self.move_queue.put('4')
 
-                self.obstacle_coord_queue.put(right_coordinates[0])
-                self.obstacle_coord_queue.put(right_coordinates[1])
+                if right_front_obstacle < 2:
+                    self.obstacle_coord_queue.put(right_coordinates[0])
+
+                if right_back_obstacle < 2:
+                    self.obstacle_coord_queue.put(right_coordinates[1])
 
                 # Get obstacle coordinates and add into array for obstacle coordinates
                 front_coordinates = self.get_coord('front')
@@ -111,27 +131,14 @@ class Explore:
 
                 self.check_right_empty += 1
 
-                self.obstacle_coord_queue.put(right_coordinates[0])
-                self.obstacle_coord_queue.put(right_coordinates[1])
+                if right_front_obstacle < 2:
+                    self.obstacle_coord_queue.put(right_coordinates[0])
+
+                if right_back_obstacle < 2:
+                    self.obstacle_coord_queue.put(right_coordinates[1])
 
                 # Update position after moving
                 self.update_pos()
-
-            # Get left side coordinates
-            left_coord = self.get_coord('left', mid_left_obstacle)
-
-            # If reading is 151, append up to max range of 9
-            if mid_left_obstacle > 7:
-                for i in range(8):
-                    self.explored_coord_queue.put(left_coord[i])
-
-            # If it is an obstacle, append to array for obstacle
-            elif 2 < mid_left_obstacle < 8:
-                coord = self.get_coord('left', mid_left_obstacle+1)
-                self.obstacle_coord_queue.put(coord[-1])
-                obstacle_coord.append(coord[-1])
-                for i in range(len(left_coord)-1):
-                    self.explored_coord_queue.put(left_coord[i])
 
     def check_in_map(self, x, y):
         return bool((len(self.explored_map) > x > -1) and
@@ -159,8 +166,9 @@ class Explore:
         # For every (x, y) pair in obstacle, set its location
         # in real_map to 1
         while True:
-            if not self.explored_coord_queue.empty():
-                coordinates = self.explored_coord_queue.get()
+            if not self.obstacle_coord_queue.empty():
+                coordinates = self.obstacle_coord_queue.get()
+                print("Obstacle coordinates", coordinates)
                 if self.check_in_map(coordinates[0], coordinates[1]):
                     self.real_map[coordinates[0]][coordinates[1]] = 1
 
@@ -368,7 +376,6 @@ class Explore:
                          [self.current_pos[1][0], self.current_pos[1][1] + 1],
                          [self.current_pos[2][0], self.current_pos[2][1] + 1]]
 
-        print(direction, coord)
         return coord
 
     def is_map_complete(self):
