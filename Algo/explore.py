@@ -58,9 +58,6 @@ class Explore:
             right_front_obstacle = round(sensor_data["RightFront"]/10)
             right_back_obstacle = round(sensor_data["RightBack"]/10)
 
-            # Initialise variable for obstacle coordinates
-            obstacle_coord = []
-
             # Get coordinates on the right
             right_coordinates = self.get_coord('right')
 
@@ -80,7 +77,6 @@ class Explore:
             elif 2 <= mid_left_obstacle < 7:
                 coord = self.get_coord('left', mid_left_obstacle + 1)
                 self.obstacle_coord_queue.put(coord[-1])
-                obstacle_coord.append(coord[-1])
                 for i in range(len(left_coord) - 1):
                     self.explored_coord_queue.put(left_coord[i])
 
