@@ -108,6 +108,9 @@ class Explore:
                 if right_back_obstacle < 2:
                     self.obstacle_coord_queue.put(right_coordinates[1])
 
+                self.explored_coord_queue.put(right_coordinates[0])
+                self.explored_coord_queue.put(right_coordinates[1])
+
                 # Get obstacle coordinates and add into array for obstacle coordinates
                 front_coordinates = self.get_coord('front')
 
@@ -119,6 +122,10 @@ class Explore:
 
                 if front_right_obstacle < 2:
                     self.obstacle_coord_queue.put(front_coordinates[2])
+
+                self.explored_coord_queue.put(front_coordinates[0])
+                self.explored_coord_queue.put(front_coordinates[1])
+                self.explored_coord_queue.put(front_coordinates[2])
 
                 # Update robot direction
                 self.update_dir(left_turn=True)
@@ -136,6 +143,9 @@ class Explore:
 
                 if right_back_obstacle < 2:
                     self.obstacle_coord_queue.put(right_coordinates[1])
+
+                self.explored_coord_queue.put(right_coordinates[0])
+                self.explored_coord_queue.put(right_coordinates[1])
 
                 # Update position after moving
                 self.update_pos()

@@ -99,7 +99,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                         if feedback["dest"] == "arduino":
                             param = feedback["param"]
                             arduino_conn.send(param.encode())
-                            if not (10 < int(param) < 13):
+                            if not (9 < int(param) < 13):
                                 msg = arduino_conn.recv()
                                 server_conn.send(msg)
                             else:
@@ -317,7 +317,7 @@ def robo_init(log_string, arduino_conn, bt_conn):
     bt_conn.send(packet.encode())
 
     arduino_conn.send(b'13')
-    arduino_conn.recv()
+    time.sleep(0.5)
     print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
 
@@ -377,7 +377,8 @@ def explore(log_string, pc_conn):
             front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
             front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
-            if front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
+            if (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
+                (right_back_obstacle < 2 and right_front_obstacle < 2):
                 print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
                 # Get sensor data
@@ -387,16 +388,15 @@ def explore(log_string, pc_conn):
                 pc_conn.recv()
                 print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
-            elif (right_wall_counter >= 3) and (right_front_obstacle < 2 and right_back_obstacle < 2) and \
-                    (front_left_obstacle < 2 or front_right_obstacle < 2 or front_mid_obstacle < 2):
-                print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
+            elif (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2):
+                print(log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
 
-                # Calibrate right
-                send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
+                # Get sensor data
+                send_param = "{\"dest\": \"arduino\", \"param\": \"10\"}"
 
                 pc_conn.send(send_param.encode())
                 pc_conn.recv()
-                print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+                print(log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
             right_wall_counter = 0
 
@@ -418,7 +418,20 @@ def explore(log_string, pc_conn):
 
         pc_conn.send(packet.encode())
         pc_conn.recv()
-        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)x
+        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
+
+        if (right_wall_counter >= 3) and (right_front_obstacle < 2 and right_back_obstacle < 2):
+            print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
+
+            # Calibrate right
+            send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
+
+            pc_conn.send(send_param.encode())
+            time.sleep(0.5)
+            pc_conn.recv()
+
+            right_wall_counter = 0
+            print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
         # Get sensor data
         send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
