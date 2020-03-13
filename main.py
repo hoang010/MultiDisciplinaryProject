@@ -30,7 +30,7 @@ def main(sys_type):
     # USB port name!!
     arduino_name = '/dev/ttyACM0'
 
-    log_string = text_color.OKBLUE + "{} | Main: ".format(time.asctime()) + text_color.ENDC
+    log_string = text_color.OKBLUE + "Main: " + text_color.ENDC
 
     # If running on Pi, run relevant threads
     if sys_type == 'Linux':
@@ -110,7 +110,7 @@ def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
                                 msg = arduino_conn.recv()
                                 server_conn.send(msg)
                             else:
-                                time.sleep(0.5)
+                                time.sleep(1)
 
                         elif feedback["dest"] == "bt":
                             del feedback["dest"]
@@ -245,6 +245,9 @@ def pc(rpi_ip, log_string):
                     path_string = path_string[:-1]
                     path_string += '}'
 
+                    send_param = "{\"dest\": \"arduino\",\"param\": \"14\" }"
+                    pc_conn.send(send_param.encode())
+
                     send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
                     pc_conn.send(send_param.encode())
 
@@ -330,6 +333,8 @@ def explore(log_string, pc_conn):
     # Start an instance of Explore class
     explorer = Explore(Direction)
 
+    start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
+
     print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
     
     right_wall_counter = 0
@@ -342,7 +347,9 @@ def explore(log_string, pc_conn):
     pc_conn.recv()
 
     # While map is not complete
-    while not explorer.is_map_complete():
+    while not explorer.is_map_complete(start):
+        print("Current position:\n", explorer.current_pos)
+        print("True start:\n", explorer.true_start)
         print("Explored map:\n", explorer.explored_map)
         print("Obstacle map:\n", explorer.real_map)
 

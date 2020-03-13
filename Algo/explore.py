@@ -29,6 +29,8 @@ class Explore:
                      [18, 14], [18, 13], [18, 12],
                      [17, 14], [17, 13], [17, 14]]
 
+        self.round = 0
+
         self.sensor_data_queue = queue.Queue()
         self.explored_coord_queue = queue.Queue()
         self.obstacle_coord_queue = queue.Queue()
@@ -54,7 +56,7 @@ class Explore:
             front_left_obstacle = round(sensor_data["FrontLeft"]/10)
             front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
             front_right_obstacle = round(sensor_data["FrontRight"]/10)
-            mid_left_obstacle = round(sensor_data["LeftSide"]/10)
+            mid_left_obstacle = round((sensor_data["LeftSide"]-10)/10)
             right_front_obstacle = round(sensor_data["RightFront"]/10)
             right_back_obstacle = round(sensor_data["RightBack"]/10)
 
@@ -65,20 +67,19 @@ class Explore:
             obs_on_right = bool(right_back_obstacle < 2 or right_front_obstacle < 2)
             turn_right = bool(not obs_on_right and self.check_right_empty > 1)
 
-            # Get left side coordinates
-            left_coord = self.get_coord('left', mid_left_obstacle)
-
             # If reading is 151, append up to max range of 9
-            if mid_left_obstacle >= 7:
-                for i in range(7):
+            if mid_left_obstacle > 6:
+                # Get left side coordinates
+                left_coord = self.get_coord('left', 6)
+                for i in range(len(left_coord)):
                     self.explored_coord_queue.put(left_coord[i])
 
             # If it is an obstacle, append to array for obstacle
-            elif 2 <= mid_left_obstacle < 7:
-                coord = self.get_coord('left', mid_left_obstacle + 1)
+            elif 2 <= mid_left_obstacle <= 6:
+                coord = self.get_coord('left', mid_left_obstacle)
                 self.obstacle_coord_queue.put(coord[-1])
-                for i in range(len(left_coord) - 1):
-                    self.explored_coord_queue.put(left_coord[i])
+                for i in range(len(coord)):
+                    self.explored_coord_queue.put(coord[i])
 
             # If there is no obstacle on the right
             if turn_right:
@@ -165,6 +166,7 @@ class Explore:
             # in explored_map to 1
             if not self.explored_coord_queue.empty():
                 coordinates = self.explored_coord_queue.get()
+                print("Explored coordinates: ", coordinates)
                 if self.check_in_map(coordinates[0], coordinates[1]):
                     self.explored_map[coordinates[0]][coordinates[1]] = 1
 
@@ -186,25 +188,25 @@ class Explore:
         # If current direction is North
         if self.direction == self.direction_class.N:
             # Return (x+1, 1)
-            for i in range(len(self.current_pos)):
+            for i in range(9):
                 self.current_pos[i][0] += 1
 
         # If current direction is South
         elif self.direction == self.direction_class.S:
             # Return (x-1, y)
-            for i in range(len(self.current_pos)):
+            for i in range(9):
                 self.current_pos[i][0] -= 1
 
         # If current direction is East
         elif self.direction == self.direction_class.E:
             # Return (x, y-1)
-            for i in range(len(self.current_pos)):
+            for i in range(9):
                 self.current_pos[i][1] -= 1
 
         # If current direction is West
         else:
             # Return (x, y+1)
-            for i in range(len(self.current_pos)):
+            for i in range(9):
                 self.current_pos[i][1] += 1
 
     def update_dir(self, left_turn):
@@ -384,7 +386,7 @@ class Explore:
 
         return coord
 
-    def is_map_complete(self):
+    def is_map_complete(self, start):
         """
         Function to check if map is complete
         :return: Boolean
@@ -392,7 +394,12 @@ class Explore:
         """
         # Sum up every element of the matrix
         # If every element is 1, it means that every element is explored and sum should be 300 (15 x 20).
-        if self.explored_map.sum() == 300:
+        if self.current_pos[4] == start[4] and self.round == 1:
+            for i in range(len(self.explored_map)):
+                for j in range(len(self.explored_map[0])):
+                    if self.explored_map[i][j] == 0:
+                        self.explored_map[i][j] = 1
+                        self.real_map[i][j] = 1
             self.save_map(self.explored_map)
             self.save_map(self.real_map)
             self.explore_thread.join()
