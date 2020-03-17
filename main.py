@@ -14,202 +14,227 @@ from config.direction import Direction
 import json
 import time
 import os
+import threading
 
 
-def main(sys_type):
-    """
-    Main function of MDP Project, execute this file to start
-    :param sys_type: String
-            String containing System Type (Windows, Linux or Mac)
-    :return:
-    """
+class Main:
+    def __init__(self, sys_type):
+        self.arduino_conn_thread = None
+        self.server_conn_thread = None
+        self.bt_conn_thread = None
+        self.pc_conn_thread = None
 
-    # Initialise required stuff here
-    rpi_ip = '192.168.17.17'
-    rpi_mac_addr = 'B8:27:EB:52:AC:83'
-    # USB port name!!
-    arduino_name = '/dev/ttyACM0'
+        self.arduino_conn = None
+        self.server_conn = None
+        self.bt_conn = None
+        self.pc_conn = None
 
-    log_string = text_color.OKBLUE + "Main: " + text_color.ENDC
+        self.sys_type = sys_type
+        self.rpi_ip = '192.168.17.17'
+        self.rpi_mac_addr = 'B8:27:EB:52:AC:83'
+        self.arduino_name = '/dev/ttyACM0'
+        self.log_string = text_color.OKBLUE + "Main: " + text_color.ENDC
 
-    # If running on Pi, run relevant threads
-    if sys_type == 'Linux':
-        rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string)
+    def start(self):
+        """
+        Main function of MDP Project, execute this file to start
+        :param sys_type: String
+                String containing System Type (Windows, Linux or Mac)
+        :return:
+        """
 
-    # If running on own PC, run instance of algorithms
-    elif sys_type == 'Windows' or sys_type == 'Darwin':
-        pc(rpi_ip, log_string)
+        # If running on Pi, run relevant threads
+        if self.sys_type == 'Linux':
+            self.rpi()
 
-    print(text_color.WARNING + 'End of program reached.' + text_color.ENDC)
+        # If running on own PC, run instance of algorithms
+        elif self.sys_type == 'Windows' or self.sys_type == 'Darwin':
+            self.pc()
 
+        print(text_color.WARNING + 'End of program reached.' + text_color.ENDC)
 
-def rpi(rpi_ip, rpi_mac_addr, arduino_name, log_string):
-    """
-    Function to start running code on Raspberry Pi
-    :param rpi_ip: String
-            String containing IP address of Raspberry Pi
-    :param rpi_mac_addr: String
-            String containing MAC address of Raspberry Pi
-    :param arduino_name: String
-            String containing Arduino device name
-    :param log_string: String
-            String containing format of log to be used
-    :return:
-    """
-    from RPi.bluetooth import Bluetooth
-    
-    # Connect to Arduino
-    arduino_conn = Arduino(arduino_name, text_color)
+    def pc(self):
+        """
+        Function to start running code on PC
+        :param rpi_ip: String
+                String containing IP address of Raspberry Pi
+        :param log_string: String
+                String containing format of log to be used
+        :return:
+        """
+        # Create an instance of PC
+        pc_conn = Client(self.rpi_ip, 7777, text_color)
 
-    # Connect to PC
-    server_conn = Server(rpi_ip, 7777, text_color)
-    server_conn.listen()
+        # Connect to Raspberry Pi
+        pc_conn.connect()
 
-    # Connect to Tablet
-    bt_conn = Bluetooth(rpi_mac_addr, text_color)
-    bt_conn.listen()
-    try:
+        self.pc_conn_thread = threading.Thread(target=self.read_pc)
+        self.pc_conn_thread.daemon = True
+        self.pc_conn_thread.start()
+
+    def rpi(self):
+        """
+        Function to start running code on Raspberry Pi
+        :param rpi_ip: String
+                String containing IP address of Raspberry Pi
+        :param rpi_mac_addr: String
+                String containing MAC address of Raspberry Pi
+        :param arduino_name: String
+                String containing Arduino device name
+        :return:
+        """
+        from RPi.bluetooth import Bluetooth
+
+        # Connect to Arduino
+        self.arduino_conn = Arduino(self.arduino_name, text_color)
+
+        # Connect to PC
+        self.server_conn = Server(self.rpi_ip, 7777, text_color)
+        self.server_conn.listen()
+
+        # Connect to Tablet
+        self.bt_conn = Bluetooth(self.rpi_mac_addr, text_color)
+        self.bt_conn.listen()
+
+        self.arduino_conn_thread = threading.Thread(target=self.read_arduino)
+        self.server_conn_thread = threading.Thread(target=self.read_server)
+        self.bt_conn_thread = threading.Thread(target=self.read_bt)
+
+        self.arduino_conn_thread.daemon = True
+        self.server_conn_thread.daemon = True
+        self.bt_conn_thread.daemon = True
+
+        self.arduino_conn_thread.start()
+        self.server_conn_thread.start()
+        self.bt_conn_thread.start()
+
+    def read_arduino(self):
         while True:
-            # Receive data from tablet
-            mode = bt_conn.recv()
+            msg = self.arduino_conn.recv()
+            self.write_server(msg)
 
-            mode = mode.decode()
+    def write_arduino(self, msg):
+        self.arduino_conn.write(msg)
 
-            # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-            if mode in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
+    def read_server(self):
+        while True:
+            feedback = self.server_conn.recv()
+            self.write_server('ack'.encode())
+            feedback = feedback.decode()
+            if feedback == 'end':
+                break
+            feedback = json.loads(feedback)
 
-                # Display on screen the mode getting executed
-                print(log_string + text_color.OKGREEN + '{} Mode Initiated'.format(mode) + text_color.ENDC)
+            if feedback["dest"] == "arduino":
+                param = feedback["param"]
+                self.write_arduino(param.encode())
 
-                if mode == 'init':
-                    server_conn.send('init'.encode())
-                    robo_init(log_string, arduino_conn)
-                    waypt = bt_conn.recv()
-                    server_conn.send(waypt)
-                    server_conn.recv()
+            elif feedback["dest"] == "bt":
+                del feedback["dest"]
+                feedback = str(feedback)
+                self.write_bt(feedback.encode())
 
-                elif mode == 'beginExplore':
-                    packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
-                    bt_conn.send(packet.encode())
+    def write_server(self, msg):
+        self.server_conn.send(msg)
 
-                    server_conn.send(mode.encode())
-                    server_conn.recv()
+    def read_bt(self):
+        while True:
+            msg = self.bt_conn.recv()
+            self.process_bt_msg(msg.decode())
 
-                    while True:
-                        feedback = server_conn.recv()
-                        server_conn.send('ack'.encode())
-                        feedback = feedback.decode()
-                        if feedback == 'end':
-                            break
-                        feedback = json.loads(feedback)
+    def write_bt(self, msg):
+        self.bt_conn.send(msg)
 
-                        if feedback["dest"] == "arduino":
-                            param = feedback["param"]
-                            arduino_conn.send(param.encode())
-                            if not (9 < int(param) < 13):
-                                msg = arduino_conn.recv()
-                                server_conn.send(msg)
-                            else:
-                                time.sleep(1)
+    def process_bt_msg(self, msg):
 
-                        elif feedback["dest"] == "bt":
-                            del feedback["dest"]
-                            feedback = str(feedback)
-                            bt_conn.send(feedback.encode())
+        # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
+        if msg in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
 
-                elif mode == 'Image Recognition':
-                    print(mode)
+            # Display on screen the mode getting executed
+            print(text_color.OKGREEN + '{} Mode Initiated'.format(msg) + text_color.ENDC)
 
-                elif mode == 'beginFastest':
-                    waypt = bt_conn.recv()
-                    server_conn.send(waypt)
-                    path = server_conn.recv()
-                    arduino_conn.send(path)
+            if msg == 'init':
+                self.server_conn.send('init'.encode())
+                self.robo_init()
+                waypt = self.bt_conn.recv()
+                self.write_server(waypt)
+                self.server_conn.recv()
+                packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
+                self.write_bt(packet.encode())
 
-                elif mode == 'manual':
-                    server_conn.to_send_queue.put('manual'.encode())
-                    while True:
-                        msg = bt_conn.recv()
-                        server_conn.send(msg)
-                        msg = msg.decode()
-                        if msg == 'end':
-                            print(log_string + text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
-                            break
-                        movement = server_conn.recv()
-                        arduino_conn.send(movement)
-                        arduino_conn.recv()
+            elif msg == 'beginExplore':
+                self.write_server(msg.encode())
+                self.read_server()
 
-                elif mode == 'disconnect':
-                    # Send message to PC and Arduino to tell them to disconnect
-                    server_conn.send('Disconnect'.encode())
-                    arduino_conn.send('Disconnect'.encode())
+            elif msg == 'Image Recognition':
+                print(msg)
 
-                    # Disconnect from wifi and bluetooth connection
-                    server_conn.disconnect()
-                    arduino_conn.disconnect()
-                    bt_conn.disconnect()
-                    return
+            elif msg == 'beginFastest':
+                self.write_server(msg.encode())
 
-            else:
-                # Display feedback so that user knows this condition is triggered
-                print(log_string + text_color.FAIL +
-                      'Invalid message {} received.'.format(mode)
-                      + text_color.ENDC)
+            elif msg == 'manual':
+                self.write_server('manual'.encode())
+                while True:
+                    msg = self.bt_conn.recv()
+                    self.write_server(msg)
+                    msg = msg.decode()
+                    if msg == 'end':
+                        print(text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
+                        break
 
-                # Add data into queue for sending to tablet
-                bt_conn.send('Send valid argument'.encode())
+            elif msg == 'disconnect':
+                # Send message to PC and Arduino to tell them to disconnect
+                self.write_server('Disconnect'.encode())
+                self.write_arduino('Disconnect'.encode())
 
-    except KeyboardInterrupt:
-        arduino_conn.disconnect()
-        server_conn.disconnect()
-        bt_conn.disconnect()
-        os.system('pkill -9 python')
+                # Disconnect from wifi and bluetooth connection
+                self.server_conn.disconnect()
+                self.arduino_conn.disconnect()
+                self.bt_conn.disconnect()
+                return
 
+        else:
+            # Display feedback so that user knows this condition is triggered
+            print(text_color.FAIL +
+                  'Invalid message {} received.'.format(msg)
+                  + text_color.ENDC)
 
-def pc(rpi_ip, log_string):
-    """
-    Function to start running code on PC
-    :param rpi_ip: String
-            String containing IP address of Raspberry Pi
-    :param log_string: String
-            String containing format of log to be used
-    :return:
-    """
-    # Create an instance of PC
-    pc_conn = Client(rpi_ip, 7777, text_color)
+            # Add data into queue for sending to tablet
+            self.write_bt('Send valid argument'.encode())
 
-    # Connect to Raspberry Pi
-    pc_conn.connect()
+    def read_pc(self):
+        while True:
+            msg = self.pc_conn.recv()
+            self.process_pc_msg(msg)
 
-    explorer = None
-    waypt_coord = None
-    flag = 0
-    path = []
+    def write_pc(self, msg):
+        self.pc_conn.send(msg)
 
-    try:
+    def process_pc_msg(self, msg):
+        explorer = None
+        waypt_coord = None
+        flag = 0
+        path = []
+
         while True:
 
-            # Receive data from Raspberry Pi
-            # TODO: Rasp Pi array here!
-            data = pc_conn.recv()
-
-            data = data.decode()
+            data = msg.decode()
 
             # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
             if data in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
 
                 # Display on screen the mode getting executed
-                print(log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
+                print(self.log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
                 if data == 'init':
-                    waypt = pc_conn.recv()
+                    waypt = self.pc_conn.recv()
                     waypt = waypt.decode()
 
                     waypt = json.loads(waypt)
                     waypt_coord = [waypt['x'], waypt['y']]
 
                 elif data == 'beginExplore':
-                    explorer = explore(log_string, pc_conn)
+                    explorer = self.explore()
                     for _ in range(2):
                         a_star = AStar(explorer.start[4], waypt_coord, explorer.real_map)
                         start_pt = AStar.Node(explorer.start[4], waypt_coord, 0)
@@ -220,7 +245,7 @@ def pc(rpi_ip, log_string):
                             flag = a_star.near_explore(a_star_current)
 
                         for node_path in a_star.path:
-                            movements = move_to_point(explorer, node_path.point)
+                            movements = self.move_to_point(explorer, node_path.point)
                             for ele in movements:
                                 path.append(ele)
 
@@ -246,315 +271,304 @@ def pc(rpi_ip, log_string):
                     path_string += '}'
 
                     send_param = "{\"dest\": \"arduino\",\"param\": \"14\" }"
-                    pc_conn.send(send_param.encode())
+                    self.write_pc(send_param.encode())
 
                     send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
-                    pc_conn.send(send_param.encode())
+                    self.write_pc(send_param.encode())
 
                 elif data == 'manual':
                     while True:
-                        movement = pc_conn.recv()
+                        movement = self.pc_conn.recv()
 
                         movement = movement.decode()
 
                         if movement == 'tl':
-                            print(log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
-                            pc_conn.send("4")
+                            print(self.log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
+                            packet = "{\"dest\": \"arduino\", \"param:\"4\"}"
 
                         elif movement == 'f':
-                            print(log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
-                            pc_conn.send("3")
+                            print(self.log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
+                            packet = "{\"dest\": \"arduino\", \"param:\"3\"}"
 
                         elif movement == 'tr':
-                            print(log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
-                            pc_conn.send("5")
+                            print(self.log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
+                            packet = "{\"dest\": \"arduino\", \"param:\"5\"}"
 
                         elif movement == 'r':
-                            print(log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
-                            pc_conn.send("6")
+                            print(self.log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
+                            packet = "{\"dest\": \"arduino\", \"param:\"6\"}"
 
                         elif movement == 'end':
                             break
 
                         else:
-                            print(log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
+                            packet = "{\"dest\": \"arduino\"}"
+                            print(self.log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
-                    print(log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
+                        self.write_pc(packet.encode())
+
+                    print(self.log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
 
                 elif data == 'disconnect':
                     # Disconnect from Raspberry Pi
-                    pc_conn.disconnect()
+                    self.pc_conn.disconnect()
                     return
 
             else:
-
                 # Display feedback so that user knows this condition is triggered
-                print(log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
+                print(self.log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
 
                 # Add data into queue for sending to Raspberry Pi
                 # Failsafe condition
-                pc_conn.send('Send valid argument'.encode())
+                self.write_pc('Send valid argument'.encode())
 
-    except KeyboardInterrupt:
-        pc_conn.disconnect()
-        os.system('pkill -9 python')
+    def robo_init(self):
+        """
+        Function to init robot, to be called by Raspberry Pi
 
+        :param log_string: String
+                String containing logs
+        :param arduino_conn: Serial
+                Serial class containing connection to Arduino
+        :param bt_conn: Socket
+                Socket containing connection to tablet0
+        :return:
+        """
+        print(self.log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
+        self.write_arduino(b'13')
+        print(self.log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
-def robo_init(log_string, arduino_conn):
-    """
-    Function to init robot, to be called by Raspberry Pi
+    def explore(self):
+        """
+        Function to run explore algorithm
+        :param log_string: String
+                Format of log
+        :param pc_conn: Socket
+                Socket containing connection between PC and RPi
+        :return:
+        """
 
-    :param log_string: String
-            String containing logs
-    :param arduino_conn: Serial
-            Serial class containing connection to Arduino
-    :param bt_conn: Socket
-            Socket containing connection to tablet0
-    :return:
-    """
+        # Start an instance of Explore class
+        explorer = Explore(Direction)
 
-    print(log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
+        start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
 
-    arduino_conn.send(b'13')
-    time.sleep(0.5)
-    print(log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
+        print(self.log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
 
+        right_wall_counter = 0
 
-def explore(log_string, pc_conn):
-    """
-    Function to run explore algorithm
-    :param log_string: String
-            Format of log
-    :param pc_conn: Socket
-            Socket containing connection between PC and RPi
-    :return:
-    """
-
-    # Start an instance of Explore class
-    explorer = Explore(Direction)
-
-    start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
-
-    print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
-    
-    right_wall_counter = 0
-
-    print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
-
-    # Get sensor data
-    send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
-    pc_conn.send(send_param.encode())
-    pc_conn.recv()
-
-    # While map is not complete
-    while not explorer.is_map_complete(start):
-        print("Current position:\n", explorer.current_pos)
-        print("True start:\n", explorer.true_start)
-        print("Explored map:\n", explorer.explored_map)
-        print("Obstacle map:\n", explorer.real_map)
-
-        print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
-
-        sensor_data = pc_conn.recv()
-        sensor_data = sensor_data.decode().strip()
-        sensor_data = json.loads(sensor_data)
-
-        explorer.sensor_data_queue.put(sensor_data)
-        print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
-
-        # Get next movement
-        movement = explorer.move_queue.get()
-
-        right_front_obstacle = round(sensor_data["RightFront"] / 10)
-        right_back_obstacle = round(sensor_data["RightBack"] / 10)
-
-        # Display message
-        if movement == '5':
-            log_movement = 'right'
-            right_wall_counter = 0
-
-        elif movement == '4':
-            # get_image(log_string, explorer, arduino_conn)
-            log_movement = 'left'
-            front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-            front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-            front_right_obstacle = round(sensor_data["FrontRight"]/10)
-
-            if (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
-                (right_back_obstacle < 2 and right_front_obstacle < 2):
-                print(log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
-
-                # Get sensor data
-                send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
-
-                pc_conn.send(send_param.encode())
-                pc_conn.recv()
-                print(log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
-
-            elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
-                print(log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
-
-                # Get sensor data
-                send_param = "{\"dest\": \"arduino\", \"param\": \"10\"}"
-
-                pc_conn.send(send_param.encode())
-                pc_conn.recv()
-                print(log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
-
-            right_wall_counter = 0
-
-        else:
-            log_movement = 'forward'
-            right_wall_counter += 1
-
-            if (right_wall_counter >= 3) and (right_front_obstacle < 2 and right_back_obstacle < 2):
-                print(log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
-
-                # Calibrate right
-                send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
-
-                pc_conn.send(send_param.encode())
-                time.sleep(0.5)
-                pc_conn.recv()
-
-                right_wall_counter = 0
-                print(log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
-        else:
-            log_movement = 'forward'
-            right_wall_counter += 1
-
-        print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
-
-        # Convert explored map into hex
-        hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
-        hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-
-        packet = "{\"dest\": \"bt\",  \
-                   \"explored\": \"" + hex_exp_map + "\",  \
-                   \"obstacle\": \"" + hex_real_map + "\",  \
-                   \"movement\": \"" + log_movement[0] + "\",  \
-                   \"direction\": \"" + explorer.direction + "\"}"
-
-        pc_conn.send(packet.encode())
-        pc_conn.recv()
-        print(log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
+        print(self.log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
         # Get sensor data
-        send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
+        send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
+        self.write_pc(send_param.encode())
+        self.pc_conn.recv()
 
-        pc_conn.send(send_param.encode())
-        pc_conn.recv()
+        # While map is not complete
+        while not explorer.is_map_complete(start):
+            print("Current position:\n", explorer.current_pos)
+            print("True start:\n", explorer.true_start)
+            print("Explored map:\n", explorer.explored_map)
+            print("Obstacle map:\n", explorer.real_map)
 
-    print(log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
+            print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-    # Convert real map to hex
-    hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-    hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+            sensor_data = self.pc_conn.recv()
+            sensor_data = sensor_data.decode().strip()
+            sensor_data = json.loads(sensor_data)
 
-    packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
+            explorer.sensor_data_queue.put(sensor_data)
+            print(self.log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
-    pc_conn.send(packet.encode())
-    pc_conn.recv()
+            # Get next movement
+            movement = explorer.move_queue.get()
 
-    # Save real map once done exploring
-    explorer.save_map(hex_real_map)
+            right_front_obstacle = round(sensor_data["RightFront"] / 10)
+            right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
-    pc_conn.send('end'.encode())
-    pc_conn.recv()
+            # Display message
+            if movement == '5':
+                log_movement = 'right'
+                right_wall_counter = 0
 
-    return explorer
+            elif movement == '4':
+                # get_image(log_string, explorer, arduino_conn)
+                log_movement = 'left'
+                front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+                front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+                front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
+                if (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
+                    (right_back_obstacle < 2 and right_front_obstacle < 2):
+                    print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
-def get_image(log_string, explorer, arduino_conn):
-    start_pos = explorer.current_pos
-    start_dir = explorer.direction
+                    # Get sensor data
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
 
-    # while True:
-    #     send_param = b'2'
-    #     arduino_conn.to_send_queue.put(send_param)
-    #     sensor_data = arduino_conn.have_recv_queue.get()
-    #
-    #     sensor_data = json.loads(sensor_data.decode().strip())
-    #
-    #     # Get the data
-    #     front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-    #     front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-    #     front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-    #     mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
-    #     right_front_obstacle = round(sensor_data["RightFront"]) / 10
-    #     right_back_obstacle = round(sensor_data["RightBack"]) / 10
-    #
-    #     # Camera facing right
-    #     # Turn left
-    #     arduino_conn.to_send_queue.put(b'4')
-    #     arduino_conn.have_recv_queue.get()
-    #
-    #     # Insert image recog code here
-    #     # TODO: This is a placeholder!
-    #     captured = ImageRecognition(text_color)
-    #
-    #     if captured:
-    #         explorer.navigate_to_point(log_string, text_color, arduino_conn, start_pos)
-    #         break
-    #
-    #     else:
-    #         # If no obstacle on right
-    #         if right_front_obstacle > 2 or right_back_obstacle > 2:
-    #             arduino_conn.to_send_queue.put(b'5')
-    #             arduino_conn.have_recv_queue.get()
-    #
-    #         # If front has obstacle
-    #         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
-    #             # Turn left
-    #             arduino_conn.to_send_queue.put(b'4')
-    #             arduino_conn.have_recv_queue.get()
-    #
-    #         else:
-    #             # Advance
-    #             arduino_conn.to_send_queue.put(b'3')
-    #             arduino_conn.have_recv_queue.get()
+                    self.pc_conn.send(send_param.encode())
+                    self.pc_conn.recv()
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
-    while not explorer.set_direction(start_dir):
-        continue
+                elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
+                    print(self.log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
 
+                    # Get sensor data
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"10\"}"
 
-def move_to_point(explorer, point):
+                    self.pc_conn.send(send_param.encode())
+                    self.pc_conn.recv()
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
-    movement = []
+                right_wall_counter = 0
 
-    # Comparing x axis
-    if explorer.current_pos[4][0] != point[0]:
-        more = explorer.current_pos[4][0] - point[0]
+            else:
+                log_movement = 'forward'
+                right_wall_counter += 1
 
-        # Turn left if more
-        if more > 0:
-            movement.append("4")
-            movement.append("3")
+                if (right_wall_counter >= 3) and (right_front_obstacle < 2 and right_back_obstacle < 2):
+                    print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
-        # Turn right if less
-        else:
-            movement.append("5")
-            movement.append("3")
+                    # Calibrate right
+                    send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
 
-    # Comparing y axis
-    elif explorer.current_pos[4][1] != point[1]:
-        more = explorer.current_pos[4][1] - point[1]
+                    self.pc_conn.send(send_param.encode())
+                    time.sleep(0.5)
+                    self.pc_conn.recv()
 
-        # Move forward if more
-        if more > 0:
-            movement.append("3")
+                    right_wall_counter = 0
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
-        # Move backward if less
-        else:
-            movement.append("6")
+            print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
-    return movement
+            # Convert explored map into hex
+            hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+            hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+
+            packet = "{\"dest\": \"bt\",  \
+                       \"explored\": \"" + hex_exp_map + "\",  \
+                       \"obstacle\": \"" + hex_real_map + "\",  \
+                       \"movement\": \"" + log_movement[0] + "\",  \
+                       \"direction\": \"" + explorer.direction + "\"}"
+
+            self.pc_conn.send(packet.encode())
+            self.pc_conn.recv()
+            print(self.log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
+
+            # Get sensor data
+            send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
+
+            self.pc_conn.send(send_param.encode())
+            self.pc_conn.recv()
+
+        print(self.log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
+
+        # Convert real map to hex
+        hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+        hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+
+        packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
+
+        self.pc_conn.send(packet.encode())
+        self.pc_conn.recv()
+
+        # Save real map once done exploring
+        explorer.save_map(hex_real_map)
+
+        self.pc_conn.send('end'.encode())
+        self.pc_conn.recv()
+
+        return explorer
+
+    def get_image(log_string, explorer, arduino_conn):
+        start_pos = explorer.current_pos
+        start_dir = explorer.direction
+
+        # while True:
+        #     send_param = b'2'
+        #     arduino_conn.to_send_queue.put(send_param)
+        #     sensor_data = arduino_conn.have_recv_queue.get()
+        #
+        #     sensor_data = json.loads(sensor_data.decode().strip())
+        #
+        #     # Get the data
+        #     front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
+        #     front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
+        #     front_right_obstacle = round(sensor_data["FrontRight"]) / 10
+        #     mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
+        #     right_front_obstacle = round(sensor_data["RightFront"]) / 10
+        #     right_back_obstacle = round(sensor_data["RightBack"]) / 10
+        #
+        #     # Camera facing right
+        #     # Turn left
+        #     arduino_conn.to_send_queue.put(b'4')
+        #     arduino_conn.have_recv_queue.get()
+        #
+        #     # Insert image recog code here
+        #     # TODO: This is a placeholder!
+        #     captured = ImageRecognition(text_color)
+        #
+        #     if captured:
+        #         explorer.navigate_to_point(log_string, text_color, arduino_conn, start_pos)
+        #         break
+        #
+        #     else:
+        #         # If no obstacle on right
+        #         if right_front_obstacle > 2 or right_back_obstacle > 2:
+        #             arduino_conn.to_send_queue.put(b'5')
+        #             arduino_conn.have_recv_queue.get()
+        #
+        #         # If front has obstacle
+        #         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
+        #             # Turn left
+        #             arduino_conn.to_send_queue.put(b'4')
+        #             arduino_conn.have_recv_queue.get()
+        #
+        #         else:
+        #             # Advance
+        #             arduino_conn.to_send_queue.put(b'3')
+        #             arduino_conn.have_recv_queue.get()
+
+        while not explorer.set_direction(start_dir):
+            continue
+
+    def move_to_point(self, explorer, point):
+
+        movement = []
+
+        # Comparing x axis
+        if explorer.current_pos[4][0] != point[0]:
+            more = explorer.current_pos[4][0] - point[0]
+
+            # Turn left if more
+            if more > 0:
+                movement.append("4")
+                movement.append("3")
+
+            # Turn right if less
+            else:
+                movement.append("5")
+                movement.append("3")
+
+        # Comparing y axis
+        elif explorer.current_pos[4][1] != point[1]:
+            more = explorer.current_pos[4][1] - point[1]
+
+            # Move forward if more
+            if more > 0:
+                movement.append("3")
+
+            # Move backward if less
+            else:
+                movement.append("6")
+
+        return movement
 
 
 if __name__ == "__main__":
     import platform
     try:
-        main(platform.system())
+        main = Main(platform.system())
         # main('Windows')
+        main.start()
     except KeyboardInterrupt:
         os.system('pkill -9 python')
