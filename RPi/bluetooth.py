@@ -45,10 +45,6 @@ class Bluetooth:
 
         self.server_socket.setblocking(True)
 
-        # Intialise variable for threads
-        self.send_thread = None
-        self.recv_thread = None
-
         self.client_sock = None
 
     def listen(self):
@@ -78,7 +74,7 @@ class Bluetooth:
         except:
             raise Exception(self.log_string + 'An error occurred while establishing connection')
 
-    def recv_channel(self):
+    def recv(self):
         """
         Function to receive data from tablet from the channel
 
@@ -99,7 +95,7 @@ class Bluetooth:
 
         return data
 
-    def send_channel(self, data):
+    def send(self, data):
         """
         Function to send data to tablet from the channel
 
@@ -124,18 +120,6 @@ class Bluetooth:
         Function to safely disconnect from connected tablet
         :return:
         """
-
-        # Close thread for recv channel
-        self.recv_thread.join()
-        print(self.log_string + self.text_color.OKGREEN +
-              'Bluetooth recv thread closed successfully'
-              + self.text_color.ENDC)
-
-        # Close thread for send channel
-        self.send_thread.join()
-        print(self.log_string + self.text_color.OKGREEN +
-              'Bluetooth send thread closed successfully'
-              + self.text_color.ENDC)
 
         # Close the socket
         self.server_socket.close()

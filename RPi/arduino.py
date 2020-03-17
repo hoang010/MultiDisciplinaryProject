@@ -51,7 +51,7 @@ class Arduino:
                   'Connection failed, check parameter values!'
                   + self.text_color.ENDC)
 
-    def recv_channel(self):
+    def recv(self):
         """
         Function to receive data from Arduino device
         :return:
@@ -77,7 +77,7 @@ class Arduino:
 
         return data
 
-    def send_channel(self, data):
+    def send(self, data):
         """
         Function to send data to Arduino device
         :return:
@@ -101,18 +101,6 @@ class Arduino:
         Function to close Arduino serial
         :return:
         """
-
-        # Close thread for recv channel
-        self.recv_thread.join()
-        print(self.log_string + self.text_color.OKGREEN +
-              'Arduino serial recv thread closed successfully'
-              + self.text_color.ENDC)
-
-        # Close thread for send channel
-        self.send_thread.join()
-        print(self.log_string + self.text_color.OKGREEN +
-              'Arduino serial send thread closed successfully'
-              + self.text_color.ENDC)
 
         # Close the serial
         self.arduino_serial.close()
