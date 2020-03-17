@@ -563,6 +563,11 @@ class Main:
 
         return movement
 
+    def keep_main_alive(self):
+        while True:
+            print(self.log_string + text_color.OKGREEN + "Program is alive" + text_color.ENDC)
+            time.sleep(10)
+
 
 if __name__ == "__main__":
     import platform
@@ -570,5 +575,6 @@ if __name__ == "__main__":
         main = Main(platform.system())
         # main('Windows')
         main.start()
+        main.keep_main_alive()
     except KeyboardInterrupt:
         os.system('pkill -9 python')
