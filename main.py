@@ -334,6 +334,9 @@ def explore(log_string, pc_conn):
     print(log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
     
     right_wall_counter = 0
+    true_start = [[2, 2], [2, 1], [2, 0],
+                  [1, 2], [1, 1], [1, 0],
+                  [0, 2], [0, 1], [0, 0]]
 
     print(log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
@@ -343,7 +346,9 @@ def explore(log_string, pc_conn):
     pc_conn.recv_channel()
 
     # While map is not complete
-    while not explorer.is_map_complete():
+    while not explorer.is_map_complete(true_start):
+
+        explorer.true_start = true_start
 
         print(log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
@@ -397,6 +402,7 @@ def explore(log_string, pc_conn):
         else:
             log_movement = 'forward'
             right_wall_counter += 1
+            explorer.round = 1
 
         print(log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 

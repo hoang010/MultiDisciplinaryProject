@@ -22,6 +22,7 @@ class Explore:
                            [1, 2], [1, 1], [1, 0],
                            [0, 2], [0, 1], [0, 0]]
 
+        self.round = 0
         self.check_right_empty = 0
         self.current_pos = self.true_start.copy()
 
@@ -46,7 +47,7 @@ class Explore:
         Function to execute right wall hugging
         :return:
         """
-        while not self.is_map_complete():
+        while not self.is_map_complete(self.true_start):
             sensor_data = self.sensor_data_queue.get()
 
             # Get the data
@@ -382,7 +383,7 @@ class Explore:
                         [self.current_pos[1][0], self.current_pos[1][1] - 1],
                         [self.current_pos[2][0], self.current_pos[2][1] - 1]]
 
-    def is_map_complete(self):
+    def is_map_complete(self, start):
         """
         Function to check if map is complete
         :return: Boolean
@@ -390,7 +391,7 @@ class Explore:
         """
         # Sum up every element of the matrix
         # If every element is 1, it means that every element is explored and sum should be 300 (15 x 20).
-        if self.explored_map.sum() == 300:
+        if self.current_pos[4] == start[4] and self.round == 1:
             self.save_map(self.explored_map)
             self.save_map(self.real_map)
             self.explore_thread.join()
