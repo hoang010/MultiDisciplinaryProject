@@ -35,6 +35,9 @@ class Main:
         self.arduino_name = '/dev/ttyACM0'
         self.log_string = text_color.OKBLUE + "Main: " + text_color.ENDC
 
+        self.explorer = None
+        self.waypt_coord = None
+
     def start(self):
         """
         Main function of MDP Project, execute this file to start
@@ -158,7 +161,6 @@ class Main:
             if msg == 'init':
                 self.server_conn.send('init'.encode())
                 self.robo_init()
-                waypt = self.bt_conn.recv()
                 self.write_server(waypt)
                 packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
                 self.write_bt(packet.encode())
@@ -299,7 +301,7 @@ class Main:
                         break
 
                     else:
-                        packet = "{\"dest\": \"arduino\"}"
+                        packet = "{\"dest\": \"nothing\"}"
                         print(self.log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
                     self.write_pc(packet.encode())
