@@ -63,13 +63,12 @@ class Main:
         :return:
         """
         # Create an instance of PC
-        pc_conn = Client(self.rpi_ip, 7777, text_color)
+        self.pc_conn = Client(self.rpi_ip, 7777, text_color)
 
         # Connect to Raspberry Pi
-        pc_conn.connect()
+        self.pc_conn.connect()
 
         self.pc_conn_thread = threading.Thread(target=self.read_pc)
-        self.pc_conn_thread.daemon = True
         self.pc_conn_thread.start()
 
     def rpi(self):
@@ -108,13 +107,16 @@ class Main:
         self.server_conn_thread.start()
         self.bt_conn_thread.start()
 
+        self.explorer = None
+        self.waypt_coord = None
+
     def read_arduino(self):
         while True:
             msg = self.arduino_conn.recv()
             self.write_server(msg)
 
     def write_arduino(self, msg):
-        self.arduino_conn.write(msg)
+        self.arduino_conn.send(msg)
 
     def read_server(self):
         while True:
@@ -158,7 +160,6 @@ class Main:
                 self.robo_init()
                 waypt = self.bt_conn.recv()
                 self.write_server(waypt)
-                self.server_conn.recv()
                 packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
                 self.write_bt(packet.encode())
 
@@ -211,116 +212,112 @@ class Main:
         self.pc_conn.send(msg)
 
     def process_pc_msg(self, msg):
-        explorer = None
-        waypt_coord = None
         flag = 0
         path = []
 
-        while True:
+        data = msg.decode()
 
-            data = msg.decode()
+        # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
+        if data in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
 
-            # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-            if data in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
+            # Display on screen the mode getting executed
+            print(self.log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
-                # Display on screen the mode getting executed
-                print(self.log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
+            if data == 'init':
+                waypt = self.pc_conn.recv()
+                waypt = waypt.decode()
 
-                if data == 'init':
-                    waypt = self.pc_conn.recv()
-                    waypt = waypt.decode()
+                waypt = json.loads(waypt)
+                self.waypt_coord = [waypt['x'], waypt['y']]
 
-                    waypt = json.loads(waypt)
-                    waypt_coord = [waypt['x'], waypt['y']]
+            elif data == 'beginExplore':
+                self.explorer = self.explore()
+                for _ in range(2):
+                    a_star = AStar(self.explorer.start[4], self.waypt_coord, self.explorer.real_map)
+                    start_pt = AStar.Node(self.explorer.start[4], self.waypt_coord, 0)
+                    a_star.open_list.append(start_pt)
 
-                elif data == 'beginExplore':
-                    explorer = self.explore()
-                    for _ in range(2):
-                        a_star = AStar(explorer.start[4], waypt_coord, explorer.real_map)
-                        start_pt = AStar.Node(explorer.start[4], waypt_coord, 0)
-                        a_star.open_list.append(start_pt)
+                    while not flag:
+                        a_star_current = a_star.select_current()
+                        flag = a_star.near_explore(a_star_current)
 
-                        while not flag:
-                            a_star_current = a_star.select_current()
-                            flag = a_star.near_explore(a_star_current)
+                    for node_path in a_star.path:
+                        movements = self.move_to_point(self.explorer, node_path.point)
+                        for ele in movements:
+                            path.append(ele)
 
-                        for node_path in a_star.path:
-                            movements = self.move_to_point(explorer, node_path.point)
-                            for ele in movements:
-                                path.append(ele)
+                    self.explorer.start = self.explorer.current_pos
+                    self.waypt_coord = self.explorer.goal[4]
 
-                        explorer.start = explorer.current_pos
-                        waypt_coord = explorer.goal[4]
+            elif data == 'imageRecognition':
+                pass
 
-                elif data == 'imageRecognition':
-                    pass
+            elif data == 'beginFastest':
+                path_string = '{'
+                for i in range(len(path)):
+                    if path[i] == 3:
+                        count = 1
+                        while path[i] == 3:
+                            count += 1
+                            i += 1
+                        path_string += '{}: {}'.format('3', str(count*10))
+                        i -= 1
+                    else:
+                        path_string += '{}: {}'.format(path[i], '90')
+                path_string = path_string[:-1]
+                path_string += '}'
 
-                elif data == 'beginFastest':
-                    path_string = '{'
-                    for i in range(len(path)):
-                        if path[i] == 3:
-                            count = 1
-                            while path[i] == 3:
-                                count += 1
-                                i += 1
-                            path_string += '{}: {}'.format('3', str(count*10))
-                            i -= 1
-                        else:
-                            path_string += '{}: {}'.format(path[i], '90')
-                    path_string = path_string[:-1]
-                    path_string += '}'
+                send_param = "{\"dest\": \"arduino\",\"param\": \"14\" }"
+                self.write_pc(send_param.encode())
 
-                    send_param = "{\"dest\": \"arduino\",\"param\": \"14\" }"
-                    self.write_pc(send_param.encode())
+                send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
+                self.write_pc(send_param.encode())
 
-                    send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
-                    self.write_pc(send_param.encode())
+            elif data == 'manual':
+                while True:
+                    movement = self.pc_conn.recv()
 
-                elif data == 'manual':
-                    while True:
-                        movement = self.pc_conn.recv()
+                    movement = movement.decode()
 
-                        movement = movement.decode()
+                    if movement == 'tl':
+                        print(self.log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
+                        packet = "{\"dest\": \"arduino\", \"param:\"A1\"}"
 
-                        if movement == 'tl':
-                            print(self.log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
-                            packet = "{\"dest\": \"arduino\", \"param:\"4\"}"
+                    elif movement == 'f':
+                        print(self.log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
+                        packet = "{\"dest\": \"arduino\", \"param:\"W1\"}"
 
-                        elif movement == 'f':
-                            print(self.log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
-                            packet = "{\"dest\": \"arduino\", \"param:\"3\"}"
+                    elif movement == 'tr':
+                        print(self.log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
+                        packet = "{\"dest\": \"arduino\", \"param:\"D1\"}"
 
-                        elif movement == 'tr':
-                            print(self.log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
-                            packet = "{\"dest\": \"arduino\", \"param:\"5\"}"
+                    elif movement == 'r':
+                        print(self.log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
+                        packet = "{\"dest\": \"arduino\", \"param:\"S1\"}"
 
-                        elif movement == 'r':
-                            print(self.log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
-                            packet = "{\"dest\": \"arduino\", \"param:\"6\"}"
+                    elif movement == 'end':
+                        break
 
-                        elif movement == 'end':
-                            break
+                    else:
+                        packet = "{\"dest\": \"arduino\"}"
+                        print(self.log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
-                        else:
-                            packet = "{\"dest\": \"arduino\"}"
-                            print(self.log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
+                    self.write_pc(packet.encode())
 
-                        self.write_pc(packet.encode())
+                print(self.log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
 
-                    print(self.log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
+            elif data == 'disconnect':
+                # Disconnect from Raspberry Pi
+                self.pc_conn.disconnect()
+                return
 
-                elif data == 'disconnect':
-                    # Disconnect from Raspberry Pi
-                    self.pc_conn.disconnect()
-                    return
+        else:
+            # Display feedback so that user knows this condition is triggered
+            print(self.log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
 
-            else:
-                # Display feedback so that user knows this condition is triggered
-                print(self.log_string + text_color.FAIL + 'Invalid argument "{}" received.'.format(data) + text_color.ENDC)
-
-                # Add data into queue for sending to Raspberry Pi
-                # Failsafe condition
-                self.write_pc('Send valid argument'.encode())
+            # Add data into queue for sending to Raspberry Pi
+            # Failsafe condition
+            self.write_pc('Send valid argument'.encode())
 
     def robo_init(self):
         """
@@ -335,7 +332,7 @@ class Main:
         :return:
         """
         print(self.log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
-        self.write_arduino(b'I')
+        self.write_arduino(b'I1')
         print(self.log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
     def explore(self):
@@ -360,7 +357,7 @@ class Main:
         print(self.log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
         # Get sensor data
-        send_param = "{\"dest\":\"arduino\",\"param\":\"2\"}"
+        send_param = "{\"dest\":\"arduino\",\"param\":\"X1\"}"
         self.write_pc(send_param.encode())
         self.pc_conn.recv()
 
