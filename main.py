@@ -335,7 +335,7 @@ class Main:
         :return:
         """
         print(self.log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
-        self.write_arduino(b'13')
+        self.write_arduino(b'I')
         print(self.log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
     def explore(self):
@@ -387,11 +387,11 @@ class Main:
             right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
             # Display message
-            if movement == '5':
+            if movement == 'D1':
                 log_movement = 'right'
                 right_wall_counter = 0
 
-            elif movement == '4':
+            elif movement == 'A1':
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = 'left'
                 front_left_obstacle = round(sensor_data["FrontLeft"]/10)
@@ -403,7 +403,7 @@ class Main:
                     print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
                     # Get sensor data
-                    send_param = "{\"dest\": \"arduino\", \"param\": \"12\"}"
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"N1\"}"
 
                     self.pc_conn.send(send_param.encode())
                     self.pc_conn.recv()
@@ -413,7 +413,7 @@ class Main:
                     print(self.log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
 
                     # Get sensor data
-                    send_param = "{\"dest\": \"arduino\", \"param\": \"10\"}"
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"F1\"}"
 
                     self.pc_conn.send(send_param.encode())
                     self.pc_conn.recv()
@@ -429,7 +429,7 @@ class Main:
                     print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
                     # Calibrate right
-                    send_param = "{\"dest\": \"arduino\",\"param\": \"11\"}"
+                    send_param = "{\"dest\": \"arduino\",\"param\": \"R1\"}"
 
                     self.pc_conn.send(send_param.encode())
                     time.sleep(0.5)
@@ -450,7 +450,7 @@ class Main:
                        \"movement\": \"" + log_movement[0] + "\",  \
                        \"direction\": \"" + explorer.direction + "\"}"
 
-            self.pc_conn.send(packet.encode())
+            self.write_pc(packet.encode())
             self.pc_conn.recv()
             print(self.log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
 
@@ -541,13 +541,13 @@ class Main:
 
             # Turn left if more
             if more > 0:
-                movement.append("4")
-                movement.append("3")
+                movement.append("A1")
+                movement.append("W1")
 
             # Turn right if less
             else:
-                movement.append("5")
-                movement.append("3")
+                movement.append("D1")
+                movement.append("W1")
 
         # Comparing y axis
         elif explorer.current_pos[4][1] != point[1]:
@@ -555,11 +555,11 @@ class Main:
 
             # Move forward if more
             if more > 0:
-                movement.append("3")
+                movement.append("W1")
 
             # Move backward if less
             else:
-                movement.append("6")
+                movement.append("S1")
 
         return movement
 

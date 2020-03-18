@@ -83,7 +83,7 @@ class Explore:
             if turn_right:
 
                 # Put the command 'right' into queue for main() to read
-                self.move_queue.put('5')
+                self.move_queue.put('D1')
 
                 # Reset counter
                 self.check_right_empty = 0
@@ -95,7 +95,7 @@ class Explore:
             elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
 
                 # Put the command 'left' into queue for main() to read
-                self.move_queue.put('4')
+                self.move_queue.put('A1')
 
                 if right_front_obstacle < 2:
                     self.obstacle_coord_queue.put(right_coordinates[0])
@@ -129,7 +129,7 @@ class Explore:
             else:
 
                 # Put the command 'advance' into queue for main() to read
-                self.move_queue.put('3')
+                self.move_queue.put('W1')
 
                 self.check_right_empty += 1
 
