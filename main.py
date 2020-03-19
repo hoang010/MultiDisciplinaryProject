@@ -110,9 +110,6 @@ class Main:
         self.server_conn_thread.start()
         self.bt_conn_thread.start()
 
-        self.explorer = None
-        self.waypt_coord = None
-
     def read_arduino(self):
         while True:
             msg = self.arduino_conn.recv()
@@ -161,6 +158,7 @@ class Main:
             if msg == 'init':
                 self.server_conn.send('init'.encode())
                 self.robo_init()
+                waypt = self.bt_conn.recv()
                 self.write_server(waypt)
                 packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
                 self.write_bt(packet.encode())
