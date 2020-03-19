@@ -37,14 +37,14 @@ void Calibration::CalibrateSpin(SharpIR sensor1,int sensorOffset1, SharpIR senso
     
     if (rightDistance - leftDistance > difference) {
       md.setSpeeds(-calibrationSetSpeed1, calibrationSetSpeed2);
-      delay(10);
+      delay(8);
       md.setM1Brake(400);
       md.setM2Brake(400);
       delay(15);
     }
     if (rightDistance - leftDistance < difference) {
       md.setSpeeds(calibrationSetSpeed1, -calibrationSetSpeed2);
-      delay(10);
+      delay(8);
       md.setM2Brake(400);
       md.setM1Brake(400);
       delay(15);
@@ -113,7 +113,7 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
 /* Calibrate using front-right and front-left sensors to a distance of 12 from boundry 
 and difference of 0 between both sensors */
 void Calibration::CalibrateFront() {
-  CalibrateDistance(SR1, 0, 10, SR2, 0, 10, 0);
+  CalibrateDistance(SR1, 0, 9, SR2, 0, 9, 0);
   //SR1 is right
   //SR2 is left
 }
