@@ -30,7 +30,8 @@ class Motion {
     MyPID *motorOne, *motorTwo;
     DualVNH5019MotorShield md;
     float runningTime(float distance);
-    float rotateTime(float angle);
+    float rotateLeftTime(float angle);
+    float rotateRightTime(float angle);
     void startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalTime);
     void stopMotion();
 
@@ -64,7 +65,7 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
 Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
   float wheelRadius = 2.95;
-  float offset = 90;
+  float offset = 50;
   
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float runTime = distance / Speed;
@@ -74,7 +75,7 @@ float Motion::runningTime(float distance) {
 
 /* Calculates time required rotate right or left by the bot in milliseconds. 
 Note: in order to change rotate angle, simply change radius (Bot Radius), wheelRadius and offset */
-float Motion::rotateTime(float angle) {
+float Motion::rotateLeftTime(float angle) {
   float radius = 8.79;//.52;
   float wheelRadius = 2.95;
   float offset = 20;
@@ -85,6 +86,19 @@ float Motion::rotateTime(float angle) {
   
   return rotateTime + offset;
 }
+
+float Motion::rotateRightTime(float angle) {
+  float radius = 8.79;//.52;
+  float wheelRadius = 2.95;
+  float offset = 20;
+  
+  float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
+  float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
+  float rotateTime = distance / Speed;
+  
+  return rotateTime + offset;
+}
+
 
 /* Apply breaks to bot motors */
 void Motion::stopMotion() {
@@ -148,13 +162,13 @@ void Motion::moveBackward(float distance) {
 
 void Motion::turnLeft(float angle) {
 
-  long totalTime = round(rotateTime(angle) * 1000);
+  long totalTime = round(rotateLeftTime(angle) * 1000);
   startMotion(false, true, totalTime );
 }
 
 void Motion::turnRight(float angle) {
 
-  long totalTime  = round(rotateTime(angle) * 1000);
+  long totalTime  = round(rotateRightTime(angle) * 1000);
   startMotion(true, false, totalTime );
 }
 
