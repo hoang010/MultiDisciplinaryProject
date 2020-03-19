@@ -175,6 +175,13 @@ void controlBot (int instruction, int secondVal) {
       sensorData = returnSensorData(8);
       Serial.println(sensorData);
       break;
+    case 'Q':  // Move Forward
+      bot->moveForward(secondVal*10);
+      delay(100);
+      calibrateBot->CalibrateRight();
+      sensorData = returnSensorData(5);
+      Serial.println(sensorData);
+      break;
     case 'W':  // Move Forward
       bot->moveForward(secondVal*10);
       sensorData = returnSensorData(5);

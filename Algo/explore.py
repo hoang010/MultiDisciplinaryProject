@@ -154,9 +154,12 @@ class Explore:
 
             # If obstacle on right and no obstacle in front
             else:
-
-                # Put the command 'advance' into queue for main() to read
-                self.move_queue.put('W1')
+                #If both right and back obstacle available then also calibrate after forward move
+                if right_back_obstacle < 2 and right_front_obstacle < 2:
+                    self.move_queue.put('Q1')
+                else:
+                    # case when cannot calibrate, move forward blindly
+                    self.move_queue.put('W1')
 
                 self.check_right_empty += 1
 
