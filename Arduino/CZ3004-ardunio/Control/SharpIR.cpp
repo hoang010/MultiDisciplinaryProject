@@ -55,7 +55,7 @@ uint8_t SharpIR::getDistance( bool avoidBurstRead )
       case GP2Y0A21YK0F_frontLeft :
         distance = 25792*pow(analogRead(pin),-1.273);
 
-        if(distance > 80) return 81;
+        if(distance > 38) return 81;
         //else if(distance < 10) return 9;
         else return distance;
 
