@@ -324,17 +324,17 @@ class Explore:
             elif self.direction == self.direction_class.E:
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[0][0] + i, self.current_pos[0][0]-i])
+                        coord.append([self.current_pos[0][0] + i, self.current_pos[0][0]])
                 else:
-                    coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]-1])
+                    coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]])
 
             # If current direction is West
             else:
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[0][0] - i, self.current_pos[0][1]+i])
+                        coord.append([self.current_pos[0][0] - i, self.current_pos[0][1]])
                 else:
-                    coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]+1])
+                    coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]])
 
         elif direction == 'right':
             if self.direction == self.direction_class.N:
