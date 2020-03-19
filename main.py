@@ -359,7 +359,7 @@ class Main:
         print(self.log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
         # Get sensor data
-        send_param = "{\"dest\":\"arduino\",\"param\":\"X1\"}"
+        send_param = "{\"dest\":\"arduino\",\"param\":\"E1\"}"
         self.write_pc(send_param.encode())
         self.pc_conn.recv()
 
@@ -368,16 +368,18 @@ class Main:
             # While map is not complete
             while not explorer.is_round_complete(start):
 
-                print("Current position:\n", explorer.current_pos)
-                print("True start:\n", explorer.true_start)
-                print("Explored map:\n", explorer.explored_map)
-                print("Obstacle map:\n", explorer.real_map)
+                print("Current position: ", explorer.current_pos[4])
+                # print("True start:\n", explorer.true_start)
+                # print("Explored map:\n", explorer.explored_map)
+                # print("Obstacle map:\n", explorer.real_map)
 
                 print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
                 sensor_data = self.pc_conn.recv()
                 sensor_data = sensor_data.decode().strip()
                 sensor_data = json.loads(sensor_data)
+
+                print(sensor_data)
 
                 sensor_data["FrontLeft"] -= (30 * i)
                 sensor_data["FrontCenter"] -= (30 * i)
@@ -407,7 +409,7 @@ class Main:
                     front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
                     front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
-                    if (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
+                    if(front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
                         (right_back_obstacle < 2 and right_front_obstacle < 2):
                         print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
@@ -416,6 +418,9 @@ class Main:
 
                         self.pc_conn.send(send_param.encode())
                         self.pc_conn.recv()
+                        time.sleep(1)
+                        self.pc_conn.recv()
+
                         print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
                     elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
@@ -426,6 +431,7 @@ class Main:
 
                         self.pc_conn.send(send_param.encode())
                         self.pc_conn.recv()
+
                         print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
                     right_wall_counter = 0
@@ -442,8 +448,10 @@ class Main:
                         send_param = "{\"dest\": \"arduino\",\"param\": \"R1\"}"
 
                         self.pc_conn.send(send_param.encode())
-                        time.sleep(0.5)
                         self.pc_conn.recv()
+                        time.sleep(1)
+                        self.pc_conn.recv()
+
 
                         right_wall_counter = 0
                         print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
