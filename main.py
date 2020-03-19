@@ -35,6 +35,9 @@ class Main:
         self.arduino_name = '/dev/ttyACM0'
         self.log_string = text_color.OKBLUE + "Main: " + text_color.ENDC
 
+        self.explorer = None
+        self.waypt_coord = None
+
     def start(self):
         """
         Main function of MDP Project, execute this file to start
@@ -69,7 +72,6 @@ class Main:
         self.pc_conn.connect()
 
         self.pc_conn_thread = threading.Thread(target=self.read_pc)
-        self.pc_conn_thread.daemon = True
         self.pc_conn_thread.start()
 
     def rpi(self):
@@ -158,7 +160,6 @@ class Main:
                 self.robo_init()
                 waypt = self.bt_conn.recv()
                 self.write_server(waypt)
-                self.server_conn.recv()
                 packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
                 self.write_bt(packet.encode())
 
@@ -211,11 +212,8 @@ class Main:
         self.pc_conn.send(msg)
 
     def process_pc_msg(self, msg):
-        explorer = None
-        waypt_coord = None
         flag = 0
         path = []
-
 
         data = msg.decode()
 
@@ -230,13 +228,13 @@ class Main:
                 waypt = waypt.decode()
 
                 waypt = json.loads(waypt)
-                waypt_coord = [waypt['x'], waypt['y']]
+                self.waypt_coord = [waypt['x'], waypt['y']]
 
             elif data == 'beginExplore':
-                explorer = self.explore()
+                self.explorer = self.explore()
                 for _ in range(2):
-                    a_star = AStar(explorer.start[4], waypt_coord, explorer.real_map)
-                    start_pt = AStar.Node(explorer.start[4], waypt_coord, 0)
+                    a_star = AStar(self.explorer.start[4], self.waypt_coord, self.explorer.real_map)
+                    start_pt = AStar.Node(self.explorer.start[4], self.waypt_coord, 0)
                     a_star.open_list.append(start_pt)
 
                     while not flag:
@@ -244,12 +242,12 @@ class Main:
                         flag = a_star.near_explore(a_star_current)
 
                     for node_path in a_star.path:
-                        movements = self.move_to_point(explorer, node_path.point)
+                        movements = self.move_to_point(self.explorer, node_path.point)
                         for ele in movements:
                             path.append(ele)
 
-                    explorer.start = explorer.current_pos
-                    waypt_coord = explorer.goal[4]
+                    self.explorer.start = self.explorer.current_pos
+                    self.waypt_coord = self.explorer.goal[4]
 
             elif data == 'imageRecognition':
                 pass
@@ -283,25 +281,25 @@ class Main:
 
                     if movement == 'tl':
                         print(self.log_string + text_color.BOLD + 'Turn left' + text_color.ENDC)
-                        packet = "{\"dest\": \"arduino\", \"param:\"4\"}"
+                        packet = "{\"dest\": \"arduino\", \"param:\"A1\"}"
 
                     elif movement == 'f':
                         print(self.log_string + text_color.BOLD + 'Move forward' + text_color.ENDC)
-                        packet = "{\"dest\": \"arduino\", \"param:\"3\"}"
+                        packet = "{\"dest\": \"arduino\", \"param:\"W1\"}"
 
                     elif movement == 'tr':
                         print(self.log_string + text_color.BOLD + 'Turn right' + text_color.ENDC)
-                        packet = "{\"dest\": \"arduino\", \"param:\"5\"}"
+                        packet = "{\"dest\": \"arduino\", \"param:\"D1\"}"
 
                     elif movement == 'r':
                         print(self.log_string + text_color.BOLD + 'Move backwards' + text_color.ENDC)
-                        packet = "{\"dest\": \"arduino\", \"param:\"6\"}"
+                        packet = "{\"dest\": \"arduino\", \"param:\"S1\"}"
 
                     elif movement == 'end':
                         break
 
                     else:
-                        packet = "{\"dest\": \"arduino\"}"
+                        packet = "{\"dest\": \"nothing\"}"
                         print(self.log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
                     self.write_pc(packet.encode())
@@ -334,7 +332,7 @@ class Main:
         :return:
         """
         print(self.log_string + text_color.WARNING + 'Initialising' + text_color.ENDC)
-        self.write_arduino(b'I')
+        self.write_arduino(b'I1')
         print(self.log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
     def explore(self):
