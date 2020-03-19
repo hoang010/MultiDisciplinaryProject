@@ -47,7 +47,12 @@ class Explore:
         Function to execute right wall hugging
         :return:
         """
-        while not self.is_map_complete(self.true_start):
+
+        start = [[2, 2], [2, 1], [2, 0],
+                 [1, 2], [1, 1], [1, 0],
+                 [0, 2], [0, 1], [0, 0]]
+
+        while not self.is_round_complete(start):
             sensor_data = self.sensor_data_queue.get()
 
             # Get the data
@@ -61,12 +66,18 @@ class Explore:
             # Get coordinates on the right
             right_coordinates = self.get_coord('right')
 
-            left_coordinates = self.get_coord('left')
-
             front_coordinates = self.get_coord('front')
 
             if mid_left_obstacle < 4:
-                self.obstacle_coord_queue.put(left_coordinates)
+                left_coordinates = self.get_coord('left', mid_left_obstacle+1)
+                self.obstacle_coord_queue.put(left_coordinates[-1])
+                for i in range(len(left_coordinates)-1):
+                    self.obstacle_coord_queue.put(left_coordinates[i])
+
+            else:
+                left_coordinates = self.get_coord('left')
+                for i in range(len(left_coordinates)):
+                    self.obstacle_coord_queue.put(left_coordinates[i])
 
             if right_front_obstacle < 2:
                 self.obstacle_coord_queue.put(right_coordinates[0])
@@ -416,104 +427,80 @@ class Explore:
         self.explored_map = np.zeros((15, 20))
         self.true_start = self.current_pos.copy()
 
-    # def check_start(self):
-    #     """
-    #     Function to check if robot is at shifted start
-    #     :return:
-    #     """
-    #     if self.current_pos[4] == self.start[4]:
-    #         return True
-    #     return False
-    #
-    # def navigate_to_point(self, log_string, text_color, sensor_data, point):
-    #     """
-    #     Function to move robot to the specified point
-    #     :param log_string: String
-    #             String containing format of log
-    #     :param text_color: Class
-    #             Class containing String color format
-    #     :param arduino_conn: Serial
-    #             Connection to Arduino via USB
-    #     :param sensor_data: Dict
-    #             Dictionary containing sensor data
-    #     :param point: Array
-    #             Point to go to, can be all 9 points of position or just 1 reference start point
-    #     :return:
-    #     """
-    #
-    #     print(log_string + text_color.WARNING + 'Move to point {}'.format(point[4]) + text_color.ENDC)
-    #
-    #     print(log_string + text_color.BOLD + 'Get sensor data' + text_color.ENDC)
-    #
-    #     print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
-    #
-    #     # Get the data
-    #     front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-    #     front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-    #     front_right_obstacle = round(sensor_data["FrontRight"]/10)
-    #     mid_left_obstacle = round(sensor_data["LeftSide"]/10)
-    #     right_front_obstacle = round(sensor_data["RightFront"]/10)
-    #     right_back_obstacle = round(sensor_data["RightBack"]/10)
-    #
-    #     start_has_obstacle = self.check_obstacle(sensor_data)
-    #
-    #     # If there is, update start by 1 in x direction and skip the loop
-    #     if start_has_obstacle:
-    #         print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
-    #         self.update_start(1, 0)
-    #         print(log_string + text_color.BOLD + 'Updated start by 1 in x direction' + text_color.ENDC)
-    #
-    #     # Check if front has obstacle
-    #     front_obstacle = bool(front_left_obstacle < 1 or front_mid_obstacle < 1 or front_right_obstacle < 1)
-    #
-    #     # If there is an obstacle in front
-    #     if front_obstacle:
-    #
-    #         # If there is no obstacle on the left
-    #         if mid_left_obstacle > 3:
-    #
-    #             print(log_string + text_color.BOLD + 'Turning left' + text_color.ENDC)
-    #
-    #             # Tell Arduino to turn left
-    #             movement = "4"
-    #
-    #             # Update direction
-    #             self.update_dir(True)
-    #
-    #         # If there is obstacle in front and no obstacle on right
-    #         else:
-    #
-    #             print(log_string + text_color.BOLD + 'Turning right' + text_color.ENDC)
-    #             # Turn right
-    #             movement = "5"
-    #
-    #             # Update direction
-    #             self.update_dir(False)
-    #
-    #     # If no obstacle in front
-    #     else:
-    #
-    #         # Advance
-    #         print(log_string + text_color.BOLD + 'Moving forward' + text_color.ENDC)
-    #         movement = "3"
-    #
-    #         self.update_pos()
-    #
-    #     # Tell arduino desired movement
-    #     self.move_queue.put(movement)
+    def check_if_at_point(self, point):
+        """
+        Function to check if robot is at shifted start
+        :return:
+        """
+        if self.current_pos[4] == point[4]:
+            return True
+        return False
 
-    def set_direction(self, direction):
-        if self.direction != direction:
-            # Turn left while direction is wrong
-            self.move_queue.put("4")
-            return False
-        return True
+    def navigate_to_point(self, log_string, text_color, sensor_data, point):
+        """
+        Function to move robot to the specified point
+        :param log_string: String
+                String containing format of log
+        :param text_color: Class
+                Class containing String color format
+        :param arduino_conn: Serial
+                Connection to Arduino via USB
+        :param sensor_data: Dict
+                Dictionary containing sensor data
+        :param point: Array
+                Point to go to, can be all 9 points of position or just 1 reference start point
+        :return:
+        """
+
+        print(log_string + text_color.WARNING + 'Move to point {}'.format(point[4]) + text_color.ENDC)
+
+        print(log_string + text_color.BOLD + 'Get sensor data' + text_color.ENDC)
+
+        print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
+
+        # Get the data
+        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+        front_right_obstacle = round(sensor_data["FrontRight"]/10)
+        mid_left_obstacle = round(sensor_data["LeftSide"]/10)
+
+        start_has_obstacle = self.check_obstacle(sensor_data)
+
+        # If there is, update start by 1 in x direction and skip the loop
+        if start_has_obstacle:
+            print(log_string + text_color.WARNING + 'Obstacle encountered' + text_color.ENDC)
+            return -1
+
+        # Check if front has obstacle
+        front_obstacle = bool(front_left_obstacle < 2 or front_right_obstacle < 2)
+
+        # If there is an obstacle in front
+        if front_obstacle:
+
+            # If there is no obstacle on the left
+            if mid_left_obstacle > 3:
+
+                # Update direction
+                self.update_dir(True)
+
+                # Tell Arduino to turn left
+                return "A1"
+
+            # If there is obstacle in front and no obstacle on right
+            else:
+                # Update direction
+                self.update_dir(False)
+                return "D1"
+
+        # If no obstacle in front
+        else:
+            self.update_pos()
+            return "W1"
 
     def check_obstacle(self, sensor_data):
 
-        front_left_obstacle = round(sensor_data["TopLeft"]/10)
-        front_mid_obstacle = round(sensor_data["TopMiddle"]/10)
-        front_right_obstacle = round(sensor_data["TopRight"]/10)
+        front_left_obstacle = round(sensor_data["TopLeft"] / 10)
+        front_mid_obstacle = round(sensor_data["TopMiddle"] / 10)
+        front_right_obstacle = round(sensor_data["TopRight"] / 10)
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:
@@ -533,11 +520,19 @@ class Explore:
                         (front_coord[1][1] - front_mid_obstacle) in self.true_start or
                         (front_coord[2][1] - front_right_obstacle) in self.true_start)
 
+    def set_direction(self, direction):
+        if self.direction != direction:
+            # Turn left while direction is wrong
+            self.move_queue.put("4")
+            return False
+        return True
+
     @staticmethod
     def update_start(start, x, y):
         for i in range(len(start)):
             start[i][0] += x
             start[i][1] += y
+        return start
 
     @staticmethod
     def save_map(hex_map):
