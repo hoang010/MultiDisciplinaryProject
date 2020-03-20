@@ -4,7 +4,7 @@
 #include "Movements.h"
 #include "Calibration.h"
 /* Object to control motor shield and in turn control the motors, additionaly information found at https://github.com/pololu/dual-vnh5019-motor-shield */
-DualVNH5019MotorShield md; 
+DualVNH5019MotorShield md;
 
 /* Definition of A & B lines of Encoder 1 (right) and Encoder 2 (left) */
 #define E2A  11
@@ -16,8 +16,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 200 // left
-#define initialSetSpeed2 230
+#define initialSetSpeed1 180 // left
+#define initialSetSpeed2 250
 #define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
@@ -44,18 +44,16 @@ void setup() {
 
 
 void loop() {
- // Serial.println(returnSrDist(12, SR6,0));
 
-
- controlBot('W',1);
- delay(2000);
-
+  controlBot('A', 1);
+  delay(2000);
+  
   delay(2);
 
   int gridMoveValueInt;
   String gridMoveValueString;
   int dummy;
-  while (Serial.available() > 0){
+  while (Serial.available() > 0) {
 
     dummy = Serial.peek();
     if (dummy > 90 || dummy < 49)
@@ -63,7 +61,7 @@ void loop() {
       dummy = Serial.read();
       continue;
     }
-    
+
     gridMoveValueString = "";
     char character = Serial.read();
 
@@ -74,9 +72,14 @@ void loop() {
     char nextChar = Serial.read();
     gridMoveValueString += nextChar;
     gridMoveValueInt = gridMoveValueString.toInt();
+    if (gridMoveValueInt == 0){
+      gridMoveValueInt = 1;
+      }
+//    Serial.println(character);
+//    Serial.println(gridMoveValueInt);
     controlBot(character, gridMoveValueInt);
   }
-  
+
 }
 
 //Fastest path format ends with }
@@ -93,7 +96,7 @@ String getFastestPath() {
 
 
 void fastestPath(String fastest_path_code) {
-  
+
   String instructions = "";
   String instruction = "";
   bool getInstruction = true;
@@ -109,8 +112,8 @@ void fastestPath(String fastest_path_code) {
         Serial.println(instructions);
         for (int j = 0; j <= instructions.length(); j++) {
           if (instructions.substring(j, j + 1) == ":" || instructions.length() == j) {
-            instruction= instructions.substring(0, j);
-            value = instructions.substring(j+1).toInt();
+            instruction = instructions.substring(0, j);
+            value = instructions.substring(j + 1).toInt();
             break;
           }
         }
@@ -133,11 +136,11 @@ void fastestPathCalibration() {
   float rightFrontDistance = SR3.getDistance(false);
   float rightBackDistance = SR4.getDistance(false);
   //if only front have object then calibrate front
-  if((frontRightDistance < 15 && frontRightDistance > 5) || (frontLeftDistance < 15 && frontLeftDistance > 5)){
+  if ((frontRightDistance < 15 && frontRightDistance > 5) || (frontLeftDistance < 15 && frontLeftDistance > 5)) {
     calibrateBot->CalibrateFront();
     //if sides also have object then calibrate side as well
-    if((rightFrontDistance < 10 && rightFrontDistance > 5) || (rightBackDistance < 10 && rightBackDistance > 5)){
-      controlBot(5,10);
+    if ((rightFrontDistance < 10 && rightFrontDistance > 5) || (rightBackDistance < 10 && rightBackDistance > 5)) {
+      controlBot(5, 10);
       delay(200);
       calibrateBot->CalibrateFront();
       delay(200);
@@ -149,51 +152,51 @@ void fastestPathCalibration() {
 
 
 /* Function to control bot functions such as return sensor data, turn left, calibrate front, etc.
-The function additionally passes a message back to RPI via serial port when required action is complete
-In order to see bot functionalities simply use serial monitor to input bot functionalities
-1. Check If arduino is responding (redundant)
-2. Return Sensor data
-3. Move Forward
-4. Turn Left
-5. Turn Right
-6. Move Backward
-7. Turn Left 180
-8. Turn Right 180
-9. Stop bot (helps unlock wheels after using break)
-10. Turn left, Calibrate with Front sensors, and turn back to original position (left wall hugging)
-11. Calibrate with Front sensors
-12. Calibrate with Left sensors
-13. Calibrate using front sensors at a staircase
-14. Get ready to receive fastest path string */
+  The function additionally passes a message back to RPI via serial port when required action is complete
+  In order to see bot functionalities simply use serial monitor to input bot functionalities
+  1. Check If arduino is responding (redundant)
+  2. Return Sensor data
+  3. Move Forward
+  4. Turn Left
+  5. Turn Right
+  6. Move Backward
+  7. Turn Left 180
+  8. Turn Right 180
+  9. Stop bot (helps unlock wheels after using break)
+  10. Turn left, Calibrate with Front sensors, and turn back to original position (left wall hugging)
+  11. Calibrate with Front sensors
+  12. Calibrate with Left sensors
+  13. Calibrate using front sensors at a staircase
+  14. Get ready to receive fastest path string */
 
-void controlBot (int instruction, int secondVal) {  
+void controlBot (char instruction, int secondVal) {
   switch (instruction) {
-    case 'C':  // Check If arduino is responding 
+    case 'C':  // Check If arduino is responding
       Serial.println("X_BOTREADY");
       break;
     case 'E':  // Return Sensor data
       sensorData = returnSensorData(8);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'W':  // Move Forward
-      bot->moveForward(secondVal*10);
+      bot->moveForward(secondVal * 10);
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'A':  // Turn Left by value
-      bot->turnLeft(secondVal*90);
+      bot->turnLeft(secondVal * 90);
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'D':  // Turn Right
-      bot->turnRight(secondVal*90);
+      bot->turnRight(secondVal * 90);
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'S':  // Move Backward
-      bot->moveBackward(secondVal*10);
+      bot->moveBackward(secondVal * 10);
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'U':  // Unbreak wheels
       md.setM1Speed(0);
@@ -202,24 +205,17 @@ void controlBot (int instruction, int secondVal) {
       break;
     case 'F' :  // Calibrate with front sensors
       calibrateBot->CalibrateFront();
-      break;
-      
-    case 'R' :  // Calibrate with right sensors
-      bot->turnRight(90);
-      delay(200);
-      calibrateBot->CalibrateFront();
-      delay(200);
-      bot->turnLeft(93);
       Serial.println("X_CALIBRATIONDONE");
       break;
-    /*case 'R' :  // Calibrate with right sensors
+
+    case 'R' :  // Calibrate with right sensors
       bot->turnRight(90);
       delay(200);
       calibrateBot->CalibrateFront();
       delay(200);
       bot->turnLeft(90);
       Serial.println("X_CALIBRATIONDONE");
-      break; */
+      break;
     case 'N' :  // Calibrate for wall on the right and front
       calibrateBot->CalibrateFront();
       delay(200);
@@ -227,7 +223,7 @@ void controlBot (int instruction, int secondVal) {
       delay(200);
       calibrateBot->CalibrateFront();
       delay(200);
-      bot->turnLeft(93);
+      bot->turnLeft(90);
       delay(200);
       calibrateBot->CalibrateFront();
       delay(200);
@@ -246,7 +242,14 @@ void controlBot (int instruction, int secondVal) {
       calibrateBot->CalibrateRight();
       delay(200);
       break;
-      //Serial.println("X_CALIBRATIONDONE");
+    //Serial.println("X_CALIBRATIONDONE");
+    case 'Q':  // Move Forward
+      calibrateBot->CalibrateRight();
+      delay(200);
+      bot->moveForward(secondVal * 10);
+      sensorData = returnSensorData(5);
+      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+      break;
     case 'Z': //Get fastest path and run
       //Serial.println("X_READYFASTESTPATH");
       String fastest_path = getFastestPath();

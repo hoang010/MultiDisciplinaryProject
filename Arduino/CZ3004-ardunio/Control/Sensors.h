@@ -74,6 +74,6 @@ String returnSensorData(int count) {
   float LR5_distance = returnLrDist(count, LR5, 0);
   float SR6_distance = returnSrDist(count, SR6, 0);
 
-  return "{\"FrontRight\":" + String(SR1_distance) + ", \"FrontLeft\":" + String(SR2_distance) + ", \"FrontCenter\":" + String(SR6_distance)+ ", \"RightFront\":" + String(SR3_distance) + ", \"RightBack\":" + String(SR4_distance) + ", \"LeftSide\":" + String(LR5_distance)+"}";
+  return "{\"FrontRight\":" + String(SR1_distance) + ", \"FrontLeft\":" + String(SR2_distance) + ", \"FrontCenter\":" + String(SR6_distance)+ ", \"RightFront\":" + String(SR3_distance) + ", \"RightBack\":" + String(SR4_distance) + ", \"LeftSide\":" + String(LR5_distance)+",";
 }
 #endif

@@ -8,13 +8,13 @@
 
 #define Pi 3.1428
 
-#define M1k  0.34003
-#define M1ts  0.00465
-#define M1td  0.1
+#define M1k  0.344551284
+#define M1ts  0.0078 //78,0.00565
+#define M1td  0.1 //12//066//0.047;//0.07625;
 
-#define M2k  0.33309
-#define M2ts  0.0036
-#define M2td  0.1
+#define M2k  0.357663857
+#define M2ts  0.009//36 //77;
+#define M2td  0.07//116 // 0.8 //Less turn right, more urn left
 #define errorCtrl  2.0
 
 /* Class to control all motion with respect to bot inclusive of 
@@ -64,8 +64,8 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
 /* Calculates time required to move forward or backward by the bot in milliseconds. 
 Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
-  float wheelRadius = 2.95;
-  float offset = 60;
+  float wheelRadius = 2.90;
+  float offset = 13;
   
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float runTime = distance / Speed;
@@ -77,8 +77,8 @@ float Motion::runningTime(float distance) {
 Note: in order to change rotate angle, simply change radius (Bot Radius), wheelRadius and offset */
 float Motion::rotateLeftTime(float angle) {
   float radius = 9;//.52;
-  float wheelRadius = 2.95;
-  float offset = 0;
+  float wheelRadius = 3;
+  float offset = -5;
   
   float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
@@ -89,7 +89,7 @@ float Motion::rotateLeftTime(float angle) {
 
 float Motion::rotateRightTime(float angle) {
   float radius = 9;//.52;
-  float wheelRadius = 2.95;
+  float wheelRadius = 3;
   float offset = 0;
   
   float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
