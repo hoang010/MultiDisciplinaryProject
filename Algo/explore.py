@@ -406,21 +406,6 @@ class Explore:
 
         return coord
 
-    def is_map_complete(self):
-        if self.explored_map.sum() == 300:
-            # for i in range(len(self.explored_map)):
-            #     for j in range(len(self.explored_map[0])):
-            #         if self.explored_map[i][j] == 0:
-            #             self.explored_map[i][j] = 1
-            #             self.real_map[i][j] = 1
-            self.save_map(self.explored_map)
-            self.save_map(self.real_map)
-            self.explore_thread.join()
-            self.update_obstacle_map_thread.join()
-            self.update_explored_map_thread.join()
-            return True
-        return False
-
     def is_round_complete(self, start):
         """
         Function to check if map is complete
@@ -441,15 +426,6 @@ class Explore:
         self.real_map = np.zeros((15, 20))
         self.explored_map = np.zeros((15, 20))
         self.true_start = self.current_pos.copy()
-
-    def check_if_at_point(self, point):
-        """
-        Function to check if robot is at shifted start
-        :return:
-        """
-        if self.current_pos[4] == point[4]:
-            return True
-        return False
 
     def navigate_to_point(self, log_string, text_color, sensor_data, point):
         """
