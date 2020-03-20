@@ -364,17 +364,6 @@ class Main:
         self.write_pc(send_param.encode())
         self.pc_conn.recv()
 
-        while not explorer.is_map_complete():
-
-            # While map is not complete
-            while not explorer.is_round_complete(start):
-
-                print("Current position: ", explorer.current_pos[4])
-                #print("Current direction "+ str(explorer.direction))
-                # print("True start:\n", explorer.true_start)
-                #print("Explored map:\n", explorer.explored_map)
-                # print("Obstacle map:\n", explorer.real_map)
-        # While map is not complete
         while not explorer.is_round_complete(start):
 
             print("Current position:\n", explorer.current_pos)
@@ -393,6 +382,8 @@ class Main:
 
             # Get next movement
             movement = explorer.move_queue.get()
+            right_front_obstacle = round(sensor_data["RightFront"] / 10)
+            right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
             # Display message
             if movement == 'D1':
@@ -433,9 +424,6 @@ class Main:
                 log_movement = 'forward'
                 right_wall_counter += 1
                 explorer.round = 1
-
-                right_front_obstacle = round(sensor_data["RightFront"] / 10)
-                right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
                 if (right_wall_counter % 3 == 0) and (right_front_obstacle < 2 and right_back_obstacle < 2):
                     print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)

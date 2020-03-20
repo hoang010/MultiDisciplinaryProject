@@ -60,7 +60,7 @@ class Explore:
             front_left_obstacle = round(sensor_data["FrontLeft"]/10)
             front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
             front_right_obstacle = round(sensor_data["FrontRight"]/10)
-            mid_left_obstacle = round((sensor_data["LeftSide"])-10/10)
+            mid_left_obstacle = round((sensor_data["LeftSide"])/10)
             right_front_obstacle = round(sensor_data["RightFront"]/10)
             right_back_obstacle = round(sensor_data["RightBack"]/10)
 
@@ -312,7 +312,6 @@ class Explore:
             if self.direction == self.direction_class.N:
                 if dist > 0:
                     for i in range(1, dist + 1):
-                        coord.append([self.current_pos[0][0], self.current_pos[0][1] + i])
                         coord.append([self.current_pos[2][0], self.current_pos[2][1] + i])
                 else:
                     coord.append([self.current_pos[0][0], self.current_pos[0][1] + 1])
@@ -322,7 +321,6 @@ class Explore:
             elif self.direction == self.direction_class.S:
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[0][0], self.current_pos[0][1] - i])
                         coord.append([self.current_pos[2][0], self.current_pos[2][1]-i])
                 else:
                     coord.append([self.current_pos[0][0], self.current_pos[0][1] - 1])
@@ -416,16 +414,7 @@ class Explore:
 
     def is_map_complete(self):
         if self.explored_map.sum() == 300:
-            # for i in range(len(self.explored_map)):
-            #     for j in range(len(self.explored_map[0])):
-            #         if self.explored_map[i][j] == 0:
-            #             self.explored_map[i][j] = 1
-            #             self.real_map[i][j] = 1
-            self.save_map(self.explored_map)
-            self.save_map(self.real_map)
-            self.explore_thread.join()
-            self.update_obstacle_map_thread.join()
-            self.update_explored_map_thread.join()
+
             return True
         return False
 
@@ -438,6 +427,16 @@ class Explore:
         # Sum up every element of the matrix
         # If every element is 1, it means that every element is explored and sum should be 300 (15 x 20).
         if self.current_pos[4] == start[4] and self.round == 1:
+            for i in range(len(self.explored_map)):
+                for j in range(len(self.explored_map[0])):
+                    if self.explored_map[i][j] == 0:
+                        self.explored_map[i][j] = 1
+                        self.real_map[i][j] = 1
+            self.save_map(self.explored_map)
+            self.save_map(self.real_map)
+            self.explore_thread.join()
+            self.update_obstacle_map_thread.join()
+            self.update_explored_map_thread.join()
             return True
         return False
 
