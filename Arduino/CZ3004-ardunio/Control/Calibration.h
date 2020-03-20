@@ -114,9 +114,26 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
 /* Calibrate using front-right and front-left sensors to a distance of 12 from boundry 
 and difference of 0 between both sensors */
 void Calibration::CalibrateFront() {
-  CalibrateDistance(SR1, 0, 9, SR2, 0, 9, 0);
-  //SR1 is right
-  //SR2 is left
+  float frontRightDistance = SR1.getDistance(false);
+  float frontLeftDistance = SR2.getDistance(false);
+  float frontMiddleDistance = SR6.getDistance(false);
+  //if right and left sensor both available
+  Serial.println(frontLeftDistance);
+  Serial.println(frontMiddleDistance);
+  Serial.println(frontRightDistance);
+  
+  if (frontLeftDistance <= 14 && frontMiddleDistance <= 14){
+    Serial.println("Using Left and Center");
+    CalibrateDistance(SR6, 0, 9, SR2, 0, 9, 0);
+    }
+  else if (frontMiddleDistance <= 14 && frontRightDistance <= 14 ){
+    Serial.println("Using Right and Center");
+    CalibrateDistance(SR1, 0, 9, SR6, 0, 9, 0);
+    }
+  else if (frontLeftDistance <= 14 && frontRightDistance <= 14){
+    Serial.println("Using furthest!");
+      CalibrateDistance(SR1, 0, 9, SR2, 0, 9, 0);
+    }
 }
 
 /* Calibrate using left-front and left-back sensors until required offset between sensors is achieved*/
@@ -129,10 +146,18 @@ void Calibration::CalibrateRight() {
 { bot }                           { bot }*/
 
 void Calibration::CalibrateStep() {
-  float frontLeftDistance = SR1.getDistance(false);
-  float frontMiddleDistance = SR2.getDistance(false);
-  float frontRightDistance = SR6.getDistance(false);
-
+  float frontLeftDistance = 0;
+  float frontMiddleDistance = 0;
+  float frontRightDistance = 0;
+  for (int i = 0; i < 11, i++){
+    frontLeftDistance += analogRead(A1);
+    frontMiddleDistance += analogRead(A0);
+    frontRightDistance += analogRead(A5);
+    }
+  frontLeftDistance /= 10;
+  frontMiddleDistance /= 10);
+  frontRightDistance /= 10;
+  
   if ( frontLeftDistance >= 7 && frontLeftDistance <= 13 && frontMiddleDistance >= 17 && frontMiddleDistance <= 22)
     CalibrateDistance(SR6, 0, 19, SR2, 0, 9, 10);
   else if (frontRightDistance >= 7 && frontRightDistance <= 13 && frontMiddleDistance >= 17 && frontMiddleDistance <= 22)

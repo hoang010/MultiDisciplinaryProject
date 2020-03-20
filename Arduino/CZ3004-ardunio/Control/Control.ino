@@ -45,14 +45,12 @@ void setup() {
 
 void loop() {
 
-  controlBot('A', 1);
-  delay(2000);
-  
   delay(2);
 
   int gridMoveValueInt;
   String gridMoveValueString;
   int dummy;
+
   while (Serial.available() > 0) {
 
     dummy = Serial.peek();
@@ -75,11 +73,8 @@ void loop() {
     if (gridMoveValueInt == 0){
       gridMoveValueInt = 1;
       }
-//    Serial.println(character);
-//    Serial.println(gridMoveValueInt);
     controlBot(character, gridMoveValueInt);
   }
-
 }
 
 //Fastest path format ends with }
@@ -214,6 +209,7 @@ void controlBot (char instruction, int secondVal) {
       calibrateBot->CalibrateFront();
       delay(200);
       bot->turnLeft(90);
+      calibrateBot->CalibrateRight();
       Serial.println("X_CALIBRATIONDONE");
       break;
     case 'N' :  // Calibrate for wall on the right and front

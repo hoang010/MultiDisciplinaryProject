@@ -366,7 +366,7 @@ class Main:
 
         while not explorer.is_round_complete(start):
 
-            print("Current position:\n", explorer.current_pos)
+            print("Current position:\n", explorer.current_pos[4])
             print("True start:\n", explorer.true_start)
             print("Explored map:\n", explorer.explored_map)
             print("Obstacle map:\n", explorer.real_map)
@@ -406,6 +406,8 @@ class Main:
 
                     self.pc_conn.send(send_param.encode())
                     self.pc_conn.recv()
+                    time.sleep(0.5)
+                    self.pc_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
                 elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
@@ -416,6 +418,8 @@ class Main:
 
                     self.pc_conn.send(send_param.encode())
                     self.pc_conn.recv()
+                    time.sleep(0.5)
+                    self.pc_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
                 right_wall_counter = 0
@@ -425,13 +429,14 @@ class Main:
                 right_wall_counter += 1
                 explorer.round = 1
 
-                if (right_wall_counter % 3 == 0) and (right_front_obstacle < 2 and right_back_obstacle < 2):
+                if (right_wall_counter % 4 == 0) and (right_front_obstacle < 2 and right_back_obstacle < 2):
                     print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
 
                     # Calibrate right
                     send_param = "{\"dest\": \"arduino\",\"param\": \"R1\"}"
 
                     self.pc_conn.send(send_param.encode())
+                    self.pc_conn.recv()
                     time.sleep(0.5)
                     self.pc_conn.recv()
 
@@ -583,4 +588,5 @@ if __name__ == "__main__":
         main.start()
         main.keep_main_alive()
     except KeyboardInterrupt:
-        os.system('pkill -9 python')
+        print("Program ending")
+        #os.system('pkill -9 python')
