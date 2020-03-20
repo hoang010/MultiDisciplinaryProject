@@ -15,6 +15,7 @@ class Calibration {
     Calibration(float _calibrateSetSpeed1, float _calibrationSetSpeed2, DualVNH5019MotorShield _md);
     void CalibrateFront();
     void CalibrateRight();
+    void CalibrateStep();
 };
 
 /* Constructor for initialising class variables include motor control*/
@@ -37,14 +38,14 @@ void Calibration::CalibrateSpin(SharpIR sensor1,int sensorOffset1, SharpIR senso
     
     if (rightDistance - leftDistance > difference) {
       md.setSpeeds(-calibrationSetSpeed1, calibrationSetSpeed2);
-      delay(10);
+      delay(8);
       md.setM1Brake(400);
       md.setM2Brake(400);
       delay(15);
     }
     if (rightDistance - leftDistance < difference) {
       md.setSpeeds(calibrationSetSpeed1, -calibrationSetSpeed2);
-      delay(10);
+      delay(8);
       md.setM2Brake(400);
       md.setM1Brake(400);
       delay(15);
@@ -113,7 +114,7 @@ void Calibration::CalibrateDistance(SharpIR sensor1,int sensorOffset1, long dist
 /* Calibrate using front-right and front-left sensors to a distance of 12 from boundry 
 and difference of 0 between both sensors */
 void Calibration::CalibrateFront() {
-  CalibrateDistance(SR1, 0, 10, SR2, 0, 10, 0);
+  CalibrateDistance(SR1, 0, 9, SR2, 0, 9, 0);
   //SR1 is right
   //SR2 is left
 }
@@ -122,24 +123,21 @@ void Calibration::CalibrateFront() {
 void Calibration::CalibrateRight() {
   CalibrateSpin(SR4, 0, SR3, 0, 0);
 }
-
 /* calibrate using front-middle and front-left  or front-middle and front-right sensors at maze steps
 |_|_|_|                           |_|_|_|
 |_|      left Stair | right Stair     |_|
 { bot }                           { bot }*/
-/*
+
 void Calibration::CalibrateStep() {
-  float frontLeftDistance = SR1.getDistance(false) + 2;
-  float frontMiddleDistance = SR2.getDistance(false) + 2;
-  float frontRightDistance = SR3.getDistance(false) + 2;
+  float frontLeftDistance = SR1.getDistance(false);
+  float frontMiddleDistance = SR2.getDistance(false);
+  float frontRightDistance = SR6.getDistance(false);
 
-  if ( frontLeftDistance >= 11 && frontLeftDistance <= 14 && frontMiddleDistance >= 17 && frontMiddleDistance <= 21)
-    CalibrateDistance( SR1, 12, SR2,  19, 7);
-  else if (frontRightDistance >= 11 && frontRightDistance <= 14 && frontMiddleDistance >= 17 && frontMiddleDistance <= 21)
-    CalibrateDistance(SR2, 19, SR3,  12, 7);
-}*/
-
-
+  if ( frontLeftDistance >= 7 && frontLeftDistance <= 13 && frontMiddleDistance >= 17 && frontMiddleDistance <= 22)
+    CalibrateDistance(SR6, 0, 19, SR2, 0, 9, 10);
+  else if (frontRightDistance >= 7 && frontRightDistance <= 13 && frontMiddleDistance >= 17 && frontMiddleDistance <= 22)
+    CalibrateDistance(SR1, 0, 9, SR6, 0, 19, 10);
+}
 //void calibrateRightSide() {
 //  float distance[3] = {0, 0, 0};
 //  distance[1] = LR1.getDistance(false) + 10;

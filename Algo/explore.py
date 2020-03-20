@@ -53,6 +53,7 @@ class Explore:
                  [0, 2], [0, 1], [0, 0]]
 
         while not self.is_round_complete(start):
+
             sensor_data = self.sensor_data_queue.get()
 
             # Get the data
@@ -139,7 +140,7 @@ class Explore:
                 self.update_dir(left_turn=False)
 
             # If there is an obstacle in front and on the right
-            elif front_left_obstacle < 2 or front_right_obstacle < 2:
+            elif front_left_obstacle < 2 or front_right_obstacle < 2 or front_mid_obstacle <2:
 
                 # Put the command 'left' into queue for main() to read
                 self.move_queue.put('A1')
@@ -149,9 +150,12 @@ class Explore:
 
             # If obstacle on right and no obstacle in front
             else:
-
-                # Put the command 'advance' into queue for main() to read
-                self.move_queue.put('W1')
+                #If both right and back obstacle available then also calibrate after forward move
+                if right_back_obstacle < 2 and right_front_obstacle < 2:
+                    self.move_queue.put('Q1')
+                else:
+                    # case when cannot calibrate, move forward blindly
+                    self.move_queue.put('W1')
 
                 self.check_right_empty += 1
 
@@ -309,32 +313,36 @@ class Explore:
                 if dist > 0:
                     for i in range(1, dist + 1):
                         coord.append([self.current_pos[0][0], self.current_pos[0][1] + i])
+                        coord.append([self.current_pos[2][0], self.current_pos[2][1] + i])
                 else:
                     coord.append([self.current_pos[0][0], self.current_pos[0][1] + 1])
+                    coord.append([self.current_pos[2][0] + 1, self.current_pos[2][1]])
 
             # If current direction is South
             elif self.direction == self.direction_class.S:
                 if dist > 0:
                     for i in range(1, dist+1):
                         coord.append([self.current_pos[0][0], self.current_pos[0][1] - i])
+                        coord.append([self.current_pos[2][0], self.current_pos[2][1]-i])
                 else:
                     coord.append([self.current_pos[0][0], self.current_pos[0][1] - 1])
+                    coord.append([self.current_pos[2][0]-1, self.current_pos[2][1]])
 
             # If current direction is East
             elif self.direction == self.direction_class.E:
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[0][0] + i, self.current_pos[0][0]])
+                        coord.append([self.current_pos[2][0]+i, self.current_pos[2][0]])
                 else:
-                    coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]])
+                    coord.append([self.current_pos[2][0], self.current_pos[2][1]-1])
 
             # If current direction is West
             else:
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[0][0] - i, self.current_pos[0][1]])
+                        coord.append([self.current_pos[2][0]-i, self.current_pos[2][1]])
                 else:
-                    coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]])
+                    coord.append([self.current_pos[2][0]+1, self.current_pos[2][1]])
 
         elif direction == 'right':
             if self.direction == self.direction_class.N:
@@ -406,6 +414,21 @@ class Explore:
 
         return coord
 
+    def is_map_complete(self):
+        if self.explored_map.sum() == 300:
+            # for i in range(len(self.explored_map)):
+            #     for j in range(len(self.explored_map[0])):
+            #         if self.explored_map[i][j] == 0:
+            #             self.explored_map[i][j] = 1
+            #             self.real_map[i][j] = 1
+            self.save_map(self.explored_map)
+            self.save_map(self.real_map)
+            self.explore_thread.join()
+            self.update_obstacle_map_thread.join()
+            self.update_explored_map_thread.join()
+            return True
+        return False
+
     def is_round_complete(self, start):
         """
         Function to check if map is complete
@@ -426,6 +449,15 @@ class Explore:
         self.real_map = np.zeros((15, 20))
         self.explored_map = np.zeros((15, 20))
         self.true_start = self.current_pos.copy()
+
+    def check_if_at_point(self, point):
+        """
+        Function to check if robot is at shifted start
+        :return:
+        """
+        if self.current_pos[4] == point[4]:
+            return True
+        return False
 
     def navigate_to_point(self, log_string, text_color, sensor_data, point):
         """

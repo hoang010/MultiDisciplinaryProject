@@ -16,8 +16,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 215 // left
-#define initialSetSpeed2 215
+#define initialSetSpeed1 210 // left
+#define initialSetSpeed2 220
 #define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
@@ -45,24 +45,14 @@ void setup() {
 
 void loop() {
  // Serial.println(returnSrDist(12, SR6,0));
-  int secondVal = 10; // Offset of 10 to let bot travel by 10 cm in forward and backward movement by default
-  controlBot('W',1);
-  delay(2000);
-   
+
+  
   delay(2);
 
   int gridMoveValueInt;
   String gridMoveValueString;
-  
   int dummy;
   while (Serial.available() > 0){
-
-    dummy = Serial.peek();
-    if (dummy > 90 || dummy < 49)
-    {
-      dummy = Serial.read();
-      continue;
-    }
     
     gridMoveValueString = "";
     char character = Serial.read();
@@ -166,24 +156,36 @@ In order to see bot functionalities simply use serial monitor to input bot funct
 13. Calibrate using front sensors at a staircase
 14. Get ready to receive fastest path string */
 
-void controlBot (int instruction, int secondVal) {  
+void controlBot (char instruction, int secondVal) {  
   switch (instruction) {
     case 'C':  // Check If arduino is responding 
       Serial.println("X_BOTREADY");
       break;
-    case 'X':  // Return Sensor data
+    case 'E':  // Return Sensor data
       sensorData = returnSensorData(8);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\""+":\""+instruction + "\"}");
+      break;
+    case 'Q':  // Move Forward
+      calibrateBot->CalibrateRight();
+      delay(100);
+      bot->moveForward(secondVal*10);
+      sensorData = returnSensorData(5);
+      Serial.println(sensorData + "\"Instruction\"" + ":\""+instruction + "\"}");
       break;
     case 'W':  // Move Forward
       bot->moveForward(secondVal*10);
+      int front = SR3.getDistance();
+      int back = SR4.getDistance(); 
+      if (fabs(front - back) < 10){
+        calibrateBot->CalibrateRight();
+        }
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\"" + ":\""+instruction + "\"}");
       break;
     case 'A':  // Turn Left by value
       bot->turnLeft(secondVal*90);
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction:\"" + "\""+instruction + "\"}");
       break;
     case 'D':  // Turn Right
       bot->turnRight(secondVal*90);
@@ -193,7 +195,7 @@ void controlBot (int instruction, int secondVal) {
     case 'S':  // Move Backward
       bot->moveBackward(secondVal*10);
       sensorData = returnSensorData(5);
-      Serial.println(sensorData);
+      Serial.println(sensorData + "\"Instruction\"" + ":\""+instruction + "\"}");
       break;
     case 'U':  // Unbreak wheels
       md.setM1Speed(0);
@@ -203,9 +205,27 @@ void controlBot (int instruction, int secondVal) {
     case 'F' :  // Calibrate with front sensors
       calibrateBot->CalibrateFront();
       break;
+      
     case 'R' :  // Calibrate with right sensors
-      calibrateBot->CalibrateRight();
+      bot->turnRight(90);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnLeft(93);
+      Serial.println("X_CALIBRATIONDONE");
       break;
+    case 'O' :  // Calibrate with right sensors
+      calibrateBot->CalibrateStep();
+      Serial.println("X_CALIBRATIONDONE");
+      break;
+    /*case 'R' :  // Calibrate with right sensors
+      bot->turnRight(90);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      bot->turnLeft(90);
+      Serial.println("X_CALIBRATIONDONE");
+      break; */
     case 'N' :  // Calibrate for wall on the right and front
       calibrateBot->CalibrateFront();
       delay(200);
@@ -213,8 +233,11 @@ void controlBot (int instruction, int secondVal) {
       delay(200);
       calibrateBot->CalibrateFront();
       delay(200);
-      bot->turnLeft(90);
-      //Serial.println("X_CALIBRATIONDONE");
+      bot->turnLeft(93);
+      delay(200);
+      calibrateBot->CalibrateFront();
+      delay(200);
+      Serial.println("X_CALIBRATIONDONE");
       break;
     case 'I': // Init
       bot->turnLeft(90);
@@ -228,6 +251,7 @@ void controlBot (int instruction, int secondVal) {
       bot->turnLeft(90);
       calibrateBot->CalibrateRight();
       delay(200);
+      break;
       //Serial.println("X_CALIBRATIONDONE");
     case 'Z': //Get fastest path and run
       //Serial.println("X_READYFASTESTPATH");

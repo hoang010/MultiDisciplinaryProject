@@ -116,6 +116,7 @@ class Main:
             self.write_server(msg)
 
     def write_arduino(self, msg):
+        time.sleep(0.5)
         self.arduino_conn.send(msg)
 
     def read_server(self):
@@ -354,14 +355,25 @@ class Main:
         print(self.log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
 
         right_wall_counter = 0
+        i = 0
 
         print(self.log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
         # Get sensor data
-        send_param = "{\"dest\":\"arduino\",\"param\":\"X1\"}"
+        send_param = "{\"dest\":\"arduino\",\"param\":\"E1\"}"
         self.write_pc(send_param.encode())
         self.pc_conn.recv()
 
+        while not explorer.is_map_complete():
+
+            # While map is not complete
+            while not explorer.is_round_complete(start):
+
+                print("Current position: ", explorer.current_pos[4])
+                #print("Current direction "+ str(explorer.direction))
+                # print("True start:\n", explorer.true_start)
+                #print("Explored map:\n", explorer.explored_map)
+                # print("Obstacle map:\n", explorer.real_map)
         # While map is not complete
         while not explorer.is_round_complete(start):
 
