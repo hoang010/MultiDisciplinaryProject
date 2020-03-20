@@ -116,6 +116,7 @@ class Main:
             self.write_server(msg)
 
     def write_arduino(self, msg):
+        time.sleep(0.5)
         self.arduino_conn.send(msg)
 
     def read_server(self):
@@ -363,188 +364,101 @@ class Main:
         self.write_pc(send_param.encode())
         self.pc_conn.recv()
 
-        while not explorer.is_map_complete():
+        while not explorer.is_round_complete(start):
 
-            # While map is not complete
-            while not explorer.is_round_complete(start):
+            print("Current position:\n", explorer.current_pos)
+            print("True start:\n", explorer.true_start)
+            print("Explored map:\n", explorer.explored_map)
+            print("Obstacle map:\n", explorer.real_map)
 
-                print("Current position: ", explorer.current_pos[4])
-                # print("True start:\n", explorer.true_start)
-                # print("Explored map:\n", explorer.explored_map)
-                # print("Obstacle map:\n", explorer.real_map)
+            print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-                print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
+            sensor_data = self.pc_conn.recv()
+            sensor_data = sensor_data.decode().strip()
+            sensor_data = json.loads(sensor_data)
 
-                sensor_data = self.pc_conn.recv()
-                sensor_data = sensor_data.decode().strip()
-                sensor_data = json.loads(sensor_data)
+            explorer.sensor_data_queue.put(sensor_data)
+            print(self.log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
-                print(sensor_data)
+            # Get next movement
+            movement = explorer.move_queue.get()
+            right_front_obstacle = round(sensor_data["RightFront"] / 10)
+            right_back_obstacle = round(sensor_data["RightBack"] / 10)
 
-                sensor_data["FrontLeft"] -= (30 * i)
-                sensor_data["FrontCenter"] -= (30 * i)
-                sensor_data["FrontRight"] -= (30 * i)
-                sensor_data["LeftSide"] -= (30 * i)
-                sensor_data["RightFront"] -= (30 * i)
-                sensor_data["RightBack"] -= (30 * i)
+            # Display message
+            if movement == 'D1':
+                log_movement = 'right'
+                right_wall_counter = 0
 
-                explorer.sensor_data_queue.put(sensor_data)
-                print(self.log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
+            elif movement == 'A1':
+                # get_image(log_string, explorer, arduino_conn)
+                log_movement = 'left'
+                front_left_obstacle = round(sensor_data["FrontLeft"]/10)
+                front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
+                front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
-                # Get next movement
-                movement = explorer.move_queue.get()
+                if (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
+                    (right_back_obstacle < 2 and right_front_obstacle < 2):
+                    print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
-                right_front_obstacle = round(sensor_data["RightFront"] / 10)
-                right_back_obstacle = round(sensor_data["RightBack"] / 10)
-
-                # Display message
-                if movement == 'D1':
-                    log_movement = 'right'
-                    right_wall_counter = 0
-
-                elif movement == 'A1':
-                    # get_image(log_string, explorer, arduino_conn)
-                    log_movement = 'left'
-                    front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-                    front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-                    front_right_obstacle = round(sensor_data["FrontRight"]/10)
-
-                    if(front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
-                        (right_back_obstacle < 2 and right_front_obstacle < 2):
-                        print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
-
-                        # Get sensor data
-                        send_param = "{\"dest\": \"arduino\", \"param\": \"N1\"}"
-
-                        self.pc_conn.send(send_param.encode())
-                        self.pc_conn.recv()
-                        time.sleep(1)
-                        self.pc_conn.recv()
-
-                        print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
-
-                    elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
-                        print(self.log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
-
-                        # Get sensor data
-                        send_param = "{\"dest\": \"arduino\", \"param\": \"F1\"}"
-
-                        self.pc_conn.send(send_param.encode())
-                        self.pc_conn.recv()
-
-                        print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
-
-                    right_wall_counter = 0
-
-                else:
-                    log_movement = 'forward'
-                    right_wall_counter += 1
-                    explorer.round = 1
-
-                    if (right_wall_counter >= 3) and (right_front_obstacle < 2 and right_back_obstacle < 2):
-                        print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
-
-                        # Calibrate right
-                        send_param = "{\"dest\": \"arduino\",\"param\": \"R1\"}"
-
-                        self.pc_conn.send(send_param.encode())
-                        self.pc_conn.recv()
-                        time.sleep(1)
-                        self.pc_conn.recv()
-
-
-                        right_wall_counter = 0
-                        print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
-
-                print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
-
-                # Convert explored map into hex
-                hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
-                hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-
-                packet = "{\"dest\": \"bt\",  \
-                           \"explored\": \"" + hex_exp_map + "\",  \
-                           \"obstacle\": \"" + hex_real_map + "\",  \
-                           \"movement\": \"" + log_movement[0] + "\",  \
-                           \"direction\": \"" + explorer.direction + "\"}"
-
-                self.write_pc(packet.encode())
-                self.pc_conn.recv()
-                print(self.log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
-
-                # Get sensor data
-                send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
-
-                self.pc_conn.send(send_param.encode())
-                self.pc_conn.recv()
-
-            i += 1
-
-            start = explorer.update_start(start, 3, 3)
-            while explorer.check_if_at_point(start):
-                sensor_data = self.pc_conn.recv()
-                sensor_data = sensor_data.decode().strip()
-                sensor_data = json.loads(sensor_data)
-                movement = explorer.navigate_to_point(self.log_string, text_color, sensor_data, start)
-                if movement == -1:
-                    start = explorer.update_start(start, 1, 0)
-                    continue
-                else:
                     # Get sensor data
-                    send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
-                    self.write_arduino(send_param.encode())
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"N1\"}"
+
+                    self.pc_conn.send(send_param.encode())
                     self.pc_conn.recv()
-                    hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
-                    hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-                    if movement == 'D1':
-                        log_movement = 'right'
-                    elif movement == 'A1':
-                        # get_image(log_string, explorer, arduino_conn)
-                        log_movement = 'left'
-                    else:
-                        log_movement = 'forward'
-                    packet = "{\"dest\": \"bt\",  \
-                               \"explored\": \"" + hex_exp_map + "\",  \
-                               \"obstacle\": \"" + hex_real_map + "\",  \
-                               \"movement\": \"" + log_movement[0] + "\",  \
-                               \"direction\": \"" + explorer.direction + "\"}"
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
-                    self.write_pc(packet.encode())
+                elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
+                    print(self.log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
+
+                    # Get sensor data
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"F1\"}"
+
+                    self.pc_conn.send(send_param.encode())
                     self.pc_conn.recv()
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
-        flag = 0
-        path = []
+                right_wall_counter = 0
 
-        a_star = AStar(self.explorer.current_pos[4], true_start, self.explorer.real_map)
-        start_pt = AStar.Node(self.explorer.current_pos[4], true_start, 0)
-        a_star.open_list.append(start_pt)
-
-        while not flag:
-            a_star_current = a_star.select_current()
-            flag = a_star.near_explore(a_star_current)
-
-        for node_path in a_star.path:
-            movements = self.move_to_point(self.explorer, node_path.point)
-            for ele in movements:
-                path.append(ele)
-
-        path_string = '{'
-        for i in range(len(path)):
-            if path[i] == 3:
-                count = 1
-                while path[i] == 3:
-                    count += 1
-                    i += 1
-                path_string += '{}: {}'.format('W', str(count * 10))
-                i -= 1
             else:
-                path_string += '{}: {}'.format(path[i], '90')
-        path_string = path_string[:-1]
-        path_string += '}'
+                log_movement = 'forward'
+                right_wall_counter += 1
+                explorer.round = 1
 
-        send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
-        self.write_pc(send_param.encode())
-        self.pc_conn.recv()
+                if (right_wall_counter % 3 == 0) and (right_front_obstacle < 2 and right_back_obstacle < 2):
+                    print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
+
+                    # Calibrate right
+                    send_param = "{\"dest\": \"arduino\",\"param\": \"R1\"}"
+
+                    self.pc_conn.send(send_param.encode())
+                    time.sleep(0.5)
+                    self.pc_conn.recv()
+
+                    right_wall_counter = 0
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+
+            print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
+
+            # Convert explored map into hex
+            hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+            hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+
+            packet = "{\"dest\": \"bt\",  \
+                       \"explored\": \"" + hex_exp_map + "\",  \
+                       \"obstacle\": \"" + hex_real_map + "\",  \
+                       \"movement\": \"" + log_movement[0] + "\",  \
+                       \"direction\": \"" + explorer.direction + "\"}"
+
+            self.write_pc(packet.encode())
+            self.pc_conn.recv()
+            print(self.log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
+
+            # Get sensor data
+            send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
+
+            self.pc_conn.send(send_param.encode())
+            self.pc_conn.recv()
 
         print(self.log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
