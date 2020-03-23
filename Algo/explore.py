@@ -86,10 +86,9 @@ class Explore:
             elif 2 <= mid_left_obstacle <= 8:
                 print("Updating long left too far")
                 #the plus 1 is for the last coor to be obstacle
-                coord = self.get_coord('left', mid_left_obstacle +1)
-                self.update_obstacle_map_no_thread(coord[-1])
-                for i in range(len(coord)):
-                    self.update_explored_map_no_thread(coord[i])
+                left_coord = self.get_coord('left', mid_left_obstacle +1)
+                for i in range(len(left_coord)):
+                    self.update_explored_map_no_thread(left_coord[i])
                     self.update_no_obstacle_map_no_thread(left_coord[i])
                 self.update_no_obstacle_map_no_thread(left_coord[-1])
 
