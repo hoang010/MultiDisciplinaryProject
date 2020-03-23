@@ -332,13 +332,13 @@ class Explore:
         for array in self.current_pos:
             if self.check_in_map(array[0], array[1]):
                 self.explored_map[array[0]][array[1]] = 1
+                self.real_map[array[0]][array[1]] = 0
         # For every (x, y) pair in coord_array, set its location
         # in explored_map to 1
         coordinates = coord
         print("Explored coordinates: ", coordinates)
         if self.check_in_map(coordinates[0], coordinates[1]):
             self.explored_map[coordinates[0]][coordinates[1]] = 1
-            self.real_map[coordinates[0]][coordinates[1]] = 0
 
     def update_obstacle_map_no_thread(self, coord):
         # For every (x, y) pair in obstacle, set its location
