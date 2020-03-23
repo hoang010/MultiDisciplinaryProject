@@ -80,6 +80,7 @@ class Explore:
                 left_coord = self.get_coord('left', 7)
                 for i in range(len(left_coord)):
                     self.update_explored_map_no_thread(left_coord[i])
+                    self.update_no_obstacle_map_no_thread(left_coord[i])
 
             # If it is an obstacle, append to array for obstacle
             elif 2 <= mid_left_obstacle <= 8:
@@ -89,6 +90,8 @@ class Explore:
                 self.update_obstacle_map_no_thread(coord[-1])
                 for i in range(len(coord)):
                     self.update_explored_map_no_thread(coord[i])
+                    self.update_no_obstacle_map_no_thread(left_coord[i])
+                self.update_no_obstacle_map_no_thread(left_coord[-1])
 
             if front_left_obstacle <= 4:
                 print("Updating front left")
