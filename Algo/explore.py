@@ -90,43 +90,50 @@ class Explore:
                 for i in range(len(coord)):
                     self.update_explored_map_no_thread(coord[i])
 
+            if front_left_obstacle <= 4:
                 print("Updating front left")
-                front_left_coord = self.get_coord('front', front_left_obstacle+1, 3)
-                self.update_obstacle_map_no_thread(front_left_coord[-1])
+                front_left_coord = self.get_coord('front', front_left_obstacle + 1, 3)
                 for i in range(0, len(front_left_coord)):
                     self.update_explored_map_no_thread(front_left_coord[i])
+                    self.update_no_obstacle_map_no_thread(front_left_coord[i])
+                self.update_obstacle_map_no_thread(front_left_coord[-1])
 
             else:
                 print("Updating front left too far")
                 front_left_coord = self.get_coord('front', 4, 3)
                 for i in range(1, len(front_left_coord)):
                     self.update_explored_map_no_thread(front_left_coord[i])
+                    self.update_no_obstacle_map_no_thread(front_left_coord[i])
 
             if front_mid_obstacle <= 4:
                 print("Updating front mid")
                 front_mid_coord = self.get_coord('front', front_mid_obstacle+1, 4)
-                self.update_obstacle_map_no_thread(front_mid_coord[-1])
                 for i in range(2, len(front_mid_coord)):
                     self.update_explored_map_no_thread(front_mid_coord[i])
+                    self.update_no_obstacle_map_no_thread(front_mid_coord[i])
+                self.update_obstacle_map_no_thread(front_mid_coord[-1])
 
             else:
                 print("Updating front mid too far")
                 front_mid_coord = self.get_coord('front', 4, 4)
                 for i in range(len(front_mid_coord)):
                     self.update_explored_map_no_thread(front_mid_coord[i])
+                    self.update_no_obstacle_map_no_thread(front_mid_coord[i])
 
             if front_right_obstacle <= 4:
                 print("Updating front right")
                 front_right_coord = self.get_coord('front', front_right_obstacle+1, 5)
-                self.update_obstacle_map_no_thread(front_right_coord[-1])
                 for i in range(len(front_right_coord)):
                     self.update_explored_map_no_thread(front_right_coord[i])
+                    self.update_no_obstacle_map_no_thread(front_right_coord[i])
+                self.update_obstacle_map_no_thread(front_right_coord[-1])
 
             else:
                 print("Updating front right too far")
                 front_right_coord = self.get_coord('front', 4, 5)
                 for i in range(len(front_right_coord)):
                     self.update_explored_map_no_thread(front_right_coord[i])
+                    self.update_no_obstacle_map_no_thread(front_right_coord[i])
 
             self.update_explored_map_no_thread(right_coordinates[0])
             self.update_explored_map_no_thread(right_coordinates[1])
@@ -341,6 +348,15 @@ class Explore:
         print("Obstacle coordinates", coordinates)
         if self.check_in_map(coordinates[0], coordinates[1]):
             self.real_map[coordinates[0]][coordinates[1]] = 1
+
+    def update_no_obstacle_map_no_thread(self, coord):
+        # For every (x, y) pair in obstacle, set its location
+        # in real_map to 1
+
+        coordinates = coord
+        print("Obstacle coordinates", coordinates)
+        if self.check_in_map(coordinates[0], coordinates[1]):
+            self.real_map[coordinates[0]][coordinates[1]] = 0
 
     def update_obstacle_map(self):
         print("Not Used!!!!!")
