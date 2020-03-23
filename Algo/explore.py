@@ -90,7 +90,7 @@ class Explore:
                 for i in range(len(left_coord)):
                     self.update_explored_map_no_thread(left_coord[i])
                     self.update_no_obstacle_map_no_thread(left_coord[i])
-                self.update_no_obstacle_map_no_thread(left_coord[-1])
+                self.update_obstacle_map_no_thread(left_coord[-1])
 
             if front_left_obstacle <= 4:
                 print("Updating front left")
