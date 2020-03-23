@@ -412,7 +412,9 @@ class Main:
                     self.pc_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
-                elif front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2:
+                elif (front_left_obstacle < 2 and front_right_obstacle < 2) or \
+                     (front_mid_obstacle < 2 and front_right_obstacle < 2) or \
+                     (front_left_obstacle < 2 and front_mid_obstacle < 2):
                     print(self.log_string + text_color.WARNING + 'Recalibrating front' + text_color.ENDC)
 
                     # Get sensor data
