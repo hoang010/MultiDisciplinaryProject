@@ -331,6 +331,7 @@ class Explore:
         print("Explored coordinates: ", coordinates)
         if self.check_in_map(coordinates[0], coordinates[1]):
             self.explored_map[coordinates[0]][coordinates[1]] = 1
+            self.real_map[coordinates[0]][coordinates[1]] = 0
 
     def update_obstacle_map_no_thread(self, coord):
         # For every (x, y) pair in obstacle, set its location
