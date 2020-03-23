@@ -50,7 +50,6 @@ void loop() {
   int gridMoveValueInt;
   String gridMoveValueString;
   int dummy;
-
   while (Serial.available() > 0) {
 
     dummy = Serial.peek();
@@ -73,6 +72,7 @@ void loop() {
     if (gridMoveValueInt == 0){
       gridMoveValueInt = 1;
       }
+
     controlBot(character, gridMoveValueInt);
   }
 }
@@ -170,22 +170,22 @@ void controlBot (char instruction, int secondVal) {
       Serial.println("X_BOTREADY");
       break;
     case 'E':  // Return Sensor data
-      sensorData = returnSensorData(8);
+      sensorData = returnSensorData(12);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'W':  // Move Forward
       bot->moveForward(secondVal * 10);
-      sensorData = returnSensorData(5);
+      sensorData = returnSensorData(8);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'A':  // Turn Left by value
       bot->turnLeft(secondVal * 90);
-      sensorData = returnSensorData(5);
+      sensorData = returnSensorData(8);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'D':  // Turn Right
       bot->turnRight(secondVal * 90);
-      sensorData = returnSensorData(5);
+      sensorData = returnSensorData(8);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'S':  // Move Backward

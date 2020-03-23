@@ -118,20 +118,18 @@ void Calibration::CalibrateFront() {
   float frontLeftDistance = SR2.getDistance(false);
   float frontMiddleDistance = SR6.getDistance(false);
   //if right and left sensor both available
-  Serial.println(frontLeftDistance);
-  Serial.println(frontMiddleDistance);
-  Serial.println(frontRightDistance);
+
   
   if (frontLeftDistance <= 14 && frontMiddleDistance <= 14){
-    Serial.println("Using Left and Center");
+    //Serial.println("Using Left and Center");
     CalibrateDistance(SR6, 0, 9, SR2, 0, 9, 0);
     }
   else if (frontMiddleDistance <= 14 && frontRightDistance <= 14 ){
-    Serial.println("Using Right and Center");
+    //Serial.println("Using Right and Center");
     CalibrateDistance(SR1, 0, 9, SR6, 0, 9, 0);
     }
   else if (frontLeftDistance <= 14 && frontRightDistance <= 14){
-    Serial.println("Using furthest!");
+    //Serial.println("Using furthest!");
       CalibrateDistance(SR1, 0, 9, SR2, 0, 9, 0);
     }
 }
@@ -149,13 +147,13 @@ void Calibration::CalibrateStep() {
   float frontLeftDistance = 0;
   float frontMiddleDistance = 0;
   float frontRightDistance = 0;
-  for (int i = 0; i < 11, i++){
+  for (int i = 0; i < 11; i++){
     frontLeftDistance += analogRead(A1);
     frontMiddleDistance += analogRead(A0);
     frontRightDistance += analogRead(A5);
     }
   frontLeftDistance /= 10;
-  frontMiddleDistance /= 10);
+  frontMiddleDistance /= 10;
   frontRightDistance /= 10;
   
   if ( frontLeftDistance >= 7 && frontLeftDistance <= 13 && frontMiddleDistance >= 17 && frontMiddleDistance <= 22)

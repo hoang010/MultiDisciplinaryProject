@@ -90,7 +90,6 @@ class Explore:
                 for i in range(len(coord)):
                     self.update_explored_map_no_thread(coord[i])
 
-            if front_left_obstacle <= 4:
                 print("Updating front left")
                 front_left_coord = self.get_coord('front', front_left_obstacle+1, 3)
                 self.update_obstacle_map_no_thread(front_left_coord[-1])
@@ -471,34 +470,25 @@ class Explore:
                 if dist > 0:
                     for i in range(1, dist + 1):
                         coord.append([self.current_pos[2][0], self.current_pos[2][1] + i])
-                else:
-                    coord.append([self.current_pos[0][0], self.current_pos[0][1] + 1])
-                    coord.append([self.current_pos[2][0] + 1, self.current_pos[2][1]])
 
             # If current direction is South
             elif self.direction == self.direction_class.S:
                 if dist > 0:
                     for i in range(1, dist+1):
                         coord.append([self.current_pos[2][0], self.current_pos[2][1]-i])
-                else:
-                    coord.append([self.current_pos[0][0], self.current_pos[0][1] - 1])
-                    coord.append([self.current_pos[2][0]-1, self.current_pos[2][1]])
 
             # If current direction is East
             elif self.direction == self.direction_class.E:
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[2][0]+i, self.current_pos[2][0]])
-                else:
-                    coord.append([self.current_pos[2][0], self.current_pos[2][1]-1])
+                        coord.append([self.current_pos[2][0]+i, self.current_pos[2][1]])
 
             # If current direction is West
             else:
                 if dist > 0:
                     for i in range(1, dist+1):
                         coord.append([self.current_pos[2][0]-i, self.current_pos[2][1]])
-                else:
-                    coord.append([self.current_pos[2][0]+1, self.current_pos[2][1]])
+
 
         elif direction == 'right':
             if self.direction == self.direction_class.N:
@@ -593,8 +583,8 @@ class Explore:
             self.save_map(self.explored_map)
             self.save_map(self.real_map)
             self.explore_thread.join()
-            self.update_obstacle_map_thread.join()
-            self.update_explored_map_thread.join()
+            #self.update_obstacle_map_thread.join()
+            #self.update_explored_map_thread.join()
             return True
         return False
 

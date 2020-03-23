@@ -12,7 +12,8 @@ ser.flushInput()
 #4. Turn Left
 #5. Turn Right
 #6. Move Backward
-
+cmd = input("Enter command: ")
+ser.write(str.encode(cmd))
 while True:
     tdata = ser.read()
     time.sleep(1)

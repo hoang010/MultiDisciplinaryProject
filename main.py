@@ -366,7 +366,8 @@ class Main:
 
         while not explorer.is_round_complete(start):
 
-            print("Current position:\n", explorer.current_pos[4])
+            print("Current position:\n", explorer.current_pos)
+            print("Direction:\n", explorer.direction)
             print("True start:\n", explorer.true_start)
             print("Explored map:\n", explorer.explored_map)
             print("Obstacle map:\n", explorer.real_map)

@@ -48,7 +48,6 @@ uint8_t SharpIR::getDistance( bool avoidBurstRead )
         distance = 21186* pow(analogRead(pin),-1.254);
 
         if(distance > 38) return 81;
-        else if(distance > 33 ) return 40;
         else return distance;
 
         break;
