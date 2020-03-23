@@ -233,9 +233,10 @@ class Main:
 
             elif data == 'beginExplore':
                 self.explorer = self.explore()
+                start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
                 for _ in range(2):
-                    a_star = AStar(self.explorer.start[4], self.waypt_coord, self.explorer.real_map)
-                    start_pt = AStar.Node(self.explorer.start[4], self.waypt_coord, 0)
+                    a_star = AStar(start[4], self.waypt_coord, self.explorer.real_map)
+                    start_pt = AStar.Node(start[4], self.waypt_coord, 0)
                     a_star.open_list.append(start_pt)
 
                     while not flag:
@@ -247,7 +248,7 @@ class Main:
                         for ele in movements:
                             path.append(ele)
 
-                    self.explorer.start = self.explorer.current_pos
+                    start = self.explorer.current_pos
                     self.waypt_coord = self.explorer.goal[4]
 
             elif data == 'imageRecognition':
