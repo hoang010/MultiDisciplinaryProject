@@ -67,11 +67,37 @@ class Explore:
             # Get coordinates on the right
             right_coordinates = self.get_coord('right')
 
-            if right_front_obstacle < 2:
-                self.update_obstacle_map_no_thread(right_coordinates[0])
+            # if right_front_obstacle < 2:
+            #     self.update_obstacle_map_no_thread(right_coordinates[0])
+            #
+            # if right_back_obstacle < 2:
+            #     self.update_obstacle_map_no_thread(right_coordinates[1])
 
-            if right_back_obstacle < 2:
-                self.update_obstacle_map_no_thread(right_coordinates[1])
+            if right_front_obstacle <= 4:
+                right_front_coord = self.get_coord('right', right_front_obstacle, 3)
+                for i in range(len(right_front_coord)):
+                    self.update_explored_map_no_thread(right_front_coord[i])
+                    self.update_no_obstacle_map_no_thread(right_front_coord[i])
+                self.update_obstacle_map_no_thread(right_front_coord[-1])
+
+            else:
+                right_front_coord = self.get_coord('right', 4, 3)
+                for i in range(len(right_front_coord)):
+                    self.update_explored_map_no_thread(right_front_coord[i])
+                    self.update_no_obstacle_map_no_thread(right_front_coord[i])
+
+            if right_back_obstacle <= 4:
+                right_back_coord = self.get_coord('right', right_back_obstacle, 8)
+                for i in range(len(right_back_coord)):
+                    self.update_explored_map_no_thread(right_back_coord[i])
+                    self.update_no_obstacle_map_no_thread(right_back_coord[i])
+                self.update_obstacle_map_no_thread(right_back_coord[-1])
+
+            else:
+                right_back_coord = self.get_coord('right', 4, 8)
+                for i in range(len(right_back_coord)):
+                    self.update_explored_map_no_thread(right_back_coord[i])
+                    self.update_no_obstacle_map_no_thread(right_back_coord[i])
 
             # If reading is 151, append up to max range of 9
             if mid_left_obstacle > 8:
@@ -86,7 +112,8 @@ class Explore:
             elif 2 <= mid_left_obstacle <= 8:
                 print("Updating long left too far")
                 #the plus 1 is for the last coor to be obstacle
-                left_coord = self.get_coord('left', mid_left_obstacle +1)
+                left_coord = self.get_coord('left', mid_left_obstacle)
+                # left_coord = self.get_coord('left', mid_left_obstacle +1)
                 for i in range(len(left_coord)):
                     self.update_explored_map_no_thread(left_coord[i])
                     self.update_no_obstacle_map_no_thread(left_coord[i])
@@ -94,7 +121,8 @@ class Explore:
 
             if front_left_obstacle <= 4:
                 print("Updating front left")
-                front_left_coord = self.get_coord('front', front_left_obstacle + 1, 3)
+                front_left_coord = self.get_coord('front', front_left_obstacle, 3)
+                # front_left_coord = self.get_coord('front', front_left_obstacle + 1, 3)
                 for i in range(0, len(front_left_coord)):
                     self.update_explored_map_no_thread(front_left_coord[i])
                     self.update_no_obstacle_map_no_thread(front_left_coord[i])
@@ -109,8 +137,9 @@ class Explore:
 
             if front_mid_obstacle <= 4:
                 print("Updating front mid")
-                front_mid_coord = self.get_coord('front', front_mid_obstacle+1, 4)
-                for i in range(2, len(front_mid_coord)):
+                front_mid_coord = self.get_coord('front', front_mid_obstacle, 4)
+                # front_mid_coord = self.get_coord('front', front_mid_obstacle+1, 4)
+                for i in range(len(front_mid_coord)):
                     self.update_explored_map_no_thread(front_mid_coord[i])
                     self.update_no_obstacle_map_no_thread(front_mid_coord[i])
                 self.update_obstacle_map_no_thread(front_mid_coord[-1])
@@ -124,7 +153,8 @@ class Explore:
 
             if front_right_obstacle <= 4:
                 print("Updating front right")
-                front_right_coord = self.get_coord('front', front_right_obstacle+1, 5)
+                front_right_coord = self.get_coord('front', front_right_obstacle, 5)
+                # front_right_coord = self.get_coord('front', front_right_obstacle+1, 5)
                 for i in range(len(front_right_coord)):
                     self.update_explored_map_no_thread(front_right_coord[i])
                     self.update_no_obstacle_map_no_thread(front_right_coord[i])
@@ -178,7 +208,6 @@ class Explore:
 
                 # Update position after moving
                 self.update_pos()
-
 
     def right_wall_hugging(self):
         """
@@ -473,7 +502,7 @@ class Explore:
 
         self.current_pos = temp.copy()
 
-    def get_coord(self, direction, dist=0, whichFront = 0):
+    def get_coord(self, direction, dist=0, whichSide = 0):
         """
         Function to get coordinates on left/right/front of robot based on direction robot is facing
         :param direction: String
@@ -512,33 +541,49 @@ class Explore:
         elif direction == 'right':
             if self.direction == self.direction_class.N:
                 # Return (x-1, y)
-                coord = [[self.current_pos[2][0], self.current_pos[2][1] - 1],
-                         [self.current_pos[8][0], self.current_pos[8][1] - 1]]
+                if dist > 0:
+                    for i in range(1, dist + 1):
+                        coord.append([self.current_pos[whichSide][0], self.current_pos[whichSide][1] - i])
+                else:
+                    coord = [[self.current_pos[2][0], self.current_pos[2][1] - 1],
+                             [self.current_pos[8][0], self.current_pos[8][1] - 1]]
 
             # If current direction is South
             elif self.direction == self.direction_class.S:
                 # Return (x+1, y)
-                coord = [[self.current_pos[2][0], self.current_pos[2][1] + 1],
-                         [self.current_pos[8][0], self.current_pos[8][1] + 1]]
+                if dist > 0:
+                    for i in range(1, dist + 1):
+                        coord.append([self.current_pos[whichSide][0], self.current_pos[whichSide][1] + i])
+                else:
+                    coord = [[self.current_pos[2][0], self.current_pos[2][1] + 1],
+                             [self.current_pos[8][0], self.current_pos[8][1] + 1]]
 
             # If current direction is East
             elif self.direction == self.direction_class.E:
                 # Return (x, y+1)
-                coord = [[self.current_pos[2][0] - 1, self.current_pos[2][1]],
-                         [self.current_pos[8][0] - 1, self.current_pos[8][1]]]
+                if dist > 0:
+                    for i in range(1, dist + 1):
+                        coord.append([self.current_pos[whichSide][0] - i, self.current_pos[whichSide][1]])
+                else:
+                    coord = [[self.current_pos[2][0] - 1, self.current_pos[2][1]],
+                             [self.current_pos[8][0] - 1, self.current_pos[8][1]]]
 
             # If current direction is West
             else:
                 # Return (x, y + 1)
-                coord = [[self.current_pos[2][0] + 1, self.current_pos[2][1]],
-                         [self.current_pos[8][0] + 1, self.current_pos[8][1]]]
+                if dist > 0:
+                    for i in range(1, dist + 1):
+                        coord.append([self.current_pos[whichSide][0] + i, self.current_pos[whichSide][1]])
+                else:
+                    coord = [[self.current_pos[2][0] + 1, self.current_pos[2][1]],
+                             [self.current_pos[8][0] + 1, self.current_pos[8][1]]]
 
         elif direction == 'front':
             if self.direction == self.direction_class.N:
                 # Return (x, y+1)
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[whichFront][0]+i, self.current_pos[whichFront][1]])
+                        coord.append([self.current_pos[whichSide][0]+i, self.current_pos[whichSide][1]])
                 else:
                     coord.append([self.current_pos[0][0] + 1, self.current_pos[0][1]])
                     coord.append([self.current_pos[1][0] + 1, self.current_pos[1][1]])
@@ -549,7 +594,7 @@ class Explore:
                 # Return (x, y-1)
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[whichFront][0]-i, self.current_pos[whichFront][1]])
+                        coord.append([self.current_pos[whichSide][0]-i, self.current_pos[whichSide][1]])
                 else:
                     coord.append([self.current_pos[0][0] - 1, self.current_pos[0][1]])
                     coord.append([self.current_pos[1][0] - 1, self.current_pos[1][1]])
@@ -560,7 +605,7 @@ class Explore:
                 # Return (x+1, y)
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[whichFront][0], self.current_pos[whichFront][1] - i])
+                        coord.append([self.current_pos[whichSide][0], self.current_pos[whichSide][1] - i])
                 else:
                     coord.append([self.current_pos[0][0], self.current_pos[0][1] - 1])
                     coord.append([self.current_pos[1][0], self.current_pos[1][1] - 1])
@@ -571,7 +616,7 @@ class Explore:
                 # Return (x-1, y)
                 if dist > 0:
                     for i in range(1, dist+1):
-                        coord.append([self.current_pos[whichFront][0], self.current_pos[whichFront][1] + i])
+                        coord.append([self.current_pos[whichSide][0], self.current_pos[whichSide][1] + i])
                 else:
                     coord.append([self.current_pos[0][0], self.current_pos[0][1] + 1])
                     coord.append([self.current_pos[1][0], self.current_pos[1][1] + 1])
