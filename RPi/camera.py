@@ -1,10 +1,10 @@
 from picamera import PiCamera
+from picamera.array import PiRGBArray
 
 class Camera:
 
-	filepath = "/home/pi/src/images/"
-
 	def __init__(self , resolution=(640, 480), framerate = 32):
+		self.filepath = "/home/pi/src/main/G17/images/"
 		self.camera = PiCamera()
 		self.camera.resolution = resolution
 		self.camera.framerate = framerate
@@ -19,10 +19,9 @@ class Camera:
 		A function to capture the image and stored it at an assigned directory
 		with its respective number count.
 		"""
-		img = F"{filepath}img{self.counter}.jpg"
-		self.camera.capture(img)
+		filename = F"{filepath}img{self.counter}.jpg"
+		self.camera.capture(filename)
 		self.counter = self.counter + 1
-
 
 	def close(self):
 		"""

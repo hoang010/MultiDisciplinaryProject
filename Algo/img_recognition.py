@@ -6,19 +6,38 @@ import glob
 class ImageRecognition:
 	def __init__(self):
 
-		config = "model/tinyv3.config"
-		weights = "model/tinyv3.weights"
+		config = "./Algo/model/tinyv3.config"
+		weights = "./Algo/model/tinyv3.weights"
 
 		self.net = cv.dnn.readNet(weights, config)
 		self.classes = None
 		self.colors = None
 		self.count = 1
+		self.ids = []
+
+		self.switcher = {
+	        0: 3,
+	        1: 1,
+	        2: 5,
+	        3: 10,
+	        4: 11,
+	        5: 2,
+	        6: 6,
+	        7: 8,
+	        8: 9,
+	        9: 7,
+	        10: 13,
+	        11: 14,
+	        12: 15,
+	        13: 4,
+	        14: 12
+	    }
 
 		self.load_classes()
 
 	def load_classes(self):
 
-		file = "model/img_classes.txt"
+		file = "./Algo/model/img_classes.txt"
 
 		with open(file , 'r') as f:
 			self.classes = [line.strip() for line in f.readlines()]
@@ -28,7 +47,7 @@ class ImageRecognition:
 	@staticmethod
 	def load_images():
 
-		return np.asarray([cv.imread(file) for file in glob.glob("images/*.jpg")])
+		return np.asarray([cv.imread(file) for file in glob.glob("./Algo/images/*.jpg")])
 
 	def get_output_layers(self):
 
@@ -59,8 +78,8 @@ class ImageRecognition:
 		width = image.shape[1]
 		height = image.shape[0]
 		scale = 0.00392
+		isRecognised = False
 
-		# TODO: implement blobFromImages()
 		blob = cv.dnn.blobFromImage(image, scale, (416, 416), (0, 0, 0), True, crop=False)
 
 		self.net.setInput(blob)
@@ -96,6 +115,7 @@ class ImageRecognition:
 		# go through the detections remaining
 		# after nms and draw bounding box
 		for i in indices:
+			isRecognised = True
 			i = i[0]
 			box = boxes[i]
 			x = box[0]
@@ -104,14 +124,18 @@ class ImageRecognition:
 			h = box[3]
 			self.draw_bounding_box(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h))
 
-		# save output image to disk
-		cv.imwrite("predicted_images/object-detection-{}.jpg".format(str(self.count)), image)
-		self.count = self.count + 1
+		if(isRecognised):
+			# save output image to disk
+			cv.imwrite("./Algo/predicted_images/object-detection-{}.jpg".format(str(self.count)), image)
+			self.count = self.count + 1
+			mapped_id = self.switcher.get(class_ids[0], "Number not in range 0 to 15!")
+			self.ids.append(["","",mapped_id])
 
+	def get_predicted_ids(self):
 
-if __name__ in "__main__":
-	img = ImageRecognition()
-	images = img.load_images()
+		packet = "{\"dest\": \"bt\",  \
+                   \"images\": \
+                   \"[" + "[" + str(self.ids[0][0]) + "," + str(self.ids[0][1]) + "," + str(self.ids[0][2]) + "]" + "," + "[" + str(self.ids[1][0]) + "," + str(self.ids[1][1]) + "," + str(self.ids[1][2]) + "]" + "," + "[" + str(self.ids[2][0]) + "," + str(self.ids[2][1]) + "," + str(self.ids[2][2]) + "]" + "," + "[" + str(self.ids[3][0]) + "," + str(self.ids[3][1]) + "," + str(self.ids[3][2]) + "]" + "," + "[" + str(self.ids[4][0]) + "," + str(self.ids[4][1]) + "," + str(self.ids[4][2]) + "]"  + "]\"}"
 
-	for image in images:
-		img.predict(image)
+		print(self.ids)
+		return packet

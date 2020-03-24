@@ -35,6 +35,10 @@ class Main:
         self.pc_cmd_conn = None
         self.pc_img_conn = None
 
+        # added for image recognition
+        self.camera = None
+        self.image_recognition = None
+
         self.sys_type = sys_type
         self.rpi_ip = '192.168.17.17'
         self.rpi_mac_addr = 'B8:27:EB:52:AC:83'
@@ -74,6 +78,8 @@ class Main:
         # Create an instance of PC
         self.pc_cmd_conn = Client(self.rpi_ip, 7777, text_color)
         self.pc_img_conn = Client(self.rpi_ip, 8888, text_color)
+        self.pc_conn = Client(self.rpi_ip, 7777, text_color)
+        self.image_recognition = ImageRecognition()
 
         # Connect to Raspberry Pi
         self.pc_cmd_conn.connect()
@@ -96,6 +102,9 @@ class Main:
         :return:
         """
         from RPi.bluetooth import Bluetooth
+        from RPi.camera import Camera
+
+        self.camera = camera()
 
         # Connect to Arduino
         self.arduino_conn = Arduino(self.arduino_name, text_color)
@@ -149,6 +158,13 @@ class Main:
                 del feedback["dest"]
                 feedback = str(feedback)
                 self.write_bt(feedback.encode())
+
+                # added for image recognition
+            elif feedback["dest"] == "rpi":
+                self.camera.capture()
+
+            else:
+                pass
 
     def write_cmd_server(self, msg):
         self.server_cmd_conn.send(msg)
