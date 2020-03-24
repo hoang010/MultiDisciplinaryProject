@@ -3,7 +3,7 @@ from RPi.server import Server
 from RPi.arduino import Arduino
 from RPi.client import Client
 from Algo.explore import Explore
-# from Algo.image_recognition import ImageRecognition
+from Algo.img_recognition import ImageRecognition
 # from Algo.a_star import AStar
 # from Algo.shortest_path import ShortestPath
 from Algo.fastest_path import *
@@ -62,11 +62,11 @@ class Main:
 
         # If running on own PC, run instance of algorithms
         elif self.sys_type == 'Windows' or self.sys_type == 'Darwin':
-            self.pc()
+            self.pc_cmd()
 
         print(text_color.WARNING + 'End of program reached.' + text_color.ENDC)
 
-    def pc(self):
+    def pc_cmd(self):
         """
         Function to start running code on PC
         :param rpi_ip: String
@@ -77,17 +77,30 @@ class Main:
         """
         # Create an instance of PC
         self.pc_cmd_conn = Client(self.rpi_ip, 7777, text_color)
-        self.pc_img_conn = Client(self.rpi_ip, 8888, text_color)
-        self.pc_conn = Client(self.rpi_ip, 7777, text_color)
-        self.image_recognition = ImageRecognition()
 
         # Connect to Raspberry Pi
         self.pc_cmd_conn.connect()
-        self.pc_img_conn.connect()
 
         self.pc_cmd_conn_thread = threading.Thread(target=self.read_cmd_pc)
-        self.pc_img_conn_thread = threading.Thread(target=self.read_img_pc)
         self.pc_cmd_conn_thread.start()
+
+    def pc_img(self):
+        """
+        Function to start running code on PC
+        :param rpi_ip: String
+                String containing IP address of Raspberry Pi
+        :param log_string: String
+                String containing format of log to be used
+        :return:
+        """
+        # Create an instance of PC
+        self.pc_img_conn = Client(self.rpi_ip, 8888, text_color)
+        self.image_recognition = ImageRecognition()
+
+        # Connect to Raspberry Pi
+        self.pc_img_conn.connect()
+
+        self.pc_img_conn_thread = threading.Thread(target=self.read_img_pc)
         self.pc_img_conn_thread.start()
 
     def rpi(self):
@@ -126,6 +139,7 @@ class Main:
 
         self.arduino_conn_thread.daemon = True
         self.server_cmd_conn_thread.daemon = True
+        self.server_img_conn_thread.daemon = True
         self.bt_conn_thread.daemon = True
 
         self.arduino_conn_thread.start()
@@ -188,7 +202,7 @@ class Main:
     def process_bt_msg(self, msg):
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-        if msg in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
+        if msg in ['init', 'beginExplore', 'beginFastest', 'manual', 'disconnect']:
 
             # Display on screen the mode getting executed
             print(text_color.OKGREEN + '{} Mode Initiated'.format(msg) + text_color.ENDC)
@@ -204,9 +218,6 @@ class Main:
             elif msg == 'beginExplore':
                 self.write_cmd_server(msg.encode())
                 self.read_cmd_server()
-
-            elif msg == 'Image Recognition':
-                print(msg)
 
             elif msg == 'beginFastest':
                 self.write_cmd_server(msg.encode())
@@ -264,7 +275,7 @@ class Main:
         data = msg.decode()
 
         # 4 modes to accommodate for: Explore, Image Recognition, Shortest Path, Manual and Disconnect
-        if data in ['init', 'beginExplore', 'imageRecognition', 'beginFastest', 'manual', 'disconnect']:
+        if data in ['init', 'beginExplore', 'beginFastest', 'manual', 'disconnect']:
 
             # Display on screen the mode getting executed
             print(self.log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
@@ -297,9 +308,6 @@ class Main:
 
                     start = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
                     self.waypt_coord = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
-
-            elif data == 'imageRecognition':
-                pass
 
             elif data == 'beginFastest':
                 path_string = '{'
