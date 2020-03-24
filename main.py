@@ -456,8 +456,10 @@ class Main:
                 front_left_obstacle = round(sensor_data["FrontLeft"]/10)
                 front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
                 front_right_obstacle = round(sensor_data["FrontRight"]/10)
-
-                if (front_left_obstacle < 2 and front_right_obstacle < 2 and front_mid_obstacle < 2) and \
+                #if any of the 2 front sensor has an object and both the sensors on the right has an object
+                if ((front_left_obstacle < 2 and front_right_obstacle < 2) or \
+                     (front_mid_obstacle < 2 and front_right_obstacle < 2) or \
+                     (front_left_obstacle < 2 and front_mid_obstacle < 2)) and \
                     (right_back_obstacle < 2 and right_front_obstacle < 2):
                     print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 

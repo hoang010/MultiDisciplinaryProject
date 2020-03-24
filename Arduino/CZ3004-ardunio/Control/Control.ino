@@ -205,7 +205,6 @@ void controlBot (char instruction, int secondVal) {
       calibrateBot->CalibrateFront();
       Serial.println("X_CALIBRATIONDONE");
       break;
-
     case 'R' :  // Calibrate with right sensors
       bot->turnRight(90);
       delay(200);
@@ -241,13 +240,16 @@ void controlBot (char instruction, int secondVal) {
       calibrateBot->CalibrateRight();
       delay(200);
       break;
-    //Serial.println("X_CALIBRATIONDONE");
     case 'Q':  // Move Forward
       calibrateBot->CalibrateRight();
       delay(200);
       bot->moveForward(secondVal * 10);
       sensorData = returnSensorData(5);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+      break;
+    case 'K':  // Move Forward
+      calibrateBot->CalibrateStep();
+      Serial.println("X_CALIBRATIONDONE");
       break;
     case 'Z': //Get fastest path and run
       //Serial.println("X_READYFASTESTPATH");
