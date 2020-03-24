@@ -20,14 +20,20 @@ import threading
 class Main:
     def __init__(self, sys_type):
         self.arduino_conn_thread = None
-        self.server_conn_thread = None
+        self.server_cmd_conn_thread = None
+        self.server_img_conn_thread = None
         self.bt_conn_thread = None
-        self.pc_conn_thread = None
 
         self.arduino_conn = None
-        self.server_conn = None
+        self.server_cmd_conn = None
+        self.server_img_conn = None
         self.bt_conn = None
-        self.pc_conn = None
+
+        self.pc_cmd_conn_thread = None
+        self.pc_img_conn_thread = None
+
+        self.pc_cmd_conn = None
+        self.pc_img_conn = None
 
         self.sys_type = sys_type
         self.rpi_ip = '192.168.17.17'
@@ -66,13 +72,17 @@ class Main:
         :return:
         """
         # Create an instance of PC
-        self.pc_conn = Client(self.rpi_ip, 7777, text_color)
+        self.pc_cmd_conn = Client(self.rpi_ip, 7777, text_color)
+        self.pc_img_conn = Client(self.rpi_ip, 8888, text_color)
 
         # Connect to Raspberry Pi
-        self.pc_conn.connect()
+        self.pc_cmd_conn.connect()
+        self.pc_img_conn.connect()
 
-        self.pc_conn_thread = threading.Thread(target=self.read_pc)
-        self.pc_conn_thread.start()
+        self.pc_cmd_conn_thread = threading.Thread(target=self.read_cmd_pc)
+        self.pc_img_conn_thread = threading.Thread(target=self.read_img_pc)
+        self.pc_cmd_conn_thread.start()
+        self.pc_img_conn_thread.start()
 
     def rpi(self):
         """
@@ -91,38 +101,41 @@ class Main:
         self.arduino_conn = Arduino(self.arduino_name, text_color)
 
         # Connect to PC
-        self.server_conn = Server(self.rpi_ip, 7777, text_color)
-        self.server_conn.listen()
+        self.server_cmd_conn = Server(self.rpi_ip, 7777, text_color)
+        self.server_img_conn = Server(self.rpi_ip, 8888, text_color)
+        self.server_cmd_conn.listen()
+        self.server_img_conn.listen()
 
         # Connect to Tablet
         self.bt_conn = Bluetooth(self.rpi_mac_addr, text_color)
         self.bt_conn.listen()
 
         self.arduino_conn_thread = threading.Thread(target=self.read_arduino)
-        self.server_conn_thread = threading.Thread(target=self.read_server)
+        self.server_cmd_conn_thread = threading.Thread(target=self.read_cmd_server)
+        self.server_img_conn_thread = threading.Thread(target=self.read_img_server)
         self.bt_conn_thread = threading.Thread(target=self.read_bt)
 
         self.arduino_conn_thread.daemon = True
-        self.server_conn_thread.daemon = True
+        self.server_cmd_conn_thread.daemon = True
         self.bt_conn_thread.daemon = True
 
         self.arduino_conn_thread.start()
-        self.server_conn_thread.start()
+        self.server_cmd_conn_thread.start()
         self.bt_conn_thread.start()
 
     def read_arduino(self):
         while True:
             msg = self.arduino_conn.recv()
-            self.write_server(msg)
+            self.write_cmd_server(msg)
 
     def write_arduino(self, msg):
         time.sleep(0.5)
         self.arduino_conn.send(msg)
 
-    def read_server(self):
+    def read_cmd_server(self):
         while True:
-            feedback = self.server_conn.recv()
-            self.write_server('ack'.encode())
+            feedback = self.server_cmd_conn.recv()
+            self.write_cmd_server('ack'.encode())
             feedback = feedback.decode()
             if feedback == 'end':
                 break
@@ -137,8 +150,16 @@ class Main:
                 feedback = str(feedback)
                 self.write_bt(feedback.encode())
 
-    def write_server(self, msg):
-        self.server_conn.send(msg)
+    def write_cmd_server(self, msg):
+        self.server_cmd_conn.send(msg)
+
+    def read_img_server(self):
+        while True:
+            msg = self.server_img_conn.recv()
+            # TODO: Do something with msg
+
+    def write_img_server(self, msg):
+        self.server_img_conn.send(msg)
 
     def read_bt(self):
         while True:
@@ -157,28 +178,28 @@ class Main:
             print(text_color.OKGREEN + '{} Mode Initiated'.format(msg) + text_color.ENDC)
 
             if msg == 'init':
-                self.server_conn.send('init'.encode())
+                self.server_cmd_conn.send('init'.encode())
                 self.robo_init()
                 waypt = self.bt_conn.recv()
-                self.write_server(waypt)
+                self.write_cmd_server(waypt)
                 packet = "{\"dest\": \"bt\",\"direction\": \"" + Direction.N + "\" }"
                 self.write_bt(packet.encode())
 
             elif msg == 'beginExplore':
-                self.write_server(msg.encode())
-                self.read_server()
+                self.write_cmd_server(msg.encode())
+                self.read_cmd_server()
 
             elif msg == 'Image Recognition':
                 print(msg)
 
             elif msg == 'beginFastest':
-                self.write_server(msg.encode())
+                self.write_cmd_server(msg.encode())
 
             elif msg == 'manual':
-                self.write_server('manual'.encode())
+                self.write_cmd_server('manual'.encode())
                 while True:
                     msg = self.bt_conn.recv()
-                    self.write_server(msg)
+                    self.write_cmd_server(msg)
                     msg = msg.decode()
                     if msg == 'end':
                         print(text_color.OKGREEN + 'Explore ended' + text_color.ENDC)
@@ -186,11 +207,11 @@ class Main:
 
             elif msg == 'disconnect':
                 # Send message to PC and Arduino to tell them to disconnect
-                self.write_server('Disconnect'.encode())
+                self.write_cmd_server('Disconnect'.encode())
                 self.write_arduino('Disconnect'.encode())
 
                 # Disconnect from wifi and bluetooth connection
-                self.server_conn.disconnect()
+                self.server_cmd_conn.disconnect()
                 self.arduino_conn.disconnect()
                 self.bt_conn.disconnect()
                 return
@@ -204,13 +225,21 @@ class Main:
             # Add data into queue for sending to tablet
             self.write_bt('Send valid argument'.encode())
 
-    def read_pc(self):
+    def read_cmd_pc(self):
         while True:
-            msg = self.pc_conn.recv()
+            msg = self.pc_cmd_conn.recv()
             self.process_pc_msg(msg)
 
-    def write_pc(self, msg):
-        self.pc_conn.send(msg)
+    def read_img_pc(self):
+        while True:
+            msg = self.pc_img_conn.recv()
+            #TODO: Do something with msg
+
+    def write_cmd_pc(self, msg):
+        self.pc_cmd_conn.send(msg)
+
+    def write_img_pc(self, msg):
+        self.pc_img_conn.send(msg)
 
     def process_pc_msg(self, msg):
         flag = 0
@@ -225,7 +254,7 @@ class Main:
             print(self.log_string + text_color.OKGREEN + '{} mode initiated'.format(data) + text_color.ENDC)
 
             if data == 'init':
-                waypt = self.pc_conn.recv()
+                waypt = self.pc_cmd_conn.recv()
                 waypt = waypt.decode()
 
                 waypt = json.loads(waypt)
@@ -272,14 +301,14 @@ class Main:
                 path_string += '}'
 
                 send_param = "{\"dest\": \"arduino\",\"param\": \"14\" }"
-                self.write_pc(send_param.encode())
+                self.write_cmd_pc(send_param.encode())
 
                 send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
-                self.write_pc(send_param.encode())
+                self.write_cmd_pc(send_param.encode())
 
             elif data == 'manual':
                 while True:
-                    movement = self.pc_conn.recv()
+                    movement = self.pc_cmd_conn.recv()
 
                     movement = movement.decode()
 
@@ -306,13 +335,13 @@ class Main:
                         packet = "{\"dest\": \"nothing\"}"
                         print(self.log_string + text_color.FAIL + 'Command unrecognised' + text_color.ENDC)
 
-                    self.write_pc(packet.encode())
+                    self.write_cmd_pc(packet.encode())
 
                 print(self.log_string + text_color.WARNING + 'Manual mode terminated' + text_color.ENDC)
 
             elif data == 'disconnect':
                 # Disconnect from Raspberry Pi
-                self.pc_conn.disconnect()
+                self.pc_cmd_conn.disconnect()
                 return
 
         else:
@@ -321,7 +350,7 @@ class Main:
 
             # Add data into queue for sending to Raspberry Pi
             # Failsafe condition
-            self.write_pc('Send valid argument'.encode())
+            self.write_cmd_pc('Send valid argument'.encode())
 
     def robo_init(self):
         """
@@ -364,8 +393,8 @@ class Main:
 
         # Get sensor data
         send_param = "{\"dest\":\"arduino\",\"param\":\"E1\"}"
-        self.write_pc(send_param.encode())
-        self.pc_conn.recv()
+        self.write_cmd_pc(send_param.encode())
+        self.pc_cmd_conn.recv()
 
         while not explorer.is_round_complete(start):
 
@@ -377,7 +406,7 @@ class Main:
 
             print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
-            sensor_data = self.pc_conn.recv()
+            sensor_data = self.pc_cmd_conn.recv()
             sensor_data = sensor_data.decode().strip()
             sensor_data = json.loads(sensor_data)
 
@@ -408,10 +437,10 @@ class Main:
                     # Get sensor data
                     send_param = "{\"dest\": \"arduino\", \"param\": \"N1\"}"
 
-                    self.pc_conn.send(send_param.encode())
-                    self.pc_conn.recv()
+                    self.pc_cmd_conn.send(send_param.encode())
+                    self.pc_cmd_conn.recv()
                     time.sleep(0.5)
-                    self.pc_conn.recv()
+                    self.pc_cmd_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate corner done' + text_color.ENDC)
 
                 elif (front_left_obstacle < 2 and front_right_obstacle < 2) or \
@@ -422,10 +451,10 @@ class Main:
                     # Get sensor data
                     send_param = "{\"dest\": \"arduino\", \"param\": \"F1\"}"
 
-                    self.pc_conn.send(send_param.encode())
-                    self.pc_conn.recv()
+                    self.pc_cmd_conn.send(send_param.encode())
+                    self.pc_cmd_conn.recv()
                     time.sleep(0.5)
-                    self.pc_conn.recv()
+                    self.pc_cmd_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
                 right_wall_counter = 0
@@ -441,10 +470,10 @@ class Main:
                     # Calibrate right
                     send_param = "{\"dest\": \"arduino\",\"param\": \"R1\"}"
 
-                    self.pc_conn.send(send_param.encode())
-                    self.pc_conn.recv()
+                    self.pc_cmd_conn.send(send_param.encode())
+                    self.pc_cmd_conn.recv()
                     time.sleep(0.5)
-                    self.pc_conn.recv()
+                    self.pc_cmd_conn.recv()
 
                     right_wall_counter = 0
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
@@ -461,15 +490,15 @@ class Main:
                        \"movement\": \"" + log_movement[0] + "\",  \
                        \"direction\": \"" + explorer.direction + "\"}"
 
-            self.write_pc(packet.encode())
-            self.pc_conn.recv()
+            self.write_cmd_pc(packet.encode())
+            self.pc_cmd_conn.recv()
             print(self.log_string + text_color.OKGREEN + 'Packet sent' + text_color.ENDC)
 
             # Get sensor data
             send_param = "{\"dest\": \"arduino\", \"param\": \"" + movement + "\"}"
 
-            self.pc_conn.send(send_param.encode())
-            self.pc_conn.recv()
+            self.pc_cmd_conn.send(send_param.encode())
+            self.pc_cmd_conn.recv()
 
         print(self.log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
@@ -479,14 +508,14 @@ class Main:
 
         packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
 
-        self.pc_conn.send(packet.encode())
-        self.pc_conn.recv()
+        self.pc_cmd_conn.send(packet.encode())
+        self.pc_cmd_conn.recv()
 
         # Save real map once done exploring
         explorer.save_map(hex_real_map)
 
-        self.pc_conn.send('end'.encode())
-        self.pc_conn.recv()
+        self.pc_cmd_conn.send('end'.encode())
+        self.pc_cmd_conn.recv()
 
         return explorer
 
