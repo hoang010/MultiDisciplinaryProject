@@ -3,6 +3,9 @@ import queue
 import threading
 import time
 
+import cv2 as cv
+import struct
+import pickle
 
 class Client:
     def __init__(self, rpi_ip, port, text_color, size=1024):
@@ -88,6 +91,40 @@ class Client:
               + self.text_color.ENDC)
 
         return data
+
+    def recv_images(self):
+
+        data = b""
+        payload_size = struct.calcsize(">L")
+
+        counter = 1
+        recv = False
+
+        while True:
+
+            while len(data) < payload_size:
+                print("Recv: {}".format(len(data)))
+                data += self.sock.recv(4096)
+
+            print("Done Recv: {}".format(len(data)))
+            packed_msg_size = data[:payload_size]
+            data = data[payload_size:]
+            msg_size = struct.unpack(">L", packed_msg_size)[0]
+            print("msg_size: {}".format(msg_size))
+
+            while len(data) < msg_size:
+                data += self.sock.recv(4096)
+
+            frame_data = data[:msg_size]
+            data = data[msg_size:]
+
+            frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
+            frame = cv.imdecode(frame, cv.IMREAD_COLOR)
+            cv.imwrite("./Algo/images/image{}.jpg".format(counter), frame)
+            counter += 1
+
+            if(counter > 1 and data == b""):
+              break
 
     def send(self, data):
 

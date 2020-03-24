@@ -3,6 +3,11 @@ import threading
 import queue
 import time
 
+import cv2 as cv
+import numpy as np
+import glob
+import pickle
+import struct
 
 class Server:
     def __init__(self, ip_address, port, text_color, size=1024):
@@ -123,6 +128,24 @@ class Server:
         print(self.log_string + self.text_color.OKBLUE +
               "Data sent"
               + self.text_color.ENDC)
+
+    def send_images(self):
+
+        filepath = "./images/*.jpg"
+        images = np.asarray([cv.imread(file) for file in glob.glob(filepath)])
+
+        img_counter = 1
+        encode_param = [int(cv.IMWRITE_JPEG_QUALITY), 90]
+
+        for image in images:
+            result, frame = cv.imencode('.jpg', image, encode_param)
+            data = pickle.dumps(frame, 0)
+            size = len(data)
+
+            print("{}: {}".format(img_counter, size))
+            self.conn_socket.sendall(struct.pack(">L", size) + data)
+
+            img_counter += 1
 
     def disconnect(self):
         """

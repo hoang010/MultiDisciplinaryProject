@@ -3,6 +3,7 @@ from RPi.server import Server
 from RPi.arduino import Arduino
 from RPi.client import Client
 from Algo.explore import Explore
+from Algo.image_recognition import ImageRecognition
 # from Algo.image_recognition import ImageRecognition
 # from Algo.a_star import AStar
 # from Algo.shortest_path import ShortestPath
@@ -28,6 +29,10 @@ class Main:
         self.server_conn = None
         self.bt_conn = None
         self.pc_conn = None
+
+        # added for image recognition
+        self.camera = None
+        self.image_recognition = None
 
         self.sys_type = sys_type
         self.rpi_ip = '192.168.17.17'
@@ -67,6 +72,7 @@ class Main:
         """
         # Create an instance of PC
         self.pc_conn = Client(self.rpi_ip, 7777, text_color)
+        self.image_recognition = ImageRecognition()
 
         # Connect to Raspberry Pi
         self.pc_conn.connect()
@@ -86,6 +92,9 @@ class Main:
         :return:
         """
         from RPi.bluetooth import Bluetooth
+        from RPi.camera import Camera
+
+        self.camera = camera()
 
         # Connect to Arduino
         self.arduino_conn = Arduino(self.arduino_name, text_color)
@@ -137,6 +146,13 @@ class Main:
                 feedback = str(feedback)
                 self.write_bt(feedback.encode())
 
+            # added for image recognition
+            elif feedback["dest"] == "rpi":
+                self.camera.capture()
+
+            else:
+                pass
+
     def write_server(self, msg):
         self.server_conn.send(msg)
 
@@ -168,8 +184,19 @@ class Main:
                 self.write_server(msg.encode())
                 self.read_server()
 
-            elif msg == 'Image Recognition':
-                print(msg)
+            elif msg == 'imageRecognition':
+
+                # added for image recognition
+                # send the images took by RPi
+                self.server_conn.send_images()
+
+                # receive the predicted result
+                result = server_conn.recv()
+                result = json.loads(result)
+                
+                # send the string to tablet for display
+                self.write_bt(result.encode())
+
 
             elif msg == 'beginFastest':
                 self.write_server(msg.encode())
@@ -254,7 +281,23 @@ class Main:
                     self.waypt_coord = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
 
             elif data == 'imageRecognition':
-                pass
+                
+                # added for image recognition
+                # receive images from the server
+                pc_conn.recv_images()
+
+                # load received images from designated directory
+                images = image_recognition.load_images()
+
+                # make prediction for each image received
+                for image in images:
+                    image_recognition.predict(image)
+
+                # get the predicted signs' id
+                result = image_recognition.get_predicted_ids()
+
+                # send the required string to server
+                pc_conn.send(result.encode())
 
             elif data == 'beginFastest':
                 path_string = '{'
