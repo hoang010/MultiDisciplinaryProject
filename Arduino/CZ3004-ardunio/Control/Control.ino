@@ -46,7 +46,6 @@ void setup() {
 void loop() {
 
   delay(2);
-
   int gridMoveValueInt;
   String gridMoveValueString;
   int dummy;
