@@ -179,7 +179,7 @@ class Main:
                 # added for image recognition
             elif feedback["dest"] == "rpi":
                 self.camera.capture()
-                self.server_img_conn.send_image(self.camera.counter)
+
             else:
                 pass
 
@@ -188,7 +188,7 @@ class Main:
 
     def read_img_server(self):
         while True:
-            self.server_img_conn.recv_image()
+            msg = self.server_img_conn.recv()
             # TODO: Do something with msg
 
     def write_img_server(self, msg):
@@ -486,6 +486,20 @@ class Main:
                     self.pc_cmd_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
+                elif (front_mid_obstacle == 2 and front_right_obstacle < 2) or \
+                     (front_left_obstacle < 2 and front_mid_obstacle == 2):
+                    print(self.log_string + text_color.WARNING + 'Recalibrating step' + text_color.ENDC)
+
+                    # Get sensor data
+                    send_param = "{\"dest\": \"arduino\", \"param\": \"K1\"}"
+
+                    self.pc_cmd_conn.send(send_param.encode())
+                    self.pc_cmd_conn.recv()
+                    time.sleep(0.5)
+                    self.pc_cmd_conn.recv()
+                    print(self.log_string + text_color.OKGREEN + 'Recalibrate step done' + text_color.ENDC)
+                    return
+
                 right_wall_counter = 0
 
             else:
@@ -506,10 +520,6 @@ class Main:
 
                     right_wall_counter = 0
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
-
-                # Calibrate right
-                send_param = "{\"dest\": \"rpi\"}"
-                self.pc_cmd_conn.send(send_param.encode())
 
             print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
