@@ -131,7 +131,7 @@ class Server:
 
     def send_images(self):
 
-        filepath = "./images/*.jpg"
+        filepath = "./Algo/images/*.jpg"
         images = np.asarray([cv.imread(file) for file in glob.glob(filepath)])
 
         img_counter = 1
@@ -146,6 +146,20 @@ class Server:
             self.conn_socket.sendall(struct.pack(">L", size) + data)
 
             img_counter += 1
+
+    def send_image(self, num):
+
+        filepath = "./Algo/images/img{}.jpg".format(str(num))
+        image = np.asarray(cv.imread(filepath))
+        encode_param = [int(cv.IMWRITE_JPEG_QUALITY), 90]
+
+        result, frame = cv.imencode('.jpg', image, encode_param)
+        data = pickle.dumps(frame, 0)
+        size = len(data)
+
+        print("{}: {}".format(str(num), size))
+        self.conn_socket.sendall(struct.pack(">L", size) + data)
+
 
     def disconnect(self):
         """
