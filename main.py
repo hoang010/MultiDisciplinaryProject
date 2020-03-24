@@ -48,7 +48,7 @@ class Main:
         self.explorer = None
         self.waypt_coord = None
 
-    def start(self):
+    def start(self, param=None):
         """
         Main function of MDP Project, execute this file to start
         :param sys_type: String
@@ -62,7 +62,10 @@ class Main:
 
         # If running on own PC, run instance of algorithms
         elif self.sys_type == 'Windows' or self.sys_type == 'Darwin':
-            self.pc_cmd()
+            if param == 'cmd':
+                self.pc_cmd()
+            else:
+                self.pc_img()
 
         print(text_color.WARNING + 'End of program reached.' + text_color.ENDC)
 
@@ -641,10 +644,14 @@ class Main:
 
 if __name__ == "__main__":
     import platform
+    import sys
     try:
         main = Main(platform.system())
-        # main('Windows')
-        main.start()
+        # main = Main('Windows')
+        if len(sys.argv) == 0:
+            main.start()
+        else:
+            main.start(sys.argv[1])
         main.keep_main_alive()
     except KeyboardInterrupt:
         print("Program ending")
