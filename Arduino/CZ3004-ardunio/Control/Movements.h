@@ -90,7 +90,7 @@ float Motion::rotateLeftTime(float angle) {
 float Motion::rotateRightTime(float angle) {
   float radius = 9;//.52;
   float wheelRadius = 3;
-  float offset = -5;
+  float offset = 0;
   
   float distance = (2 * Pi * radius * angle) / 360.0;   // 2*pi*R*(angleOfRotation/360)
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
