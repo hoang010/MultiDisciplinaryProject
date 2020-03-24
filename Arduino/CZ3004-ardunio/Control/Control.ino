@@ -16,8 +16,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 180 // left
-#define initialSetSpeed2 250
+#define initialSetSpeed1 160 // left
+#define initialSetSpeed2 280
 #define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
@@ -44,6 +44,10 @@ void setup() {
 
 
 void loop() {
+
+//  delay(1000);
+//  controlBot('W', 1);
+//  delay(2000);
 
   delay(2);
   int gridMoveValueInt;
@@ -174,17 +178,17 @@ void controlBot (char instruction, int secondVal) {
       break;
     case 'W':  // Move Forward
       bot->moveForward(secondVal * 10);
-      sensorData = returnSensorData(8);
+      sensorData = returnSensorData(5);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'A':  // Turn Left by value
       bot->turnLeft(secondVal * 90);
-      sensorData = returnSensorData(8);
+      sensorData = returnSensorData(5);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'D':  // Turn Right
       bot->turnRight(secondVal * 90);
-      sensorData = returnSensorData(8);
+      sensorData = returnSensorData(5);
       Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
       break;
     case 'S':  // Move Backward
