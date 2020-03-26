@@ -16,8 +16,8 @@ DualVNH5019MotorShield md;
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
 #define targetRPM 80
-#define initialSetSpeed1 160 // left
-#define initialSetSpeed2 280
+#define initialSetSpeed1 150 // left
+#define initialSetSpeed2 330
 #define calibrationSetSpeed1 320
 #define calibrationSetSpeed2 350
 
@@ -44,10 +44,6 @@ void setup() {
 
 
 void loop() {
-
-//  delay(1000);
-//  controlBot('W', 1);
-//  delay(2000);
 
   delay(2);
   int gridMoveValueInt;
@@ -100,14 +96,12 @@ void fastestPath(String fastest_path_code) {
   bool getInstruction = true;
   bool getValue = true;
   int value = 0;
-  Serial.println(fastest_path_code);
   do {
     //for each character in the code
     for (int i = 0; i <= fastest_path_code.length(); i++) {
       //if the substring for the index is : or if it is the last character
       if (fastest_path_code.substring(i, i + 1) == "," || fastest_path_code.length() == i) {
         instructions = fastest_path_code.substring(0, i);
-        Serial.println(instructions);
         for (int j = 0; j <= instructions.length(); j++) {
           if (instructions.substring(j, j + 1) == ":" || instructions.length() == j) {
             instruction = instructions.substring(0, j);
@@ -119,7 +113,10 @@ void fastestPath(String fastest_path_code) {
         break;
       }
     }
-    controlBot(instruction.toInt(), value);
+    int str_len = instruction.length() +1;
+    char char_arr[str_len];
+    instruction.toCharArray(char_arr, str_len);
+    controlBot(char_arr[0], value);
     delay(200);
     //fastestPathCalibration();
     //delay(100);
