@@ -307,7 +307,8 @@ class Main:
                 self.waypt_coord = [waypt['x'], waypt['y']]
 
             elif data == 'beginExplore':
-                self.explorer = self.explore()
+				initial_start = Point(1, 1)
+                self.explorer = self.explore(initial_start)
                 start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
                 start_point = Point(start[4][0], start[4][1])
                 end_point = Point(self.waypt_coord[0], self.waypt_coord[1])

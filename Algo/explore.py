@@ -42,15 +42,11 @@ class Explore:
         #self.update_explored_map_thread.start()
         #self.update_obstacle_map_thread.start()
 
-    def right_wall_hugging_no_thread(self):
+    def right_wall_hugging_no_thread(self, start):
         """
         Function to execute right wall hugging
         :return:
         """
-
-        start = [[2, 2], [2, 1], [2, 0],
-                 [1, 2], [1, 1], [1, 0],
-                 [0, 2], [0, 1], [0, 0]]
 
         while not self.is_round_complete(start):
 
@@ -660,7 +656,7 @@ class Explore:
         """
         # Sum up every element of the matrix
         # If every element is 1, it means that every element is explored and sum should be 300 (15 x 20).
-        if self.current_pos[4] == start[4] and self.round == 1:
+        if self.current_pos[4][0] == start.x and self.current_pos[4][1] == start.y and self.round == 1:
             for i in range(len(self.explored_map)):
                 for j in range(len(self.explored_map[0])):
                     if self.explored_map[i][j] == 0:
