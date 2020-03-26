@@ -436,6 +436,7 @@ class Main:
             print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
             sensor_data = self.pc_cmd_conn.recv()
+            print(sensor_data)
             sensor_data = sensor_data.decode().strip()
             sensor_data = json.loads(sensor_data)
 
@@ -527,7 +528,7 @@ class Main:
                 # Calibrate right
                 send_param = "{\"dest\": \"rpi\"}"
                 self.pc_cmd_conn.send(send_param.encode())
-
+                self.pc_cmd_conn.recv()
             print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
             # Convert explored map into hex

@@ -72,7 +72,7 @@ void loop() {
       gridMoveValueInt = 1;
       }
 
-    controlBot(character, gridMoveValueInt);
+    controlBot(character, gridMoveValueInt, 1);
   }
 }
 
@@ -116,7 +116,7 @@ void fastestPath(String fastest_path_code) {
     int str_len = instruction.length() +1;
     char char_arr[str_len];
     instruction.toCharArray(char_arr, str_len);
-    controlBot(char_arr[0], value);
+    controlBot(char_arr[0], value, 0);
     delay(200);
     //fastestPathCalibration();
     //delay(100);
@@ -135,11 +135,11 @@ void fastestPathCalibration() {
     calibrateBot->CalibrateFront();
     //if sides also have object then calibrate side as well
     if ((rightFrontDistance < 10 && rightFrontDistance > 5) || (rightBackDistance < 10 && rightBackDistance > 5)) {
-      controlBot(5, 10);
+      controlBot(5, 10, 0);
       delay(200);
       calibrateBot->CalibrateFront();
       delay(200);
-      controlBot(4, 10);
+      controlBot(4, 10, 0);
     }
   }
 }
@@ -164,7 +164,7 @@ void fastestPathCalibration() {
   13. Calibrate using front sensors at a staircase
   14. Get ready to receive fastest path string */
 
-void controlBot (char instruction, int secondVal) {
+void controlBot (char instruction, int secondVal, int returnSensor) {
   switch (instruction) {
     case 'C':  // Check If arduino is responding
       Serial.println("X_BOTREADY");
@@ -175,23 +175,32 @@ void controlBot (char instruction, int secondVal) {
       break;
     case 'W':  // Move Forward
       bot->moveForward(secondVal * 10);
-      sensorData = returnSensorData(5);
-      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+      if(returnSensor == 1){
+        sensorData = returnSensorData(5);
+        Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+        }
+
       break;
     case 'A':  // Turn Left by value
       bot->turnLeft(secondVal * 90);
-      sensorData = returnSensorData(5);
-      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+      if(returnSensor == 1){
+        sensorData = returnSensorData(5);
+        Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+        }
       break;
     case 'D':  // Turn Right
       bot->turnRight(secondVal * 90);
-      sensorData = returnSensorData(5);
-      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+      if(returnSensor == 1){
+        sensorData = returnSensorData(5);
+        Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+        }
       break;
     case 'S':  // Move Backward
       bot->moveBackward(secondVal * 10);
-      sensorData = returnSensorData(5);
-      Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+      if(returnSensor == 1){
+        sensorData = returnSensorData(5);
+        Serial.println(sensorData + "\"Instruction\":\"" + instruction+"\"}" );
+        }
       break;
     case 'U':  // Unbreak wheels
       md.setM1Speed(0);
