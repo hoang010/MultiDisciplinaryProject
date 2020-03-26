@@ -46,7 +46,7 @@ class Main:
         self.log_string = text_color.OKBLUE + "Main: " + text_color.ENDC
 
         self.explorer = None
-        self.waypt_coord = None
+        self.waypt_coord = []
         self.path_string = ''
 
     def start(self, param=None):
@@ -138,7 +138,6 @@ class Main:
 
         self.arduino_conn_thread = threading.Thread(target=self.read_arduino)
         self.server_cmd_conn_thread = threading.Thread(target=self.read_cmd_server)
-        self.server_img_conn_thread = threading.Thread(target=self.read_img_server)
         self.bt_conn_thread = threading.Thread(target=self.read_bt)
 
         self.arduino_conn_thread.daemon = True
@@ -164,6 +163,7 @@ class Main:
         while True:
             feedback = self.server_cmd_conn.recv()
             self.write_cmd_server('ack'.encode())
+
             feedback = feedback.decode()
 
             if feedback == 'end':
@@ -172,6 +172,9 @@ class Main:
 
             if feedback["dest"] == "arduino":
                 param = feedback["param"]
+                self.server_img_conn.send("C".encode())
+                self.camera.capture()
+                self.server_img_conn.write_img_server(self.camera.counter)
                 self.write_arduino(param.encode())
 
             elif feedback["dest"] == "bt":
@@ -181,24 +184,16 @@ class Main:
 
             elif feedback["dest"] == "rpi":
                 param = feedback["param"]
-                
-                if(param == "C"):
-                    # self.server_img_conn.send("C".encode())
-                    self.camera.capture()
-                    # self.server_img_conn.send_image(self.camera.counter)
-                elif(param == "S"):
-                    pass
-                    # self.server_img_conn.send("S".encode())
-                    
+
+                if param == "S":
+                    # pass
+                    self.server_img_conn.send("S".encode())
 
     def write_cmd_server(self, msg):
         self.server_cmd_conn.send(msg)
 
-    def read_img_server(self):
-        pass
-
     def write_img_server(self, msg):
-        self.server_img_conn.send(msg)
+        self.server_img_conn.send_image(msg)
 
     def read_bt(self):
         while True:
@@ -267,17 +262,17 @@ class Main:
             self.process_pc_msg(msg)
 
     def read_img_pc(self):
-        pass
-        # while True:
-        #     msg = self.pc_img_conn.recv()
-        #     msg = msg.decode()
+        while True:
+            msg = self.pc_img_conn.recv()
+            msg = msg.decode()
 
-        #     if(msg == "C"):
-        #         pass
-        #         self.pc_img_conn.recv_image()
-        #         self.process_img()
-        #     if(msg == "S"):
-        #         predicted_ids = self.image_recognition.get_predicted_ids()
+            if msg == "C":
+                pass
+                self.pc_img_conn.recv_image()
+                self.process_img()
+            if msg == "S":
+                predicted_ids = self.image_recognition.get_predicted_ids()
+                print(predicted_ids)
         
     def write_cmd_pc(self, msg):
         self.pc_cmd_conn.send(msg)
@@ -288,7 +283,7 @@ class Main:
     def process_img(self):
 
         img = self.image_recognition.load_image()
-        self = self.image_recognition.predict(img)
+        self.image_recognition.predict(img)
 
     def process_pc_msg(self, msg):
         flag = 0
@@ -307,7 +302,8 @@ class Main:
                 waypt = waypt.decode()
 
                 waypt = json.loads(waypt)
-                self.waypt_coord = [waypt['x'], waypt['y']]
+                self.waypt_coord.append(waypt['x'])
+                self.waypt_coord.append(waypt['y'])
 
             elif data == 'beginExplore':
                 initial_start = Point(1, 1)
@@ -316,7 +312,7 @@ class Main:
                 start_point = Point(int(start[4][0]), int(start[4][1]))
                 end_point = Point(int(self.waypt_coord[0]), int(self.waypt_coord[1]))
                 for _ in range(2):
-                    a_star = AStar(start[4], self.waypt_coord, self.explorer.real_map)
+                    a_star = AStar(start_point, end_point, self.explorer.real_map)
                     start_pt = AStar.Node(start_point, end_point, 0)
                     a_star.open_list.append(start_pt)
 
@@ -329,8 +325,8 @@ class Main:
                         for ele in movements:
                             path.append(ele)
 
-                    start = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
-                    self.waypt_coord = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
+                    start_point = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
+                    end_point = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
 
                 self.path_string = '{'
                 for i in range(len(path)):
@@ -428,13 +424,9 @@ class Main:
         # Start an instance of Explore class
         explorer = Explore(initial_start, Direction)
 
-        true_start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
-        start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
-
         print(self.log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
 
         right_wall_counter = 0
-        i = 0
 
         print(self.log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
@@ -456,7 +448,6 @@ class Main:
             ([4][1] == 1) and ([4][1] == 18) implies its hugging along the x-axis
             ([4][0] == 1) and ([4][0] == 13) implies its hugging along the y-axis
             """
-        # if(not(explorer.current_pos[4][1] == 1 or explorer.current_pos[4][1] == 18 or explorer.current_pos[4][0] == 1 or explorer.current_pos[4][0] == 13)):
 
             print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
@@ -467,10 +458,6 @@ class Main:
 
             explorer.sensor_data_queue.put(sensor_data)
             print(self.log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
-
-            send_param = "{\"dest\": \"rpi\",\"param\": \"C\"}"
-            self.pc_cmd_conn.send(send_param.encode())
-            self.pc_cmd_conn.recv()
 
             # Get next movement
             movement = explorer.move_queue.get()
@@ -489,7 +476,7 @@ class Main:
                 front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
                 front_right_obstacle = round(sensor_data["FrontRight"]/10)
 
-                #if any of the 2 front sensor has an object and both the sensors on the right has an object
+                # if any of the 2 front sensor has an object and both the sensors on the right has an object
                 if ((front_left_obstacle < 2 and front_right_obstacle < 2) or
                     (front_mid_obstacle < 2 and front_right_obstacle < 2) or
                     (front_left_obstacle < 2 and front_mid_obstacle < 2)) and \
