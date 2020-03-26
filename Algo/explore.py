@@ -5,7 +5,7 @@ import threading
 
 
 class Explore:
-    def __init__(self, start, direction_class):
+    def __init__(self, start, direction_class, normal_round):
         """
         Function to initialise an instance of Explore
         :param direction_class: Class
@@ -17,6 +17,7 @@ class Explore:
         self.real_map = np.zeros((15, 20))
         self.explored_map = self.real_map.copy()
         self.round = 0
+        self.normal_round = normal_round
 
         self.start = start
 
@@ -54,12 +55,12 @@ class Explore:
             sensor_data = self.sensor_data_queue.get()
 
             # Get the data
-            front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-            front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-            front_right_obstacle = round(sensor_data["FrontRight"]/10)
-            mid_left_obstacle = round((sensor_data["LeftSide"])/10)
-            right_front_obstacle = round(sensor_data["RightFront"]/10)
-            right_back_obstacle = round(sensor_data["RightBack"]/10)
+            front_left_obstacle = self.normal_round(sensor_data["FrontLeft"]/10)
+            front_mid_obstacle = self.normal_round(sensor_data["FrontCenter"]/10)
+            front_right_obstacle = self.normal_round(sensor_data["FrontRight"]/10)
+            mid_left_obstacle = self.normal_round((sensor_data["LeftSide"])/10)
+            right_front_obstacle = self.normal_round(sensor_data["RightFront"]/10)
+            right_back_obstacle = self.normal_round(sensor_data["RightBack"]/10)
 
             # Get coordinates on the right
             right_coordinates = self.get_coord('right')
@@ -71,14 +72,14 @@ class Explore:
             #     self.update_obstacle_map_no_thread(right_coordinates[1])
 
             if right_front_obstacle <= 4:
-                right_front_coord = self.get_coord('right', right_front_obstacle+1, 2)
+                right_front_coord = self.get_coord('right', right_front_obstacle+1, 1)
                 for i in range(len(right_front_coord)):
                     self.update_explored_map_no_thread(right_front_coord[i])
                     self.update_no_obstacle_map_no_thread(right_front_coord[i])
                 self.update_obstacle_map_no_thread(right_front_coord[-1])
 
             else:
-                right_front_coord = self.get_coord('right', 4, 2)
+                right_front_coord = self.get_coord('right', 4, 1)
                 for i in range(len(right_front_coord)):
                     self.update_explored_map_no_thread(right_front_coord[i])
                     self.update_no_obstacle_map_no_thread(right_front_coord[i])
@@ -203,10 +204,10 @@ class Explore:
 
                 self.check_right_empty += 1
 
-                self.self_correct_position()
-
                 # Update position after moving
                 self.update_pos()
+
+            self.self_correct_position
 
     def right_wall_hugging(self):
         """
@@ -223,12 +224,12 @@ class Explore:
             sensor_data = self.sensor_data_queue.get()
 
             # Get the data
-            front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-            front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-            front_right_obstacle = round(sensor_data["FrontRight"]/10)
-            mid_left_obstacle = round((sensor_data["LeftSide"])/10)
-            right_front_obstacle = round(sensor_data["RightFront"]/10)
-            right_back_obstacle = round(sensor_data["RightBack"]/10)
+            front_left_obstacle = self.normal_round(sensor_data["FrontLeft"]/10)
+            front_mid_obstacle = self.normal_round(sensor_data["FrontCenter"]/10)
+            front_right_obstacle = self.normal_round(sensor_data["FrontRight"]/10)
+            mid_left_obstacle = self.normal_round((sensor_data["LeftSide"])/10)
+            right_front_obstacle = self.normal_round(sensor_data["RightFront"]/10)
+            right_back_obstacle = self.normal_round(sensor_data["RightBack"]/10)
 
             # Get coordinates on the right
             right_coordinates = self.get_coord('right')
@@ -405,19 +406,19 @@ class Explore:
                 if self.direction == self.direction_class.N:
                     for i in range(len(self.current_pos)):
                         self.current_pos[i][0] -= 1
-                        return
+                    return
                 elif self.direction == self.direction_class.S:
                     for i in range(len(self.current_pos)):
                         self.current_pos[i][0] += 1
-                        return
+                    return
                 elif self.direction == self.direction_class.E:
                     for i in range(len(self.current_pos)):
                         self.current_pos[i][1] += 1
-                        return
+                    return
                 else:
                     for i in range(len(self.current_pos)):
                         self.current_pos[i][1] -= 1
-                        return
+                    return
 
     def update_pos(self):
         """
@@ -658,7 +659,6 @@ class Explore:
         # Sum up every element of the matrix
         # If every element is 1, it means that every element is explored and sum should be 300 (15 x 20).
         if self.current_pos[4][0] == self.start.x and self.current_pos[4][1] == self.start.y and self.round == 1:
-            print("Saving map now")
             for i in range(len(self.explored_map)):
                 for j in range(len(self.explored_map[0])):
                     if self.explored_map[i][j] == 0:
@@ -713,9 +713,9 @@ class Explore:
         print(log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
         # Get the data
-        front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-        front_right_obstacle = round(sensor_data["FrontRight"]/10)
-        mid_left_obstacle = round(sensor_data["LeftSide"]/10)
+        front_left_obstacle = self.normal_round(sensor_data["FrontLeft"]/10)
+        front_right_obstacle = self.normal_round(sensor_data["FrontRight"]/10)
+        mid_left_obstacle = self.normal_round(sensor_data["LeftSide"]/10)
 
         start_has_obstacle = self.check_obstacle(sensor_data)
 
@@ -752,9 +752,9 @@ class Explore:
 
     def check_obstacle(self, sensor_data):
 
-        front_left_obstacle = round(sensor_data["TopLeft"] / 10)
-        front_mid_obstacle = round(sensor_data["TopMiddle"] / 10)
-        front_right_obstacle = round(sensor_data["TopRight"] / 10)
+        front_left_obstacle = self.normal_round(sensor_data["TopLeft"] / 10)
+        front_mid_obstacle = self.normal_round(sensor_data["TopMiddle"] / 10)
+        front_right_obstacle = self.normal_round(sensor_data["TopRight"] / 10)
         front_coord = self.get_coord('front')
 
         if self.direction == self.direction.N:

@@ -73,7 +73,7 @@ class ImageRecognition:
 
 		cv.rectangle(image, (x, y), (x_plus_w, y_plus_h), color, 2)
 
-		cv.putText(image, label, (x_plus_w, y_plus_h), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+		cv.putText(image, label, (x, y_plus_h), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 	def predict(self, image):
 
@@ -105,7 +105,7 @@ class ImageRecognition:
 				class_id = np.argmax(scores)
 				confidence = scores[class_id]
 
-				if confidence > 0.2:
+				if confidence > 0.3:
 
 					center_x = int(detection[0] * width)
 					center_y = int(detection[1] * height)
@@ -131,20 +131,21 @@ class ImageRecognition:
 			w = box[2]
 			h = box[3]
 			self.draw_bounding_box(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h))
+			print("Class id: " + str(class_ids[i]) + ", Confidences level : " + str(confidences[i]))
 
+		#and class_ids[0] not in self.predicted_list
 		if(isRecognised and class_ids[0] not in self.predicted_list):
 			# save output image to disk
 			cv.imwrite("./Algo/predicted_images/object-detection-{}.jpg".format(str(self.count)), image)
 			self.count = self.count + 1
-			mapped_id = self.switcher.get(class_ids[0], "Number not in range 0 to 15!")
 			self.predicted_list.append(class_ids[0])
-			self.ids.append(["","",mapped_id])
+			mapped_id = self.switcher.get(class_ids[0], "Number not in range 0 to 15!")
+			self.ids.append(mapped_id)
 
 	def get_predicted_ids(self):
 
 		packet = "{\"dest\": \"bt\",  \
-                   \"images\": \
-                   \"[" + "[" + str(self.ids[0][0]) + "," + str(self.ids[0][1]) + "," + str(self.ids[0][2]) + "]" + "," + "[" + str(self.ids[1][0]) + "," + str(self.ids[1][1]) + "," + str(self.ids[1][2]) + "]" + "," + "[" + str(self.ids[2][0]) + "," + str(self.ids[2][1]) + "," + str(self.ids[2][2]) + "]" + "," + "[" + str(self.ids[3][0]) + "," + str(self.ids[3][1]) + "," + str(self.ids[3][2]) + "]" + "," + "[" + str(self.ids[4][0]) + "," + str(self.ids[4][1]) + "," + str(self.ids[4][2]) + "]"  + "]\"}"
+                   \"images\": \"" + str(self.ids) + "\"}"
 
 		print(self.ids)
 		return packet

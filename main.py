@@ -9,6 +9,7 @@ from Algo.img_recognition import ImageRecognition
 from Algo.fastest_path import *
 from config.text_color import TextColor as text_color
 from config.direction import Direction
+from config.round import normal_round
 
 # Import libraries
 import json
@@ -48,6 +49,7 @@ class Main:
         self.explorer = None
         self.waypt_coord = []
         self.path_string = ''
+        self.capture_flag = False
 
     def start(self, param=None):
         """
@@ -142,12 +144,12 @@ class Main:
 
         self.arduino_conn_thread.daemon = True
         self.server_cmd_conn_thread.daemon = True
-        self.server_img_conn_thread.daemon = True
+        # self.server_img_conn_thread.daemon = True
         self.bt_conn_thread.daemon = True
 
         self.arduino_conn_thread.start()
         self.server_cmd_conn_thread.start()
-        self.server_img_conn_thread.start()
+        # self.server_img_conn_thread.start()
         self.bt_conn_thread.start()
 
     def read_arduino(self):
@@ -160,6 +162,8 @@ class Main:
         self.arduino_conn.send(msg)
 
     def read_cmd_server(self):
+
+        count = 0 
         while True:
             feedback = self.server_cmd_conn.recv()
             self.write_cmd_server('ack'.encode())
@@ -172,9 +176,13 @@ class Main:
 
             if feedback["dest"] == "arduino":
                 param = feedback["param"]
-                self.server_img_conn.send("C".encode())
-                self.camera.capture()
-                self.server_img_conn.write_img_server(self.camera.counter)
+
+                if count % 2 == 0:
+                    self.server_img_conn.send("C".encode())
+                    self.camera.capture()
+                    self.write_img_server(self.camera.counter)
+
+                # count += 1
                 self.write_arduino(param.encode())
 
             elif feedback["dest"] == "bt":
@@ -186,8 +194,9 @@ class Main:
                 param = feedback["param"]
 
                 if param == "S":
-                    # pass
                     self.server_img_conn.send("S".encode())
+                    img_id = self.server_img_conn.recv()
+                    self.write_cmd_server(img_id)
 
     def write_cmd_server(self, msg):
         self.server_cmd_conn.send(msg)
@@ -199,7 +208,7 @@ class Main:
         while True:
             msg = self.bt_conn.recv()
             self.process_bt_msg(msg.decode())
-
+    
     def write_bt(self, msg):
         self.bt_conn.send(msg)
 
@@ -267,12 +276,11 @@ class Main:
             msg = msg.decode()
 
             if msg == "C":
-                pass
                 self.pc_img_conn.recv_image()
                 self.process_img()
             if msg == "S":
                 predicted_ids = self.image_recognition.get_predicted_ids()
-                print(predicted_ids)
+                self.pc_img_conn.send(predicted_ids.encode())
         
     def write_cmd_pc(self, msg):
         self.pc_cmd_conn.send(msg)
@@ -284,10 +292,9 @@ class Main:
 
         img = self.image_recognition.load_image()
         self.image_recognition.predict(img)
+        print("Processing Image!")
 
     def process_pc_msg(self, msg):
-        flag = 0
-        path = []
 
         data = msg.decode()
 
@@ -308,46 +315,16 @@ class Main:
             elif data == 'beginExplore':
                 initial_start = Point(1, 1)
                 self.explorer = self.explore(initial_start)
-                start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
-                start_point = Point(int(start[4][0]), int(start[4][1]))
-                end_point = Point(int(self.waypt_coord[0]), int(self.waypt_coord[1]))
-                for _ in range(2):
-                    a_star = AStar(start_point, end_point, self.explorer.real_map)
-                    start_pt = AStar.Node(start_point, end_point, 0)
-                    a_star.open_list.append(start_pt)
-
-                    while not flag:
-                        a_star_current = a_star.select_current()
-                        flag = a_star.near_explore(a_star_current)
-
-                    for node_path in a_star.path:
-                        movements = self.move_to_point(node_path.point)
-                        for ele in movements:
-                            path.append(ele)
-
-                    start_point = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
-                    end_point = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
-
-                self.path_string = '{'
-                for i in range(len(path)):
-                    if path[i] == 'W':
-                        count = 1
-                        while path[i] == 'W':
-                            count += 1
-                            i += 1
-                        self.path_string += '{}: {}'.format('W', count)
-                        i -= 1
-                    else:
-                        self.path_string += '{}: {}'.format(path[i], '1')
-                self.path_string += '}'
 
             elif data == 'beginFastest':
 
                 send_param = "{\"dest\": \"arduino\",\"param\": \"Z\" }"
                 self.write_cmd_pc(send_param.encode())
+                self.pc_cmd_conn.recv()
 
                 send_param = "{\"dest\": \"arduino\",\"param\": \"" + self.path_string + "\" }"
                 self.write_cmd_pc(send_param.encode())
+                self.pc_cmd_conn.recv()
 
             elif data == 'manual':
                 while True:
@@ -422,11 +399,13 @@ class Main:
         """
 
         # Start an instance of Explore class
-        explorer = Explore(initial_start, Direction)
+        self.explorer = Explore(initial_start, Direction, normal_round)
 
         print(self.log_string + text_color.OKGREEN + 'Explore started' + text_color.ENDC)
 
         right_wall_counter = 0
+        flag = 0
+        path = []
 
         print(self.log_string + text_color.BOLD + 'Getting sensor data' + text_color.ENDC)
 
@@ -435,9 +414,9 @@ class Main:
         self.write_cmd_pc(send_param.encode())
         self.pc_cmd_conn.recv()
 
-        while not explorer.is_round_complete():
+        while not self.explorer.is_round_complete():
 
-            # print("Current position:\n", explorer.current_pos)
+            print("Current position:\n", self.explorer.current_pos)
             # print("Direction:\n", explorer.direction)
             # print("True start:\n", explorer.true_start)
             # print("Explored map:\n", explorer.explored_map)
@@ -456,13 +435,13 @@ class Main:
             sensor_data = sensor_data.decode().strip()
             sensor_data = json.loads(sensor_data)
 
-            explorer.sensor_data_queue.put(sensor_data)
+            self.explorer.sensor_data_queue.put(sensor_data)
             print(self.log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
 
             # Get next movement
-            movement = explorer.move_queue.get()
-            right_front_obstacle = round(sensor_data["RightFront"] / 10)
-            right_back_obstacle = round(sensor_data["RightBack"] / 10)
+            movement = self.explorer.move_queue.get()
+            right_front_obstacle = normal_round(sensor_data["RightFront"] / 10)
+            right_back_obstacle = normal_round(sensor_data["RightBack"] / 10)
 
             # Display message
             if movement == 'D1':
@@ -472,9 +451,10 @@ class Main:
             elif movement == 'A1':
                 # get_image(log_string, explorer, arduino_conn)
                 log_movement = 'left'
-                front_left_obstacle = round(sensor_data["FrontLeft"]/10)
-                front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
-                front_right_obstacle = round(sensor_data["FrontRight"]/10)
+
+                front_left_obstacle = normal_round(sensor_data["FrontLeft"]/10)
+                front_mid_obstacle = normal_round(sensor_data["FrontCenter"]/10)
+                front_right_obstacle = normal_round(sensor_data["FrontRight"]/10)
 
                 # if any of the 2 front sensor has an object and both the sensors on the right has an object
                 if ((front_left_obstacle < 2 and front_right_obstacle < 2) or
@@ -506,26 +486,26 @@ class Main:
                     self.pc_cmd_conn.recv()
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate front done' + text_color.ENDC)
 
-                elif (front_mid_obstacle == 2 and front_right_obstacle < 2) or \
-                     (front_left_obstacle < 2 and front_mid_obstacle == 2):
-                    print(self.log_string + text_color.WARNING + 'Recalibrating step' + text_color.ENDC)
+                # elif (front_mid_obstacle == 2 and front_right_obstacle < 2) or \
+                #      (front_left_obstacle < 2 and front_mid_obstacle == 2):
+                #     print(self.log_string + text_color.WARNING + 'Recalibrating step' + text_color.ENDC)
 
-                    # Get sensor data
-                    send_param = "{\"dest\": \"arduino\", \"param\": \"K1\"}"
+                #     # Get sensor data
+                #     send_param = "{\"dest\": \"arduino\", \"param\": \"K1\"}"
 
-                    self.pc_cmd_conn.send(send_param.encode())
-                    self.pc_cmd_conn.recv()
-                    time.sleep(0.5)
-                    self.pc_cmd_conn.recv()
-                    print(self.log_string + text_color.OKGREEN + 'Recalibrate step done' + text_color.ENDC)
-                    return
+                #     self.pc_cmd_conn.send(send_param.encode())
+                #     self.pc_cmd_conn.recv()
+                #     time.sleep(0.5)
+                #     self.pc_cmd_conn.recv()
+                #     print(self.log_string + text_color.OKGREEN + 'Recalibrate step done' + text_color.ENDC)
+                #     return
 
                 right_wall_counter = 0
 
             else:
                 log_movement = 'forward'
                 right_wall_counter += 1
-                explorer.round = 1
+                self.explorer.round = 1
 
                 if (right_wall_counter % 4 == 0) and (right_front_obstacle < 2 and right_back_obstacle < 2):
                     print(self.log_string + text_color.WARNING + 'Recalibrating right wall' + text_color.ENDC)
@@ -544,14 +524,14 @@ class Main:
             print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
             # Convert explored map into hex
-            hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
-            hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
+            hex_exp_map = self.explorer.convert_map_to_hex(self.explorer.explored_map)
+            hex_real_map = self.explorer.convert_map_to_hex(self.explorer.real_map)
 
             packet = "{\"dest\": \"bt\",  \
                        \"explored\": \"" + hex_exp_map + "\",  \
                        \"obstacle\": \"" + hex_real_map + "\",  \
                        \"movement\": \"" + log_movement[0] + "\",  \
-                       \"direction\": \"" + explorer.direction + "\"}"
+                       \"direction\": \"" + self.explorer.direction + "\"}"
 
             self.write_cmd_pc(packet.encode())
             self.pc_cmd_conn.recv()
@@ -566,33 +546,103 @@ class Main:
         print(self.log_string + text_color.OKGREEN + 'Explore completed' + text_color.ENDC)
 
         # Convert real map to hex
-        hex_real_map = explorer.convert_map_to_hex(explorer.real_map)
-        hex_exp_map = explorer.convert_map_to_hex(explorer.explored_map)
+        hex_real_map = self.explorer.convert_map_to_hex(self.explorer.real_map)
+        hex_exp_map = self.explorer.convert_map_to_hex(self.explorer.explored_map)
 
-        packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
+        start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
+        start_point = Point(int(start[4][0]), int(start[4][1]))
+        end_point = Point(int(self.waypt_coord[0]), int(self.waypt_coord[1]))
+        print("Computing fastest path!")
+        for _ in range(2):
+            a_star = AStar(start_point, end_point, self.explorer.real_map)
+            start_pt = AStar.Node(start_point, end_point, 0)
+            a_star.open_list.append(start_pt)
 
-        self.pc_cmd_conn.send(packet.encode())
-        self.pc_cmd_conn.recv()
+            while not flag:
+                a_star.current = a_star.select_current()
+                flag = a_star.near_explore(a_star.current)
+
+            print(a_star.path)
+            # print(start_point.x, start_point.y)
+            # print(end_point.x, end_point.y)
+            # print(self.explorer.real_map)
+
+            for node_path in a_star.path:
+                movements = self.move_to_point(node_path.point)
+                for ele in movements:
+                    path.append(ele)
+
+            start_point = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
+            end_point = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
+
+        self.path_string = '{'
+        count = 0
+        for i in range(len(path)):
+            if path[i] == 'W':
+                count += 1
+            elif path[i] != 'W' and path[i-1] == 'W':
+                if count != 0:
+                    self.path_string += '{}:{},'.format('W', str(count))
+                self.path_string += '{}:{},'.format(path[i], '1')
+                count = 0
+            else:
+                self.path_string += '{}:{},'.format(path[i], '1')
+        
+        self.path_string = self.path_string[:-1]
+        self.path_string += '}'
 
         packet = "{\"dest\": \"rpi\",\"param\": \"S\"}"
         self.pc_cmd_conn.send(packet.encode())
         self.pc_cmd_conn.recv()
 
+        image_id = self.pc_cmd_conn.recv().decode()
+
+        packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\", \"Image_id\": \"" + image_id + "\"}"
+
+        self.pc_cmd_conn.send(packet.encode())
+        self.pc_cmd_conn.recv()
+
         # Save real map once done exploring
-        explorer.save_map(hex_real_map)
+        self.explorer.save_map(hex_real_map)
 
         self.pc_cmd_conn.send('end'.encode())
         self.pc_cmd_conn.recv()
 
-        return explorer
+        if self.explorer.direction == Direction.E:
+            send_param = "{\"dest\": \"arduino\",\"param\": \"N1\"}"
+            self.pc_cmd_conn.send(send_param.encode())
+            self.pc_cmd_conn.recv()
+            time.sleep(0.5)
+            self.pc_cmd_conn.recv()
+
+        else:
+            send_param = "{\"dest\": \"arduino\",\"param\": \"A1\"}"
+            self.explorer.update_dir(True)
+            elf.pc_cmd_conn.send(send_param.encode())
+            self.pc_cmd_conn.recv()
+            time.sleep(0.5)
+            self.pc_cmd_conn.recv()
+            send_param = "{\"dest\": \"arduino\",\"param\": \"N1\"}"
+            self.pc_cmd_conn.send(send_param.encode())
+            self.pc_cmd_conn.recv()
+            time.sleep(0.5)
+            self.pc_cmd_conn.recv()
+
+        send_param = "{\"dest\": \"arduino\",\"param\": \"A2\"}"
+        self.pc_cmd_conn.send(send_param.encode())
+        self.pc_cmd_conn.recv()
+        time.sleep(0.5)
+        self.pc_cmd_conn.recv()
+        time.sleep(0.5)
+        self.pc_cmd_conn.recv()
 
     def move_to_point(self, point):
 
         movement = []
 
         # Comparing x axis
-        if self.explorer.current_pos[4][0] != point[0]:
-            more = self.explorer.current_pos[4][0] - point[0]
+        if self.explorer.current_pos[4][0] != point.x:
+            more = self.explorer.current_pos[4][0] - point.x
 
             # Turn left if more
             if more > 0:
@@ -605,8 +655,8 @@ class Main:
                 movement.append("W")
 
         # Comparing y axis
-        elif self.explorer.current_pos[4][1] != point[1]:
-            more = self.explorer.current_pos[4][1] - point[1]
+        elif self.explorer.current_pos[4][1] != point.y:
+            more = self.explorer.current_pos[4][1] - point.y
 
             # Move forward if more
             if more > 0:
@@ -615,6 +665,9 @@ class Main:
             # Move backward if less
             else:
                 movement.append("S")
+
+        self.explorer.current_pos[4][0] = point.x
+        self.explorer.current_pos[4][1] = point.y
 
         return movement
 

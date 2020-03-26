@@ -8,9 +8,6 @@ class Point:
         self.y = y
 
     def __eq__(self, other):
-        print(self.x)
-        print(self.y)
-        print(other)
         if self.x == other.x and self.y == other.y:
             return 1
         else:
@@ -90,7 +87,7 @@ class AStar:
         return 0
 
     def is_obstacle(self, node):
-        if self.map.data[node.point.x][node.point.y] == 1:
+        if self.map[node.point.x][node.point.y] == 1:
             return 1
         return 0
 
