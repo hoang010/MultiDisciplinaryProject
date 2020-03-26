@@ -462,6 +462,7 @@ class Main:
             print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
             sensor_data = self.pc_cmd_conn.recv()
+            print(sensor_data)
             sensor_data = sensor_data.decode().strip()
             sensor_data = json.loads(sensor_data)
 
@@ -549,7 +550,6 @@ class Main:
 
                     right_wall_counter = 0
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
-
 
             print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
