@@ -187,7 +187,7 @@ class Explore:
                 self.update_dir(left_turn=False)
 
             # If there is an obstacle in front and on the right
-            elif front_left_obstacle < 2 or front_right_obstacle < 2 or front_mid_obstacle <2:
+            elif front_left_obstacle < 2 or front_right_obstacle < 2 or front_mid_obstacle < 2:
 
                 # Put the command 'left' into queue for main() to read
                 self.move_queue.put('A1')
@@ -205,6 +205,8 @@ class Explore:
                     self.move_queue.put('W1')
 
                 self.check_right_empty += 1
+
+                self.self_correct_position()
 
                 # Update position after moving
                 self.update_pos()
@@ -399,6 +401,26 @@ class Explore:
                 print("Obstacle coordinates", coordinates)
                 if self.check_in_map(coordinates[0], coordinates[1]):
                     self.real_map[coordinates[0]][coordinates[1]] = 1
+
+    def self_correct_position(self):
+        for coordinates in self.current_pos:
+            if not self.check_in_map(coordinates[0], coordinates[1]):
+                if self.direction == self.direction_class.N:
+                    for i in range(len(self.current_pos)):
+                        self.current_pos[i][0] -= 1
+                        return
+                elif self.direction == self.direction_class.S:
+                    for i in range(len(self.current_pos)):
+                        self.current_pos[i][0] += 1
+                        return
+                elif self.direction == self.direction_class.E:
+                    for i in range(len(self.current_pos)):
+                        self.current_pos[i][1] += 1
+                        return
+                else:
+                    for i in range(len(self.current_pos)):
+                        self.current_pos[i][1] -= 1
+                        return
 
     def update_pos(self):
         """

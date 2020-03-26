@@ -121,15 +121,15 @@ void Calibration::CalibrateFront() {
 
   
   if (frontLeftDistance <= 14 && frontMiddleDistance <= 14){
-    Serial.println("Using Left and Center");
+    //Serial.println("Using Left and Center");
     CalibrateDistance(SR6, -1, 9, SR2, 0, 9, 0);
     }
   else if (frontMiddleDistance <= 14 && frontRightDistance <= 14 ){
     Serial.println("Using Right and Center");
-    CalibrateDistance(SR1, 0, 9, SR6, -1, 9, 0);
+    //CalibrateDistance(SR1, 0, 9, SR6, -1, 9, 0);
     }
   else if (frontLeftDistance <= 14 && frontRightDistance <= 14){
-    Serial.println("Using furthest!");
+    //Serial.println("Using furthest!");
       CalibrateDistance(SR1, 0, 9, SR2, 0, 9, 0);
     }
 }
@@ -147,14 +147,6 @@ void Calibration::CalibrateStep() {
   float frontLeftDistance = 0;
   float frontMiddleDistance = 0;
   float frontRightDistance = 0;
-  for (int i = 0; i < 11; i++){
-    frontLeftDistance += analogRead(A1);
-    frontMiddleDistance += analogRead(A0);
-    frontRightDistance += analogRead(A5);
-    }
-  frontLeftDistance /= 10;
-  frontMiddleDistance /= 10;
-  frontRightDistance /= 10;
   
   if ( frontLeftDistance >= 7 && frontLeftDistance <= 13 && frontMiddleDistance >= 17 && frontMiddleDistance <= 22)
     CalibrateDistance(SR6, 0, 19, SR2, 0, 9, 10);
