@@ -120,7 +120,7 @@ class Main:
         from RPi.bluetooth import Bluetooth
         from RPi.camera import Camera
 
-        self.camera = camera()
+        self.camera = Camera()
 
         # Connect to Arduino
         self.arduino_conn = Arduino(self.arduino_name, text_color)
@@ -163,6 +163,7 @@ class Main:
             feedback = self.server_cmd_conn.recv()
             self.write_cmd_server('ack'.encode())
             feedback = feedback.decode()
+
             if feedback == 'end':
                 break
             feedback = json.loads(feedback)
@@ -176,20 +177,22 @@ class Main:
                 feedback = str(feedback)
                 self.write_bt(feedback.encode())
 
-                # added for image recognition
             elif feedback["dest"] == "rpi":
-                self.camera.capture()
-                self.server_img_conn.send_image(self.camera.counter)
-            else:
-                pass
+                param = feedback["param"]
+                
+                if(param == "C"):
+                    self.server_img_conn.send("C".encode())
+                    self.camera.capture()
+                    self.server_img_conn.send_image(self.camera.counter)
+                elif(param == "S"):
+                    self.server_img_conn.send("S".encode())
+                    
 
     def write_cmd_server(self, msg):
         self.server_cmd_conn.send(msg)
 
     def read_img_server(self):
-        while True:
-            self.server_img_conn.recv_image()
-            # TODO: Do something with msg
+        pass
 
     def write_img_server(self, msg):
         self.server_img_conn.send(msg)
@@ -263,13 +266,24 @@ class Main:
     def read_img_pc(self):
         while True:
             msg = self.pc_img_conn.recv()
-            #TODO: Do something with msg
+            msg = msg.decode()
 
+            if(msg == "C"):
+                self.pc_img_conn.recv_image()
+                self.process_img()
+            if(msg == "S"):
+                predicted_ids = self.image_recognition.get_predicted_ids()
+        
     def write_cmd_pc(self, msg):
         self.pc_cmd_conn.send(msg)
 
     def write_img_pc(self, msg):
         self.pc_img_conn.send(msg)
+
+    def process_img(self):
+
+        img = self.image_recognition.load_image()
+        self = self.image_recognition.predict(img)
 
     def process_pc_msg(self, msg):
         flag = 0
@@ -292,25 +306,25 @@ class Main:
 
             elif data == 'beginExplore':
                 self.explorer = self.explore()
-                start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
-                start_point = Point(start[4][0], start[4][1])
-                end_point = Point(self.waypt_coord[0], self.waypt_coord[1])
-                for _ in range(2):
-                    a_star = AStar(start[4], self.waypt_coord, self.explorer.real_map)
-                    start_pt = AStar.Node(start_point, end_point, 0)
-                    a_star.open_list.append(start_pt)
+                # start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
+                # start_point = Point(start[4][0], start[4][1])
+                # end_point = Point(self.waypt_coord[0], self.waypt_coord[1])
+                # for _ in range(2):
+                #     a_star = AStar(start[4], self.waypt_coord, self.explorer.real_map)
+                #     start_pt = AStar.Node(start_point, end_point, 0)
+                #     a_star.open_list.append(start_pt)
 
-                    while not flag:
-                        a_star_current = a_star.select_current()
-                        flag = a_star.near_explore(a_star_current)
+                #     while not flag:
+                #         a_star_current = a_star.select_current()
+                #         flag = a_star.near_explore(a_star_current)
 
-                    for node_path in a_star.path:
-                        movements = self.move_to_point(self.explorer, node_path.point)
-                        for ele in movements:
-                            path.append(ele)
+                #     for node_path in a_star.path:
+                #         movements = self.move_to_point(self.explorer, node_path.point)
+                #         for ele in movements:
+                #             path.append(ele)
 
-                    start = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
-                    self.waypt_coord = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
+                #     start = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
+                #     self.waypt_coord = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
 
             elif data == 'beginFastest':
                 path_string = '{'
@@ -408,6 +422,8 @@ class Main:
         # Start an instance of Explore class
         explorer = Explore(Direction)
 
+        log_movement = ""
+
         true_start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
         start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
 
@@ -425,11 +441,21 @@ class Main:
 
         while not explorer.is_round_complete(start):
 
-            print("Current position:\n", explorer.current_pos)
-            print("Direction:\n", explorer.direction)
-            print("True start:\n", explorer.true_start)
-            print("Explored map:\n", explorer.explored_map)
-            print("Obstacle map:\n", explorer.real_map)
+            # print("Current position:\n", explorer.current_pos)
+            # print("Direction:\n", explorer.direction)
+            # print("True start:\n", explorer.true_start)
+            # print("Explored map:\n", explorer.explored_map)
+            # print("Obstacle map:\n", explorer.real_map)
+
+            """
+            Check the position of the robot and take images accordingly
+            ([4][1] == 1) and ([4][1] == 18) implies its hugging along the x-axis
+            ([4][0] == 1) and ([4][0] == 13) implies its hugging along the y-axis
+            """
+        # if(not(explorer.current_pos[4][1] == 1 or explorer.current_pos[4][1] == 18 or explorer.current_pos[4][0] == 1 or explorer.current_pos[4][0] == 13)):
+            send_param = "{\"dest\": \"rpi\",\"param\": \"C\"}"
+            self.pc_cmd_conn.send(send_param.encode())
+            self.pc_cmd_conn.recv()
 
             print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
@@ -505,9 +531,6 @@ class Main:
                     right_wall_counter = 0
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
 
-                # Calibrate right
-                send_param = "{\"dest\": \"rpi\"}"
-                self.pc_cmd_conn.send(send_param.encode())
 
             print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
@@ -539,6 +562,10 @@ class Main:
 
         packet = "{\"dest\": \"bt\", \"obstacle\": \"" + hex_real_map + "\", \"explored\": \"" + hex_exp_map + "\"}"
 
+        self.pc_cmd_conn.send(packet.encode())
+        self.pc_cmd_conn.recv()
+
+        packet = "{\"dest\": \"rpi\",\"param\": \"S\"}"
         self.pc_cmd_conn.send(packet.encode())
         self.pc_cmd_conn.recv()
 

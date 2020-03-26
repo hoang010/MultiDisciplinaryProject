@@ -31,7 +31,7 @@ class Arduino:
                   + self.text_color.ENDC)
 
             # Try to connect to the Arduino device
-            self.arduino_serial = serial.Serial(self.arduino_name, 9600)
+            self.arduino_serial = serial.Serial(self.arduino_name, 115200)
 
             # Flush input in the buffer
             self.arduino_serial.flushInput()

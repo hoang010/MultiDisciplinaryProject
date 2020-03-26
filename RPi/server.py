@@ -149,7 +149,7 @@ class Server:
 
     def send_image(self, num):
 
-        filepath = "./Algo/images/img{}.jpg".format(str(num))
+        filepath = "./Algo/images/img{}.jpg".format(str(num-1))
         image = np.asarray(cv.imread(filepath))
         encode_param = [int(cv.IMWRITE_JPEG_QUALITY), 90]
 

@@ -10,6 +10,7 @@ class Camera:
 		self.camera.resolution = resolution
 		self.camera.framerate = framerate
 		self.rawCapture = PiRGBArray(self.camera)
+		self.camera.rotation = 90
 
 		#self.camera.vflip = False
 		#self.camera.hflip = False
@@ -26,7 +27,7 @@ class Camera:
 		self.camera.capture(self.rawCapture, format="bgr")
 		image = self.rawCapture.array
 		cv.imwrite(filename, image)
-		self.counter = self.counter + 1
+		self.counter += 1
 		self.rawCapture.truncate(0)
 
 	def close(self):

@@ -14,6 +14,8 @@ class ImageRecognition:
 		self.colors = None
 		self.count = 1
 		self.ids = []
+		self.tracker = 1
+		self.predicted_list = []
 
 		self.switcher = {
 	        0: 3,
@@ -43,6 +45,12 @@ class ImageRecognition:
 			self.classes = [line.strip() for line in f.readlines()]
 
 		self.colors = np.random.uniform(0, 255, size=(len(self.classes), 3))
+
+	def load_image(self):
+
+		file = "./Algo/images/image{}.jpg".format(str(self.tracker))
+		self.tracker += 1
+		return np.asarray(cv.imread(file))
 
 	@staticmethod
 	def load_images():
@@ -124,11 +132,12 @@ class ImageRecognition:
 			h = box[3]
 			self.draw_bounding_box(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h))
 
-		if(isRecognised):
+		if(isRecognised and class_ids[0] not in self.predicted_list):
 			# save output image to disk
 			cv.imwrite("./Algo/predicted_images/object-detection-{}.jpg".format(str(self.count)), image)
 			self.count = self.count + 1
 			mapped_id = self.switcher.get(class_ids[0], "Number not in range 0 to 15!")
+			self.predicted_list.append(class_ids[0])
 			self.ids.append(["","",mapped_id])
 
 	def get_predicted_ids(self):

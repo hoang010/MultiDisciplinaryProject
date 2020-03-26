@@ -122,11 +122,12 @@ class Client:
 
             frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
             frame = cv.imdecode(frame, cv.IMREAD_COLOR)
-            cv.imwrite("./Algo/images/image{}.jpg".format(counter), frame)
+            cv.imwrite("./Algo/images/image{}.jpg".format(str(self.count), frame))
+            self.count += 1
             counter += 1
 
             if(counter > 1 and data == b""):
-                break
+                break;
 
     def recv_image(self):
 
@@ -156,7 +157,7 @@ class Client:
 
             frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
             frame = cv.imdecode(frame, cv.IMREAD_COLOR)
-            cv.imwrite("./Algo/images/image{}.jpg".format(self.count), frame)
+            cv.imwrite("./Algo/images/image{}.jpg".format(str(self.count)), frame)
             counter += 1
             self.count += 1
 
