@@ -5,7 +5,7 @@ import threading
 
 
 class Explore:
-    def __init__(self, direction_class):
+    def __init__(self, start, direction_class):
         """
         Function to initialise an instance of Explore
         :param direction_class: Class
@@ -18,11 +18,12 @@ class Explore:
         self.explored_map = self.real_map.copy()
         self.round = 0
 
+        self.start = start
+
         self.true_start = [[2, 2], [2, 1], [2, 0],
                            [1, 2], [1, 1], [1, 0],
                            [0, 2], [0, 1], [0, 0]]
 
-        self.round = 0
         self.check_right_empty = 0
         self.current_pos = self.true_start.copy()
 
@@ -42,13 +43,13 @@ class Explore:
         #self.update_explored_map_thread.start()
         #self.update_obstacle_map_thread.start()
 
-    def right_wall_hugging_no_thread(self, start):
+    def right_wall_hugging_no_thread(self):
         """
         Function to execute right wall hugging
         :return:
         """
 
-        while not self.is_round_complete(start):
+        while not self.is_round_complete():
 
             sensor_data = self.sensor_data_queue.get()
 
@@ -70,27 +71,27 @@ class Explore:
             #     self.update_obstacle_map_no_thread(right_coordinates[1])
 
             if right_front_obstacle <= 4:
-                right_front_coord = self.get_coord('right', right_front_obstacle, 3)
+                right_front_coord = self.get_coord('right', right_front_obstacle+1, 2)
                 for i in range(len(right_front_coord)):
                     self.update_explored_map_no_thread(right_front_coord[i])
                     self.update_no_obstacle_map_no_thread(right_front_coord[i])
                 self.update_obstacle_map_no_thread(right_front_coord[-1])
 
             else:
-                right_front_coord = self.get_coord('right', 4, 3)
+                right_front_coord = self.get_coord('right', 4, 2)
                 for i in range(len(right_front_coord)):
                     self.update_explored_map_no_thread(right_front_coord[i])
                     self.update_no_obstacle_map_no_thread(right_front_coord[i])
 
             if right_back_obstacle <= 4:
-                right_back_coord = self.get_coord('right', right_back_obstacle, 8)
+                right_back_coord = self.get_coord('right', right_back_obstacle+1, 7)
                 for i in range(len(right_back_coord)):
                     self.update_explored_map_no_thread(right_back_coord[i])
                     self.update_no_obstacle_map_no_thread(right_back_coord[i])
                 self.update_obstacle_map_no_thread(right_back_coord[-1])
 
             else:
-                right_back_coord = self.get_coord('right', 4, 8)
+                right_back_coord = self.get_coord('right', 4, 7)
                 for i in range(len(right_back_coord)):
                     self.update_explored_map_no_thread(right_back_coord[i])
                     self.update_no_obstacle_map_no_thread(right_back_coord[i])
@@ -108,7 +109,7 @@ class Explore:
             elif 2 <= mid_left_obstacle <= 8:
                 print("Updating long left too far")
                 #the plus 1 is for the last coor to be obstacle
-                left_coord = self.get_coord('left', mid_left_obstacle)
+                left_coord = self.get_coord('left', mid_left_obstacle+1)
                 # left_coord = self.get_coord('left', mid_left_obstacle +1)
                 for i in range(len(left_coord)):
                     self.update_explored_map_no_thread(left_coord[i])
@@ -117,7 +118,7 @@ class Explore:
 
             if front_left_obstacle <= 4:
                 print("Updating front left")
-                front_left_coord = self.get_coord('front', front_left_obstacle, 3)
+                front_left_coord = self.get_coord('front', front_left_obstacle+1, 3)
                 # front_left_coord = self.get_coord('front', front_left_obstacle + 1, 3)
                 for i in range(0, len(front_left_coord)):
                     self.update_explored_map_no_thread(front_left_coord[i])
@@ -133,7 +134,7 @@ class Explore:
 
             if front_mid_obstacle <= 4:
                 print("Updating front mid")
-                front_mid_coord = self.get_coord('front', front_mid_obstacle, 4)
+                front_mid_coord = self.get_coord('front', front_mid_obstacle+1, 4)
                 # front_mid_coord = self.get_coord('front', front_mid_obstacle+1, 4)
                 for i in range(len(front_mid_coord)):
                     self.update_explored_map_no_thread(front_mid_coord[i])
@@ -149,7 +150,7 @@ class Explore:
 
             if front_right_obstacle <= 4:
                 print("Updating front right")
-                front_right_coord = self.get_coord('front', front_right_obstacle, 5)
+                front_right_coord = self.get_coord('front', front_right_obstacle+1, 5)
                 # front_right_coord = self.get_coord('front', front_right_obstacle+1, 5)
                 for i in range(len(front_right_coord)):
                     self.update_explored_map_no_thread(front_right_coord[i])
@@ -383,7 +384,7 @@ class Explore:
         # in real_map to 1
 
         coordinates = coord
-        print("Obstacle coordinates", coordinates)
+        print("No obstacle coordinates", coordinates)
         if self.check_in_map(coordinates[0], coordinates[1]):
             self.real_map[coordinates[0]][coordinates[1]] = 0
 
@@ -648,7 +649,7 @@ class Explore:
             return True
         return False
 
-    def is_round_complete(self, start):
+    def is_round_complete(self):
         """
         Function to check if map is complete
         :return: Boolean
@@ -656,7 +657,8 @@ class Explore:
         """
         # Sum up every element of the matrix
         # If every element is 1, it means that every element is explored and sum should be 300 (15 x 20).
-        if self.current_pos[4][0] == start.x and self.current_pos[4][1] == start.y and self.round == 1:
+        if self.current_pos[4][0] == self.start.x and self.current_pos[4][1] == self.start.y and self.round == 1:
+            print("Saving map now")
             for i in range(len(self.explored_map)):
                 for j in range(len(self.explored_map[0])):
                     if self.explored_map[i][j] == 0:

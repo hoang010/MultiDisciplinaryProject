@@ -183,11 +183,12 @@ class Main:
                 param = feedback["param"]
                 
                 if(param == "C"):
-                    self.server_img_conn.send("C".encode())
+                    # self.server_img_conn.send("C".encode())
                     self.camera.capture()
-                    self.server_img_conn.send_image(self.camera.counter)
+                    # self.server_img_conn.send_image(self.camera.counter)
                 elif(param == "S"):
-                    self.server_img_conn.send("S".encode())
+                    pass
+                    # self.server_img_conn.send("S".encode())
                     
 
     def write_cmd_server(self, msg):
@@ -266,15 +267,17 @@ class Main:
             self.process_pc_msg(msg)
 
     def read_img_pc(self):
-        while True:
-            msg = self.pc_img_conn.recv()
-            msg = msg.decode()
+        pass
+        # while True:
+        #     msg = self.pc_img_conn.recv()
+        #     msg = msg.decode()
 
-            if(msg == "C"):
-                self.pc_img_conn.recv_image()
-                self.process_img()
-            if(msg == "S"):
-                predicted_ids = self.image_recognition.get_predicted_ids()
+        #     if(msg == "C"):
+        #         pass
+        #         self.pc_img_conn.recv_image()
+        #         self.process_img()
+        #     if(msg == "S"):
+        #         predicted_ids = self.image_recognition.get_predicted_ids()
         
     def write_cmd_pc(self, msg):
         self.pc_cmd_conn.send(msg)
@@ -307,11 +310,11 @@ class Main:
                 self.waypt_coord = [waypt['x'], waypt['y']]
 
             elif data == 'beginExplore':
-				initial_start = Point(1, 1)
+                initial_start = Point(1, 1)
                 self.explorer = self.explore(initial_start)
                 start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
-                start_point = Point(start[4][0], start[4][1])
-                end_point = Point(self.waypt_coord[0], self.waypt_coord[1])
+                start_point = Point(int(start[4][0]), int(start[4][1]))
+                end_point = Point(int(self.waypt_coord[0]), int(self.waypt_coord[1]))
                 for _ in range(2):
                     a_star = AStar(start[4], self.waypt_coord, self.explorer.real_map)
                     start_pt = AStar.Node(start_point, end_point, 0)
@@ -412,7 +415,7 @@ class Main:
         self.write_arduino(b'I1')
         print(self.log_string + text_color.OKGREEN + 'Initialising done' + text_color.ENDC)
 
-    def explore(self):
+    def explore(self, initial_start):
         """
         Function to run explore algorithm
         :param log_string: String
@@ -423,9 +426,7 @@ class Main:
         """
 
         # Start an instance of Explore class
-        explorer = Explore(Direction)
-
-        log_movement = ""
+        explorer = Explore(initial_start, Direction)
 
         true_start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
         start = [[2, 2], [2, 1], [2, 0], [1, 2], [1, 1], [1, 0], [0, 2], [0, 1], [0, 0]]
@@ -442,7 +443,7 @@ class Main:
         self.write_cmd_pc(send_param.encode())
         self.pc_cmd_conn.recv()
 
-        while not explorer.is_round_complete(start):
+        while not explorer.is_round_complete():
 
             # print("Current position:\n", explorer.current_pos)
             # print("Direction:\n", explorer.direction)
