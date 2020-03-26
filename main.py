@@ -180,7 +180,7 @@ class Main:
                 # added for image recognition
             elif feedback["dest"] == "rpi":
                 self.camera.capture()
-
+                self.server_img_conn.send_image(self.camera.counter)
             else:
                 pass
 
@@ -189,7 +189,7 @@ class Main:
 
     def read_img_server(self):
         while True:
-            msg = self.server_img_conn.recv()
+            self.server_img_conn.recv_image()
             # TODO: Do something with msg
 
     def write_img_server(self, msg):
@@ -522,6 +522,10 @@ class Main:
 
                     right_wall_counter = 0
                     print(self.log_string + text_color.OKGREEN + 'Recalibrate right wall done' + text_color.ENDC)
+
+                # Calibrate right
+                send_param = "{\"dest\": \"rpi\"}"
+                self.pc_cmd_conn.send(send_param.encode())
 
             print(self.log_string + text_color.BOLD + 'Moving {}'.format(log_movement) + text_color.ENDC)
 
