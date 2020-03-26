@@ -148,6 +148,7 @@ class Main:
 
         self.arduino_conn_thread.start()
         self.server_cmd_conn_thread.start()
+        self.server_img_conn_thread.start()
         self.bt_conn_thread.start()
 
     def read_arduino(self):
