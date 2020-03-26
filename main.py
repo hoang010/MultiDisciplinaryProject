@@ -47,6 +47,7 @@ class Main:
 
         self.explorer = None
         self.waypt_coord = None
+        self.path_string = ''
 
     def start(self, param=None):
         """
@@ -120,7 +121,7 @@ class Main:
         from RPi.bluetooth import Bluetooth
         from RPi.camera import Camera
 
-        self.camera = camera()
+        self.camera = Camera()
 
         # Connect to Arduino
         self.arduino_conn = Arduino(self.arduino_name, text_color)
@@ -305,32 +306,32 @@ class Main:
                         flag = a_star.near_explore(a_star_current)
 
                     for node_path in a_star.path:
-                        movements = self.move_to_point(self.explorer, node_path.point)
+                        movements = self.move_to_point(node_path.point)
                         for ele in movements:
                             path.append(ele)
 
                     start = Point(self.explorer.current_pos[4][0], self.explorer.current_pos[4][1])
                     self.waypt_coord = Point(self.explorer.goal[4][0], self.explorer.goal[4][1])
 
-            elif data == 'beginFastest':
-                path_string = '{'
+                self.path_string = '{'
                 for i in range(len(path)):
-                    if path[i] == 3:
+                    if path[i] == 'W':
                         count = 1
-                        while path[i] == 3:
+                        while path[i] == 'W':
                             count += 1
                             i += 1
-                        path_string += '{}: {}'.format('3', str(count*10))
+                        self.path_string += '{}: {}'.format('W', count)
                         i -= 1
                     else:
-                        path_string += '{}: {}'.format(path[i], '90')
-                path_string = path_string[:-1]
-                path_string += '}'
+                        self.path_string += '{}: {}'.format(path[i], '1')
+                self.path_string += '}'
 
-                send_param = "{\"dest\": \"arduino\",\"param\": \"14\" }"
+            elif data == 'beginFastest':
+
+                send_param = "{\"dest\": \"arduino\",\"param\": \"Z\" }"
                 self.write_cmd_pc(send_param.encode())
 
-                send_param = "{\"dest\": \"arduino\",\"param\": \"" + path_string + "\" }"
+                send_param = "{\"dest\": \"arduino\",\"param\": \"" + self.path_string + "\" }"
                 self.write_cmd_pc(send_param.encode())
 
             elif data == 'manual':
@@ -456,10 +457,11 @@ class Main:
                 front_left_obstacle = round(sensor_data["FrontLeft"]/10)
                 front_mid_obstacle = round(sensor_data["FrontCenter"]/10)
                 front_right_obstacle = round(sensor_data["FrontRight"]/10)
+
                 #if any of the 2 front sensor has an object and both the sensors on the right has an object
-                if ((front_left_obstacle < 2 and front_right_obstacle < 2) or \
-                     (front_mid_obstacle < 2 and front_right_obstacle < 2) or \
-                     (front_left_obstacle < 2 and front_mid_obstacle < 2)) and \
+                if ((front_left_obstacle < 2 and front_right_obstacle < 2) or
+                    (front_mid_obstacle < 2 and front_right_obstacle < 2) or
+                    (front_left_obstacle < 2 and front_mid_obstacle < 2)) and \
                     (right_back_obstacle < 2 and right_front_obstacle < 2):
                     print(self.log_string + text_color.WARNING + 'Recalibrating corner' + text_color.ENDC)
 
@@ -562,87 +564,35 @@ class Main:
 
         return explorer
 
-    def get_image(log_string, explorer, arduino_conn):
-        start_pos = explorer.current_pos
-        start_dir = explorer.direction
-
-        # while True:
-        #     send_param = b'2'
-        #     arduino_conn.to_send_queue.put(send_param)
-        #     sensor_data = arduino_conn.have_recv_queue.get()
-        #
-        #     sensor_data = json.loads(sensor_data.decode().strip())
-        #
-        #     # Get the data
-        #     front_left_obstacle = round(sensor_data["FrontLeft"]) / 10
-        #     front_mid_obstacle = round(sensor_data["FrontCenter"]) / 10
-        #     front_right_obstacle = round(sensor_data["FrontRight"]) / 10
-        #     mid_left_obstacle = round(sensor_data["LeftSide"]) / 10
-        #     right_front_obstacle = round(sensor_data["RightFront"]) / 10
-        #     right_back_obstacle = round(sensor_data["RightBack"]) / 10
-        #
-        #     # Camera facing right
-        #     # Turn left
-        #     arduino_conn.to_send_queue.put(b'4')
-        #     arduino_conn.have_recv_queue.get()
-        #
-        #     # Insert image recog code here
-        #     # TODO: This is a placeholder!
-        #     captured = ImageRecognition(text_color)
-        #
-        #     if captured:
-        #         explorer.navigate_to_point(log_string, text_color, arduino_conn, start_pos)
-        #         break
-        #
-        #     else:
-        #         # If no obstacle on right
-        #         if right_front_obstacle > 2 or right_back_obstacle > 2:
-        #             arduino_conn.to_send_queue.put(b'5')
-        #             arduino_conn.have_recv_queue.get()
-        #
-        #         # If front has obstacle
-        #         elif front_left_obstacle < 2 or front_mid_obstacle < 2 or front_right_obstacle < 2:
-        #             # Turn left
-        #             arduino_conn.to_send_queue.put(b'4')
-        #             arduino_conn.have_recv_queue.get()
-        #
-        #         else:
-        #             # Advance
-        #             arduino_conn.to_send_queue.put(b'3')
-        #             arduino_conn.have_recv_queue.get()
-
-        while not explorer.set_direction(start_dir):
-            continue
-
-    def move_to_point(self, explorer, point):
+    def move_to_point(self, point):
 
         movement = []
 
         # Comparing x axis
-        if explorer.current_pos[4][0] != point[0]:
-            more = explorer.current_pos[4][0] - point[0]
+        if self.explorer.current_pos[4][0] != point[0]:
+            more = self.explorer.current_pos[4][0] - point[0]
 
             # Turn left if more
             if more > 0:
-                movement.append("A1")
-                movement.append("W1")
+                movement.append("A")
+                movement.append("W")
 
             # Turn right if less
             else:
-                movement.append("D1")
-                movement.append("W1")
+                movement.append("D")
+                movement.append("W")
 
         # Comparing y axis
-        elif explorer.current_pos[4][1] != point[1]:
-            more = explorer.current_pos[4][1] - point[1]
+        elif self.explorer.current_pos[4][1] != point[1]:
+            more = self.explorer.current_pos[4][1] - point[1]
 
             # Move forward if more
             if more > 0:
-                movement.append("W1")
+                movement.append("W")
 
             # Move backward if less
             else:
-                movement.append("S1")
+                movement.append("S")
 
         return movement
 
@@ -664,7 +614,7 @@ if __name__ == "__main__":
     try:
         main = Main(platform.system())
         # main = Main('Windows')
-        if len(sys.argv) == 0:
+        if len(sys.argv) == 1:
             main.start()
         else:
             main.start(sys.argv[1])
