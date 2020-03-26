@@ -262,7 +262,7 @@ class Main:
 
     def read_cmd_pc(self):
         while True:
-     g       msg = self.pc_cmd_conn.recv()
+            msg = self.pc_cmd_conn.recv()
             self.process_pc_msg(msg)
 
     def read_img_pc(self):
@@ -455,9 +455,6 @@ class Main:
             ([4][0] == 1) and ([4][0] == 13) implies its hugging along the y-axis
             """
         # if(not(explorer.current_pos[4][1] == 1 or explorer.current_pos[4][1] == 18 or explorer.current_pos[4][0] == 1 or explorer.current_pos[4][0] == 13)):
-            send_param = "{\"dest\": \"rpi\",\"param\": \"C\"}"
-            self.pc_cmd_conn.send(send_param.encode())
-            self.pc_cmd_conn.recv()
 
             print(self.log_string + text_color.WARNING + 'Round not completed' + text_color.ENDC)
 
@@ -468,6 +465,10 @@ class Main:
 
             explorer.sensor_data_queue.put(sensor_data)
             print(self.log_string + text_color.OKGREEN + 'Sensor data received' + text_color.ENDC)
+
+            send_param = "{\"dest\": \"rpi\",\"param\": \"C\"}"
+            self.pc_cmd_conn.send(send_param.encode())
+            self.pc_cmd_conn.recv()
 
             # Get next movement
             movement = explorer.move_queue.get()
