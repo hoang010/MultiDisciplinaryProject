@@ -47,23 +47,6 @@ float returnLrDist (int count, SharpIR sensor, int offset) {
   return final;
 }
 
-int avoidObstacles(int count){
-    float SR1_distance = returnSrDist(count, SR1, -5);
-    float SR2_distance = returnSrDist(count, SR2, -5);
-    float SR6_distance = returnSrDist(count, SR6, -5);
-    /*
-    if (SR1_distance <= 25 and SR1_distance >= 15){
-      return true;
-      }M
-    if (SR2_distance <= 25 and SR2_distance >= 15){
-      return true;
-      }*/
-    Serial.println(SR6_distance);
-    if (SR6_distance <= 25 and SR6_distance >= 15){
-      return round(SR6_distance);
-      }
-    return -1;
-  }
 
 String returnSensorData(int count) {
 
@@ -72,7 +55,7 @@ String returnSensorData(int count) {
   float SR3_distance = returnSrDist(count, SR3, 5);
   float SR4_distance = returnSrDist(count, SR4, 5);
   float LR5_distance = returnLrDist(count, LR5, 0);
-  float SR6_distance = returnSrDist(count, SR6, 0);
+  float SR6_distance = returnSrDist(count, SR6, -1);
 
   return "{\"FrontRight\":" + String(SR1_distance) + ", \"FrontLeft\":" + String(SR2_distance) + ", \"FrontCenter\":" + String(SR6_distance)+ ", \"RightFront\":" + String(SR3_distance) + ", \"RightBack\":" + String(SR4_distance) + ", \"LeftSide\":" + String(LR5_distance)+",";
 }

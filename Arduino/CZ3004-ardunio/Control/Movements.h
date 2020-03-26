@@ -65,7 +65,7 @@ Motion::Motion(float _rpm, float _setInitialMotorSpeed1, int _pinM1, float _setI
 Note: in order to change forward travelling distance, simply change wheelRadius and offset */
 float Motion::runningTime(float distance) {
   float wheelRadius = 2.90;
-  float offset = 10;
+  float offset = 5;
   
   float Speed = (rpm * 2 * Pi * wheelRadius) / 60000.0; // Speed in cm/millisecond
   float runTime = distance / Speed;
