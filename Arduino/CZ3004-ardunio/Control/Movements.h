@@ -135,8 +135,7 @@ void Motion::startMotion(bool forwardMotorOne, bool forwardMotorTwo, long totalT
       setMotorSpeed2 = motorTwo->setWheelSpeed(setMotorSpeed2, pinM2, rpm, forwardMotorTwo);  // Find new set speed of motor 2
 
       md.setM1Speed(setMotorSpeed1);
-      md.setM2Speed(setMotorSpeed2);
-
+      md.setM2Speed(setMotorSpeed2+50);
       count = 0;
     }
 

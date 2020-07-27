@@ -15,8 +15,8 @@ DualVNH5019MotorShield md;
 /*Definition of target or required RPM by motors, calibration speed and starting set Speed
   ~ Staring set Speed is set to a mid range value below 80 rpm in order to not allow the PID
   controlled to start from 0 rpm which tend to cause a delay in response time*/
-#define targetRPM 80
-#define initialSetSpeed1 170 // left
+#define targetRPM 90
+#define initialSetSpeed1 150 // left
 #define initialSetSpeed2 305
 #define calibrationSetSpeed1 300
 #define calibrationSetSpeed2 340
@@ -44,6 +44,9 @@ void setup() {
 
 
 void loop() {
+//  delay(2000);
+//  controlBot('D', 1, 1);
+//  delay(1000);
   delay(2);
   int gridMoveValueInt;
   String gridMoveValueString;
